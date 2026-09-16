@@ -1,0 +1,439 @@
+﻿/* ============================================================
+   NAVBAR - StrengthOut  (Naukri-style horizontal bar)
+   Primary: #70c144 (green)   Secondary: #1d72f2 (blue)
+   ============================================================ */
+
+/* ── Shell ─────────────────────────────────────────────────── */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  width: 100%;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 60px;
+  gap: 0;
+}
+
+/* ── Brand / Logo ──────────────────────────────────────────── */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 2rem;
+}
+
+.nav-brand-logo {
+  height: 32px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  display: block;
+  transition: opacity 0.2s;
+}
+.nav-brand:hover .nav-brand-logo { opacity: 0.88; }
+
+.brand-role-tag {
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: #1d72f2;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.brand-role-tag.super {
+  background: #f59e0b;
+  color: #000;
+}
+
+/* ── Nav links ─────────────────────────────────────────────── */
+.nav-links {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0 1rem;
+  height: 100%;
+  white-space: nowrap;
+  transition: color 0.18s;
+}
+.nav-item::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: #70c144;
+  border-radius: 2px 2px 0 0;
+  transition: width 0.22s;
+}
+.nav-item:hover { color: #70c144; }
+.nav-item:hover::after { width: 65%; }
+.nav-item.active { color: #70c144; font-weight: 600; }
+.nav-item.active::after { width: 75%; height: 3px; }
+
+/* notification dot badge on nav links */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 3px;
+  margin-left: 1px;
+  margin-top: -8px;
+  flex-shrink: 0;
+}
+
+/* ── Search bar ─────────────────────────────────────────────── */
+.nav-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 360px;
+  margin: 0 1.5rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-search-input {
+  width: 100%;
+  height: 36px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 20px 0 0 20px;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  font-family: inherit;
+  outline: none;
+  background: #f9fafb;
+  transition: border-color 0.15s, background 0.15s;
+}
+.nav-search-input::placeholder { color: #9ca3af; }
+.nav-search-input:focus {
+  border-color: #70c144;
+  background: #fff;
+}
+
+.nav-search-btn {
+  height: 36px;
+  width: 40px;
+  border: none;
+  border-radius: 0 20px 20px 0;
+  background: #70c144;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.18s;
+}
+.nav-search-btn:hover { background: #5ea836; }
+
+/* ── Right cluster ──────────────────────────────────────────── */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* "StrengthOut+" branded pill button */
+.nav-plus-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 34px;
+  padding: 0 0.9rem;
+  border: 1.5px solid #70c144;
+  border-radius: 20px;
+  background: transparent;
+  color: #70c144;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.18s, color 0.18s;
+  letter-spacing: 0.01em;
+}
+.nav-plus-btn:hover {
+  background: #70c144;
+  color: #fff;
+}
+.nav-plus-btn-logo {
+  height: 16px;
+  width: auto;
+  object-fit: contain;
+  filter: invert(52%) sepia(90%) saturate(400%) hue-rotate(70deg) brightness(0.95);
+  transition: filter 0.18s;
+}
+.nav-plus-btn:hover .nav-plus-btn-logo {
+  filter: brightness(0) invert(1);
+}
+
+/* Icon buttons (bell, hamburger) */
+.nav-icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.nav-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* badge on icon buttons */
+.nav-icon-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #fff;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+/* ── User avatar ────────────────────────────────────────────── */
+.nav-user { position: relative; flex-shrink: 0; }
+
+.nav-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  transition: background 0.18s;
+  position: relative;
+}
+.nav-user-trigger:hover { background: #f3f4f6; }
+
+.nav-avatar {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #70c144, #5ea836);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #70c144;
+}
+.nav-avatar.super {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #f59e0b;
+}
+
+/* unread badge on avatar */
+.nav-avatar-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #fff;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.user-firstname {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #374151;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-caret-icon {
+  color: #9ca3af;
+  transition: transform 0.22s;
+  flex-shrink: 0;
+}
+.user-caret-icon.open { transform: rotate(180deg); color: #70c144; }
+
+/* ── Dropdown ───────────────────────────────────────────────── */
+.nav-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  min-width: 230px;
+  box-shadow: 0 16px 40px -8px rgba(0,0,0,0.14), 0 4px 12px -2px rgba(0,0,0,0.06);
+  padding: 0.5rem;
+  z-index: 1010;
+  animation: dropdownPop 0.18s cubic-bezier(0.16,1,0.3,1);
+  transform-origin: top right;
+}
+@keyframes dropdownPop {
+  from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.dropdown-user-header { padding: 0.6rem 0.8rem 0.55rem; }
+.dropdown-user-name { font-weight: 700; font-size: 0.9rem; color: #111827; margin-bottom: 0.2rem; }
+.dropdown-user-email {
+  font-size: 0.76rem;
+  color: #6b7280;
+  margin-bottom: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.role-badge-tag {
+  font-size: 0.64rem;
+  font-weight: 700;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.role-badge-tag.super { background: #fef3c7; color: #92400e; }
+
+.dropdown-divider { border: none; border-top: 1px solid #f1f5f9; margin: 0.4rem 0; }
+
+.dropdown-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.845rem;
+  color: #374151;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.14s, color 0.14s;
+  font-weight: 500;
+  font-family: inherit;
+}
+.dropdown-link svg { color: #9ca3af; flex-shrink: 0; transition: color 0.14s; }
+.dropdown-link:hover { background: #f8fafc; color: #111827; }
+.dropdown-link:hover svg { color: #70c144; }
+.dropdown-link.logout-btn { color: #dc2626; }
+.dropdown-link.logout-btn svg { color: #dc2626; }
+.dropdown-link.logout-btn:hover { background: #fff1f2; color: #b91c1c; }
+
+/* ── Auth buttons (unauthenticated) ─────────────────────────── */
+.nav-auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+.nav-btn-login {
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.38rem 0.9rem;
+  border-radius: 20px;
+  border: 1.5px solid #d1d5db;
+  text-decoration: none;
+  transition: border-color 0.18s, color 0.18s;
+}
+.nav-btn-login:hover { border-color: #70c144; color: #70c144; }
+.nav-btn-register {
+  background: linear-gradient(135deg, #70c144, #5ea836);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.42rem 1.1rem;
+  border-radius: 20px;
+  border: none;
+  text-decoration: none;
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+  box-shadow: 0 2px 8px rgba(112,193,68,0.35);
+}
+.nav-btn-register:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(112,193,68,0.45);
+}
+
+/* ── Mobile: hide extras ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .nav-search { max-width: 260px; }
+  .nav-plus-btn { display: none; }
+}
+@media (max-width: 768px) {
+  .nav-search { display: none; }
+  .nav-links  { display: none; }
+  .user-firstname { display: none; }
+}

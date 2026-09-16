@@ -1,0 +1,120 @@
+﻿.dashboard-page {
+  padding: 2.5rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-hero {
+  background: linear-gradient(135deg, #dcf3e5 0%, #eefbf3 100%);
+  border: 1px solid #c3edd3;
+  border-radius: 12px;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+.hero-greeting {
+  color: #15803d;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hero-name {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  color: #4b5563;
+  margin: 0;
+  font-size: 1.05rem;
+  max-width: 550px;
+  line-height: 1.5;
+}
+
+.role-badge {
+  background-color: #70c144;
+  color: #ffffff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  box-shadow: 0 2px 8px rgba(112, 193, 68, 0.3);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.dash-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  text-decoration: none;
+  transition: all 0.22s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.dash-card:hover {
+  border-color: #70c144;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -4px rgba(112, 193, 68, 0.15);
+}
+
+.dash-card-icon {
+  font-size: 2.2rem;
+  min-width: 3.2rem;
+  height: 3.2rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-card-content {
+  flex: 1;
+}
+
+.dash-card-content h3 {
+  color: #111827;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem;
+}
+
+.dash-card-content p {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.dash-card-arrow {
+  color: #70c144;
+  font-size: 1.4rem;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+
+.dash-card:hover .dash-card-arrow {
+  transform: translateX(4px);
+}
