@@ -759,3 +759,18 @@
 .pwd-bar-2 { background: #f97316; }
 .pwd-bar-3 { background: #eab308; }
 .pwd-bar-4 { background: #22c55e; }
+
+/* ── Responsive: Small phones — OTP refinement ── */
+@media (max-width: 380px) {
+  .otp-boxes-row {
+    gap: 6px;
+  }
+  .otp-digit-box {
+    width: 42px;
+    height: 50px;
+    font-size: 1.3rem;
+    border-radius: 8px;
+  }
+  .auth-panel-headline { font-size: 1.3rem; }
+  .auth-form-title { font-size: 1.2rem; }
+}

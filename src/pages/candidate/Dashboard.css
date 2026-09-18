@@ -118,3 +118,35 @@
 .dash-card:hover .dash-card-arrow {
   transform: translateX(4px);
 }
+
+/* ============================================================
+   RESPONSIVE — Candidate Dashboard
+   ============================================================ */
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 1.5rem 1rem 3rem;
+  }
+  .dashboard-hero {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .hero-greeting { font-size: 1.6rem; }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-page {
+    padding: 1.25rem 0.75rem 2rem;
+  }
+  .hero-greeting { font-size: 1.35rem; }
+  .dash-card {
+    padding: 1.1rem;
+    gap: 0.85rem;
+  }
+  .dash-card-icon { font-size: 1.8rem; min-width: 2.8rem; height: 2.8rem; }
+  .dash-card-content h3 { font-size: 1rem; }
+  .dash-card-content p { font-size: 0.84rem; }
+}

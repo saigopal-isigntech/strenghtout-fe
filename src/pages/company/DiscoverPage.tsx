@@ -1,16 +1,19 @@
-﻿import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { candidatesApi } from "../../api/candidates";
 import { connectionsApi } from "../../api/connections";
 import type { CandidateProfile, Evidence } from "../../types";
-import { FiMapPin, FiBriefcase, FiCalendar, FiExternalLink, FiX, FiCheckCircle } from "react-icons/fi";
+import { FiMapPin, FiBriefcase, FiCalendar, FiExternalLink, FiX, FiCheckCircle, FiUserPlus } from "react-icons/fi";
 import "./Discover.css";
 
 const DiscoverPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const qParam = searchParams.get("q") || "";
+
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(qParam);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
 
@@ -29,14 +32,20 @@ const DiscoverPage: React.FC = () => {
 
   const [toastMsg, setToastMsg] = useState("");
 
-  const search = async (p = 0) => {
+  // Sync state if URL query parameter changes
+  useEffect(() => {
+    setQuery(qParam);
+  }, [qParam]);
+
+  const search = useCallback(async (p = 0, searchTerms = query) => {
     setLoading(true);
     try {
-      const params: Record<string, string | number> = { page: p, size: 12 };
-      if (query.trim()) params.q = query.trim();
+      const params: Record<string, string | number> = { page: p, size: 50 };
+      if (searchTerms.trim()) params.q = searchTerms.trim();
       const res = await candidatesApi.search(params);
-      setCandidates(res.data.data.content || []);
-      setTotal(res.data.data.totalElements || 0);
+      const list = res.data?.data?.content || [];
+      setCandidates(list);
+      setTotal(res.data?.data?.totalElements || list.length || 0);
       setPage(p);
     } catch {
       setCandidates([]);
@@ -44,11 +53,24 @@ const DiscoverPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
 
+  // Live letter-by-letter search trigger with 150ms debounce
   useEffect(() => {
-    search(0);
-  }, []);
+    const timer = setTimeout(() => {
+      search(0, query);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [query, search]);
+
+  const handleInputChange = (val: string) => {
+    setQuery(val);
+    if (val.trim()) {
+      setSearchParams({ q: val }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   const handleOpenProfile = async (c: CandidateProfile) => {
     setEvalModal(c);
@@ -110,6 +132,20 @@ const DiscoverPage: React.FC = () => {
 
   const activeCandidate = fullProfile || evalModal;
 
+  // Instant letter-by-letter client filter fallback
+  const filteredCandidates = useMemo(() => {
+    if (!query.trim()) return candidates;
+    const qLower = query.trim().toLowerCase();
+    return candidates.filter(c => {
+      const nameMatch = c.fullName?.toLowerCase().includes(qLower);
+      const headlineMatch = c.headline?.toLowerCase().includes(qLower);
+      const locationMatch = (c.currentLocation || c.location || "").toLowerCase().includes(qLower);
+      const skills = Array.isArray(c.skills) ? c.skills.map((s: any) => (typeof s === "string" ? s : s.skillName || s.name || "").toLowerCase()) : [];
+      const skillMatch = skills.some(s => s.includes(qLower));
+      return nameMatch || headlineMatch || locationMatch || skillMatch;
+    });
+  }, [candidates, query]);
+
   return (
     <div className="discover-page">
       {toastMsg && <div className="discover-toast">{toastMsg}</div>}
@@ -127,11 +163,11 @@ const DiscoverPage: React.FC = () => {
           type="search"
           placeholder="Search by candidate name, headline, skills, or location..."
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && search(0)}
+          onChange={e => handleInputChange(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && search(0, query)}
           className="filter-input"
         />
-        <button className="btn-search" onClick={() => search(0)} disabled={loading}>
+        <button className="btn-search" onClick={() => search(0, query)} disabled={loading}>
           {loading ? <span className="spinner" /> : "Search Candidates"}
         </button>
       </div>
@@ -143,12 +179,12 @@ const DiscoverPage: React.FC = () => {
       <div className="candidate-grid">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="candidate-card skeleton" />)
-          : candidates.length === 0 ? (
+          : filteredCandidates.length === 0 ? (
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", background: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
               <p style={{ color: "#64748b", fontSize: "1.05rem" }}>No candidates found matching your search.</p>
             </div>
           ) : (
-            candidates.map(c => {
+            filteredCandidates.map(c => {
               const skills = extractSkills(c);
               const expMonths = c.totalExperienceMonths || (c.totalExperienceYears ? c.totalExperienceYears * 12 : 0);
               const expYears = Math.round(expMonths / 12);
@@ -177,46 +213,28 @@ const DiscoverPage: React.FC = () => {
 
                   <div className="card-score">
                     <span>Experience:</span>
-                    <strong>{expYears > 0 ? `${expYears} yr${expYears !== 1 ? "s" : ""}` : "Entry / Fresher"}</strong>
+                    <strong>{expYears > 0 ? `${expYears} yrs` : "Entry / Fresher"}</strong>
                   </div>
 
-                  <div className="card-skills">
-                    {skills.slice(0, 5).map(s => (
-                      <span key={s} className="skill-chip">{s}</span>
-                    ))}
-                    {skills.length > 5 && (
-                      <span className="skill-chip">+{skills.length - 5} more</span>
-                    )}
-                  </div>
+                  {skills.length > 0 && (
+                    <div className="card-skills">
+                      {skills.slice(0, 5).map(s => (
+                        <span key={s} className="skill-pill">{s}</span>
+                      ))}
+                      {skills.length > 5 && <span className="skill-pill extra">+{skills.length - 5} more</span>}
+                    </div>
+                  )}
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "auto" }}>
+                  <div className="card-actions">
                     <button
-                      className="btn-eval"
-                      style={{
-                        background: "#f1f5f9",
-                        border: "1px solid #cbd5e1",
-                        color: "#1e293b",
-                        borderRadius: "6px",
-                        padding: "0.55rem 0.5rem",
-                        fontWeight: 600,
-                        fontSize: "0.85rem",
-                        cursor: "pointer"
-                      }}
-                      onClick={(e) => {
+                      className="btn-card-primary"
+                      onClick={e => {
                         e.stopPropagation();
-                        handleOpenProfile(c);
+                        setConnectModal({ candidateId: c.id!, name: c.fullName });
                       }}
                     >
-                      Evaluate Profile
-                    </button>
-                    <button
-                      className="btn-request"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConnectModal({ candidateId: c.id, name: c.fullName });
-                      }}
-                    >
-                      Connect
+                      <FiUserPlus size={16} />
+                      <span>Connect with Candidate</span>
                     </button>
                   </div>
                 </div>
@@ -225,68 +243,48 @@ const DiscoverPage: React.FC = () => {
           )}
       </div>
 
-      {total > 12 && (
-        <div className="pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem" }}>
-          <button disabled={page === 0} onClick={() => search(page - 1)} className="page-btn">Previous</button>
-          <span>Page {page + 1} of {Math.ceil(total / 12)}</span>
-          <button disabled={(page + 1) * 12 >= total} onClick={() => search(page + 1)} className="page-btn">Next</button>
-        </div>
-      )}
-
-      {/* Candidate Profile Dossier Modal */}
+      {/* Profile Detail / Evaluation Modal */}
       {evalModal && activeCandidate && (
         <div className="modal-overlay" onClick={() => setEvalModal(null)}>
-          <div className="modal-box" style={{ maxWidth: "680px", maxHeight: "88vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-            
-            {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "linear-gradient(135deg, #70c144, #5ea836)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 700, flexShrink: 0 }}>
+          <div className="modal-box candidate-eval-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div className="modal-avatar-lg">
                   {activeCandidate.fullName?.[0]?.toUpperCase() || "C"}
                 </div>
                 <div>
-                  <span style={{ fontSize: "0.72rem", background: "#dcfce7", color: "#166534", fontWeight: 700, padding: "0.15rem 0.55rem", borderRadius: "9999px" }}>
-                    VERIFIED CANDIDATE PROFILE
-                  </span>
-                  <h2 style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.3rem 0 0.1rem", color: "#0f172a" }}>
-                    {activeCandidate.fullName}
-                  </h2>
-                  <p style={{ color: "#475569", margin: 0, fontSize: "0.92rem", fontWeight: 500 }}>
-                    {activeCandidate.headline || "Professional Candidate"}
-                  </p>
+                  <h3 style={{ margin: 0, fontSize: "1.35rem", color: "#0f172a" }}>{activeCandidate.fullName}</h3>
+                  <p style={{ margin: "2px 0 0", color: "#64748b", fontSize: "0.9rem" }}>{activeCandidate.headline || "Professional Candidate"}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setEvalModal(null)}
-                style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b" }}
-              >
-                <FiX size={18} />
+              <button className="btn-modal-close" onClick={() => setEvalModal(null)}>
+                <FiX size={20} />
               </button>
             </div>
 
             {loadingProfile && (
-              <div style={{ textAlign: "center", padding: "1rem", color: "#64748b", fontSize: "0.88rem" }}>
-                Loading verified dossier & evidence attachments...
+              <div style={{ padding: "1rem 0", color: "#64748b", fontSize: "0.9rem" }}>
+                Loading full candidate details...
               </div>
             )}
 
-            {/* Quick Meta Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.75rem", background: "#f8fafc", padding: "0.85rem", borderRadius: "8px", marginBottom: "1.25rem", border: "1px solid #e2e8f0" }}>
+            {/* Core Candidate Overview Info */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "#f8fafc", padding: "1rem", borderRadius: "8px", margin: "1rem 0" }}>
               <div>
-                <span style={{ fontSize: "0.73rem", color: "#64748b", display: "block" }}>Location</span>
+                <span style={{ fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Current Location</span>
                 <strong style={{ fontSize: "0.9rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                  <FiMapPin size={14} color="#70c144" /> {activeCandidate.currentLocation || activeCandidate.location || "Not specified"}
+                  <FiMapPin size={14} color="#70c144" /> {activeCandidate.currentLocation || activeCandidate.location || "Location not specified"}
                 </strong>
               </div>
               <div>
-                <span style={{ fontSize: "0.73rem", color: "#64748b", display: "block" }}>Experience</span>
+                <span style={{ fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Experience Level</span>
                 <strong style={{ fontSize: "0.9rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                  <FiBriefcase size={14} color="#70c144" /> {activeCandidate.totalExperienceMonths ? `${Math.round(activeCandidate.totalExperienceMonths / 12)} years` : (activeCandidate.experienceStatus || "Entry / Fresher")}
+                  <FiBriefcase size={14} color="#70c144" /> {activeCandidate.experienceStatus || "Entry / Fresher"}
                 </strong>
               </div>
               {(activeCandidate.availability || activeCandidate.noticePeriod) && (
-                <div>
-                  <span style={{ fontSize: "0.73rem", color: "#64748b", display: "block" }}>Notice Period / Availability</span>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <span style={{ fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Availability / Notice Period</span>
                   <strong style={{ fontSize: "0.9rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.3rem" }}>
                     <FiCalendar size={14} color="#70c144" /> {activeCandidate.availability || activeCandidate.noticePeriod}
                   </strong>
@@ -326,7 +324,7 @@ const DiscoverPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Projects / Work History if present */}
+            {/* Projects */}
             {Array.isArray(activeCandidate.projects) && activeCandidate.projects.length > 0 && (
               <div style={{ marginBottom: "1.25rem" }}>
                 <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>Featured Projects</h4>
@@ -341,7 +339,7 @@ const DiscoverPage: React.FC = () => {
               </div>
             )}
 
-            {/* Evidences if present */}
+            {/* Evidences */}
             {evidences.length > 0 && (
               <div style={{ marginBottom: "1.25rem" }}>
                 <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>Verifiable Evidences</h4>
@@ -385,7 +383,7 @@ const DiscoverPage: React.FC = () => {
                 onClick={() => {
                   const candidateToConnect = activeCandidate;
                   setEvalModal(null);
-                  setConnectModal({ candidateId: candidateToConnect.id, name: candidateToConnect.fullName });
+                  setConnectModal({ candidateId: candidateToConnect.id!, name: candidateToConnect.fullName });
                 }}
               >
                 Connect with Candidate

@@ -412,3 +412,50 @@
   color: #6b7280;
   padding: 2rem;
 }
+
+/* ============================================================
+   RESPONSIVE — Admin Dashboard
+   ============================================================ */
+@media (max-width: 1024px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard {
+    padding: 1.5rem 1rem 3rem;
+  }
+  .admin-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .admin-dash-title { font-size: 1.55rem; }
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+  }
+  .admin-table-card {
+    border-radius: 8px;
+  }
+  .admin-activity-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard {
+    padding: 1rem 0.65rem 2rem;
+  }
+  .admin-dash-title { font-size: 1.3rem; }
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .stat-card {
+    padding: 1rem;
+  }
+  .stat-number { font-size: 1.6rem; }
+  .stat-label { font-size: 0.78rem; }
+}

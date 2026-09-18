@@ -113,6 +113,8 @@ export interface CandidateProject {
   demoUrl?: string;
   startDate?: string;
   endDate?: string;
+  startDateStr?: string;
+  endDateStr?: string;
   technologies?: string[];
 }
 
@@ -147,12 +149,12 @@ export interface CandidateProfile {
   dateOfBirth?: string;
   maritalStatus?: string;
   permanentAddress?: string;
-  languages?: string[];
+  languages?: string[] | string;
   visibilityStatus?: string;
   completionPct?: number;
   overallStrengthScore?: number;
   skills: any[];
-  evidences: Evidence[];
+  evidences?: Evidence[];
   experiences?: any[];
   education?: CandidateEducation[];
   projects?: CandidateProject[];
@@ -207,18 +209,21 @@ export interface CompanyProfile {
 
 export interface ConnectionRequest {
   id: string;
-  companyId: string;
-  companyDisplayName: string;
+  companyId?: string;
+  companyName?: string;
+  companyDisplayName?: string;
   companyIndustry?: string;
   companyCity?: string;
-  candidateId: string;
-  candidateFullName: string;
+  candidateId?: string;
+  candidateName?: string;
+  candidateFullName?: string;
   candidateHeadline?: string;
   candidateLocation?: string;
   candidateExperienceMonths?: number;
-  roleTitle: string;
-  opportunitySummary: string;
-  workType: string;
+  roleTitle?: string;
+  opportunitySummary?: string;
+  message?: string;
+  workType?: string;
   location?: string;
   expectedStart?: string;
   status: string;
@@ -236,4 +241,3 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
-

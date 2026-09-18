@@ -111,3 +111,27 @@ body {
 a { color: inherit; text-decoration: none; }
 
 input, select, textarea, button { font-family: inherit; }
+
+/* ============================================================
+   RESPONSIVE — Global
+   ============================================================ */
+html {
+  overflow-x: hidden;
+}
+
+body, #root {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
+}

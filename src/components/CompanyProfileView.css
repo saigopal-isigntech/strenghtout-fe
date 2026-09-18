@@ -349,3 +349,62 @@
   color: #991b1b;
   border: 1px solid #fecaca;
 }
+
+/* ============================================================
+   RESPONSIVE — Company Profile
+   ============================================================ */
+@media (max-width: 768px) {
+  .company-profile-wrap {
+    padding: 1.5rem 1rem 3rem;
+  }
+  .company-header-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem 1.25rem;
+    gap: 1rem;
+  }
+  .company-title { font-size: 1.5rem; }
+  .company-tags { justify-content: center; }
+  .company-body-grid {
+    grid-template-columns: 1fr;
+    padding: 1.25rem;
+    gap: 1.5rem;
+  }
+  .edit-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .edit-actions {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .btn-save-company, .btn-cancel-company {
+    width: 100%;
+    text-align: center;
+  }
+  .add-contact-box {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-profile-wrap {
+    padding: 1rem 0.65rem 2rem;
+  }
+  .company-header-hero {
+    padding: 1.5rem 1rem;
+  }
+  .company-logo-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.6rem;
+  }
+  .company-title { font-size: 1.3rem; }
+  .company-body-grid { padding: 1rem; }
+  .side-card { padding: 1.1rem; }
+  .contact-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .contact-info { font-size: 0.82rem; }
+}

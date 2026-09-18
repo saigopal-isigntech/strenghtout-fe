@@ -209,7 +209,7 @@ const AdminDashboard: React.FC = () => {
                     <td className="time-col">{new Date(req.submittedAt).toLocaleDateString()}</td>
                     <td className="company-col"><strong>{req.companyName}</strong></td>
                     <td className="candidate-col">{req.candidateName}</td>
-                    <td className="msg-col">{req.message?.slice(0, 70) || "No message"}{req.message?.length > 70 ? "..." : ""}</td>
+                    <td className="msg-col">{req.message?.slice(0, 70) || "No message"}{(req.message?.length ?? 0) > 70 ? "..." : ""}</td>
                     <td className="actions-col">
                       <button
                         className="btn-quick-approve"
@@ -238,3 +238,4 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+

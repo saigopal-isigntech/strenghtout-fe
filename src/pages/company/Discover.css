@@ -84,17 +84,19 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+  align-items: stretch;
 }
 
 .candidate-card {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 1.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.22s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .candidate-card:hover {
@@ -107,7 +109,7 @@
   display: flex;
   gap: 1rem;
   align-items: flex-start;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
 }
 
 .card-avatar {
@@ -122,7 +124,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #1d72f2;
+  background: linear-gradient(135deg, #1d72f2 0%, #0d9488 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -130,10 +132,12 @@
   font-size: 1.25rem;
   font-weight: 700;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(29, 114, 242, 0.25);
 }
 
 .card-meta {
   flex: 1;
+  min-width: 0;
 }
 
 .card-name {
@@ -141,6 +145,9 @@
   font-weight: 700;
   color: #111827;
   margin: 0 0 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-headline {
@@ -148,6 +155,10 @@
   font-size: 0.85rem;
   margin: 0 0 0.25rem;
   line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-location {
@@ -162,52 +173,80 @@
   justify-content: space-between;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
-  border-radius: 6px;
-  padding: 0.45rem 0.85rem;
-  margin-bottom: 1.25rem;
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 1rem;
   font-size: 0.85rem;
   color: #15803d;
   font-weight: 600;
 }
 
 .card-score strong {
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .card-skills {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 1.5rem;
-  flex: 1;
+  margin-bottom: 1.25rem;
+  min-height: 28px;
 }
 
+.skill-pill,
 .skill-chip {
   background: #f1f5f9;
   color: #334155;
   border: 1px solid #e2e8f0;
   font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-}
-
-.btn-request {
-  background: #1d72f2;
-  color: white;
-  border: none;
+  padding: 0.25rem 0.6rem;
   border-radius: 6px;
-  padding: 0.65rem 1rem;
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  transition: background 0.2s;
-  box-shadow: 0 2px 8px rgba(29, 114, 242, 0.25);
+  display: inline-flex;
+  align-items: center;
 }
 
+.skill-pill.extra {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.card-actions {
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.btn-card-primary,
+.btn-request {
+  width: 100%;
+  background: #70c144;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(112, 193, 68, 0.25);
+  box-sizing: border-box;
+}
+
+.btn-card-primary:hover,
 .btn-request:hover {
-  background: #1558c0;
+  background: #5ea836;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(112, 193, 68, 0.35);
+}
+
+.btn-card-primary:active,
+.btn-request:active {
+  transform: translateY(0);
 }
 
 .modal-overlay {
@@ -276,6 +315,11 @@
   padding: 0.6rem 1.4rem;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: background 0.15s;
 }
 
 .btn-modal-submit:hover:not(:disabled) {
@@ -290,4 +334,83 @@
   padding: 0.6rem 1.2rem;
   font-weight: 600;
   cursor: pointer;
+}
+/* ============================================================
+   RESPONSIVE — Discover Page
+   ============================================================ */
+@media (max-width: 1024px) {
+  .candidate-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .discover-page {
+    padding: 1.5rem 1rem 3rem;
+  }
+  .discover-header h1 { font-size: 1.55rem; }
+  .discover-filters {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .filter-input {
+    min-width: unset;
+    width: 100%;
+  }
+  .btn-search {
+    width: 100%;
+    justify-content: center;
+  }
+  .candidate-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .modal-box {
+    max-width: 100%;
+    margin: 0.5rem;
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .discover-page {
+    padding: 1rem 0.65rem 2rem;
+  }
+  .discover-header h1 { font-size: 1.3rem; }
+  .discover-header p { font-size: 0.88rem; }
+  .candidate-card {
+    padding: 1.25rem;
+  }
+  .card-avatar, .card-avatar-placeholder {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
+  .card-name { font-size: 1.05rem; }
+  .card-headline { font-size: 0.8rem; }
+  .card-score { font-size: 0.8rem; padding: 0.4rem 0.7rem; }
+  .modal-box {
+    padding: 1.25rem;
+    border-radius: 12px 12px 0 0;
+  }
+  .modal-box h2 { font-size: 1.15rem; }
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+  .btn-modal-submit, .btn-modal-cancel {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  .modal-box textarea {
+    font-size: 16px; /* Prevents iOS zoom */
+  }
 }

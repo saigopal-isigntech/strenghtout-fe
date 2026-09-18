@@ -437,3 +437,181 @@
   .nav-links  { display: none; }
   .user-firstname { display: none; }
 }
+
+
+/* ============================================================
+   MOBILE HAMBURGER & DRAWER
+   ============================================================ */
+
+/* Hamburger button — hidden on desktop */
+.nav-hamburger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: #374151;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  flex-shrink: 0;
+  margin-left: auto;
+  order: 10;
+}
+.nav-hamburger:hover { background: #f3f4f6; color: #111827; }
+
+/* Mobile backdrop */
+.mobile-backdrop {
+  display: none;
+}
+
+/* Mobile drawer */
+.mobile-drawer {
+  display: none;
+}
+
+/* ── Responsive: Show hamburger + drawer on mobile ── */
+@media (max-width: 768px) {
+  .nav-hamburger {
+    display: flex;
+  }
+
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(2px);
+    z-index: 1050;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .mobile-drawer {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100vh;
+    height: 100dvh;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.1);
+    z-index: 1060;
+    padding: 1.25rem;
+    gap: 1rem;
+    transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mobile-drawer.open {
+    right: 0;
+  }
+
+  .mobile-drawer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-top: 0.5rem;
+  }
+
+  .mobile-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mobile-nav-link:hover { background: #f8fafc; color: #111827; }
+  .mobile-nav-link.active {
+    background: #f0fdf4;
+    color: #15803d;
+    font-weight: 700;
+    border-left: 3px solid #70c144;
+  }
+
+  .mobile-drawer-search {
+    padding: 0.5rem 0;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    outline: none;
+    background: #f9fafb;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .mobile-search-input:focus {
+    border-color: #70c144;
+    background: #fff;
+  }
+
+  .mobile-auth-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  .mobile-auth-btns .nav-btn-login,
+  .mobile-auth-btns .nav-btn-register {
+    text-align: center;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Navbar inner layout adjustments */
+  .navbar-inner {
+    gap: 0.4rem;
+  }
+
+  .nav-right {
+    gap: 0.3rem;
+  }
+
+  /* Hide auth actions from nav-right on mobile (they're in drawer now) */
+  .nav-auth-actions {
+    display: none;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-inner {
+    padding: 0 0.75rem;
+  }
+  .nav-brand-logo {
+    height: 26px;
+  }
+  .nav-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .nav-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.72rem;
+  }
+  .nav-dropdown {
+    right: -0.5rem;
+    min-width: 200px;
+  }
+}

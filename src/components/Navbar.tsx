@@ -5,7 +5,7 @@ import logoImg from "../assets/logo.png";
 import { notificationsApi } from "../api/notifications";
 
 /* react-icons */
-import { FiSearch, FiBell, FiChevronDown, FiLogOut, FiSettings } from "react-icons/fi";
+import { FiSearch, FiBell, FiChevronDown, FiLogOut, FiSettings, FiMenu, FiX } from "react-icons/fi";
 import { HiOutlineUser, HiOutlineUsers, HiOutlineClipboardList } from "react-icons/hi";
 
 import "./Navbar.css";
@@ -16,33 +16,39 @@ const Navbar: React.FC = () => {
   const location  = useLocation();
 
   const [menuOpen,    setMenuOpen]    = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isFetchingUnreadRef = useRef(false);
+  const lastFetchedPathRef  = useRef<string>("");
 
-  /* ── fetch unread count ── */
+  /* fetch unread count with strict deduplication guard */
   const fetchUnread = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isFetchingUnreadRef.current) return;
+    isFetchingUnreadRef.current = true;
     try {
       const res = await notificationsApi.getUnreadCount();
       const val = (res.data?.data as any)?.unreadCount ?? (res.data?.data as any)?.count ?? 0;
       setUnreadCount(Number(val));
     } catch {
       /* silent */
+    } finally {
+      isFetchingUnreadRef.current = false;
     }
   }, [isAuthenticated]);
 
-  /* poll every 60 s and whenever the route changes to /notifications */
+  /* Single effect: fetches unread count cleanly on route changes without background polling leaks */
   useEffect(() => {
-    fetchUnread();
-    const id = setInterval(fetchUnread, 60_000);
-    return () => clearInterval(id);
-  }, [fetchUnread]);
+    if (!isAuthenticated) return;
+    if (lastFetchedPathRef.current !== location.pathname) {
+      lastFetchedPathRef.current = location.pathname;
+      fetchUnread();
+    }
+  }, [isAuthenticated, location.pathname, fetchUnread]);
 
-  /* re-fetch when user navigates back from /notifications */
-  useEffect(() => {
-    if (location.pathname !== "/notifications") fetchUnread();
-  }, [location.pathname, fetchUnread]);
+  /* close mobile drawer on route change */
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   /* close dropdown on outside click */
   useEffect(() => {
@@ -137,13 +143,59 @@ const Navbar: React.FC = () => {
             type="search"
             placeholder="Search profiles, skills..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            
             aria-label="Search"
           />
           <button type="submit" className="nav-search-btn" aria-label="Search">
             <FiSearch size={15} strokeWidth={2.5} />
           </button>
         </form>
+
+        {/* Hamburger (mobile only) */}
+        <button
+          className="nav-hamburger"
+          onClick={() => setMobileOpen(o => !o)}
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+        </button>
+
+        {/* Mobile Drawer */}
+        {mobileOpen && <div className="mobile-backdrop" onClick={() => setMobileOpen(false)} />}
+        <div className={`mobile-drawer ${mobileOpen ? "open" : ""}`}>
+          <div className="mobile-drawer-links">
+            {navLinks().map(link => (
+              <Link
+                key={link.to + link.label}
+                to={link.to}
+                className={`mobile-nav-link ${isActive(link.to) ? "active" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          {isAuthenticated && (
+            <div className="mobile-drawer-search">
+              <form onSubmit={(e) => { handleSearch(e); setMobileOpen(false); }}>
+                <input
+                  type="search"
+                  className="mobile-search-input"
+                  placeholder="Search profiles, skills..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </form>
+            </div>
+          )}
+          {!isAuthenticated && (
+            <div className="mobile-auth-btns">
+              <Link to="/login" className="nav-btn-login" onClick={() => setMobileOpen(false)}>Sign In</Link>
+              <Link to="/register" className="nav-btn-register" onClick={() => setMobileOpen(false)}>Get Started</Link>
+            </div>
+          )}
+        </div>
 
         {/* Right cluster */}
         <div className="nav-right">
