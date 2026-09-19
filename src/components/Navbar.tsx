@@ -1,42 +1,85 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/logo.png";
 import { notificationsApi } from "../api/notifications";
 
 /* react-icons */
-import { FiSearch, FiBell, FiChevronDown, FiLogOut, FiSettings, FiMenu, FiX } from "react-icons/fi";
+import {
+  FiSearch,
+  FiBell,
+  FiChevronDown,
+  FiLogOut,
+  FiSettings,
+  FiMenu,
+  FiX,
+  FiSun,
+  FiMoon,
+} from "react-icons/fi";
 import { HiOutlineUser, HiOutlineUsers, HiOutlineClipboardList } from "react-icons/hi";
 
 import "./Navbar.css";
 
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [menuOpen,    setMenuOpen]    = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const isFetchingUnreadRef = useRef(false);
-  const lastFetchedPathRef  = useRef<string>("");
+  const lastFetchedPathRef = useRef<string>("");
+
+  /* Theme state: default is 'light' */
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    return (localStorage.getItem("strengthout_theme") as "light" | "dark") || "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
+    }
+    localStorage.setItem("strengthout_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   /* fetch unread count with strict deduplication guard */
   const fetchUnread = useCallback(async () => {
     if (!isAuthenticated || isFetchingUnreadRef.current) return;
+    if (location.pathname === "/notifications") {
+      setUnreadCount(0);
+      return;
+    }
     isFetchingUnreadRef.current = true;
     try {
       const res = await notificationsApi.getUnreadCount();
-      const val = (res.data?.data as any)?.unreadCount ?? (res.data?.data as any)?.count ?? 0;
-      setUnreadCount(Number(val));
+      const val =
+        (res.data?.data as any)?.unreadCount ?? (res.data?.data as any)?.count ?? 0;
+      setUnreadCount(location.pathname === "/notifications" ? 0 : Number(val));
     } catch {
       /* silent */
     } finally {
       isFetchingUnreadRef.current = false;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, location.pathname]);
+
+  /* listen for notificationsRead custom event */
+  useEffect(() => {
+    const handleRead = () => setUnreadCount(0);
+    window.addEventListener("notificationsRead", handleRead);
+    return () => window.removeEventListener("notificationsRead", handleRead);
+  }, []);
 
   /* Single effect: fetches unread count cleanly on route changes without background polling leaks */
   useEffect(() => {
@@ -48,7 +91,9 @@ const Navbar: React.FC = () => {
   }, [isAuthenticated, location.pathname, fetchUnread]);
 
   /* close mobile drawer on route change */
-  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   /* close dropdown on outside click */
   useEffect(() => {
@@ -60,45 +105,57 @@ const Navbar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleLogout = async () => { await logout(); navigate("/login"); };
-  const isSuperAdmin = user?.role === "ROLE_SUPER_ADMIN" || user?.accountType === "SUPER_ADMIN";
-  const userInitial  = user?.fullName?.[0]?.toUpperCase() || "U";
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+  const isSuperAdmin =
+    user?.role === "ROLE_SUPER_ADMIN" || user?.accountType === "SUPER_ADMIN";
+  const userInitial = user?.fullName?.[0]?.toUpperCase() || "U";
 
   const isActive = (path: string) => {
-    if (path === "/dashboard" && (location.pathname === "/dashboard" || location.pathname === "/")) return true;
+    if (
+      path === "/dashboard" &&
+      (location.pathname === "/dashboard" || location.pathname === "/")
+    )
+      return true;
     return location.pathname === path;
   };
 
   const navLinks = () => {
-    if (!user) return [
-      { to: "/",         label: "Home" },
-      { to: "/about",    label: "About" },
-      { to: "/careers",  label: "Careers" },
-      { to: "/services", label: "Services" },
-      { to: "/contact",  label: "Contact" },
-    ];
-    if (isAdmin()) return [
-      { to: "/dashboard",      label: "Home" },
-      { to: "/admin/requests", label: "Requests" },
-      { to: "/admin/users",    label: "Users" },
-      { to: "/admin/audit",    label: "Audit" },
-    ];
-    if (user.role === "ROLE_COMPANY") return [
-      { to: "/dashboard",   label: "Home" },
-      { to: "/discover",    label: "Discover" },
-      { to: "/my-requests", label: "My Requests" },
-    ];
+    if (!user)
+      return [
+        { to: "/", label: "Home" },
+        { to: "/about", label: "About" },
+        { to: "/careers", label: "Careers" },
+        { to: "/services", label: "Services" },
+        { to: "/contact", label: "Contact" },
+      ];
+    if (isAdmin())
+      return [
+        { to: "/dashboard", label: "Home" },
+        { to: "/admin/requests", label: "Requests" },
+        { to: "/admin/users", label: "Users" },
+        { to: "/admin/audit", label: "Audit" },
+      ];
+    if (user.role === "ROLE_COMPANY")
+      return [
+        { to: "/dashboard", label: "Home" },
+        { to: "/discover", label: "Discover" },
+        { to: "/my-requests", label: "My Requests" },
+      ];
     return [
       { to: "/dashboard", label: "Home" },
-      { to: "/discover",  label: "Discover" },
-      { to: "/about",     label: "About" },
-      { to: "/services",  label: "Services" },
+      { to: "/discover", label: "Discover" },
+      { to: "/about", label: "About" },
+      { to: "/services", label: "Services" },
     ];
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
+    if (searchQuery.trim())
+      navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const handleBellClick = () => {
@@ -106,14 +163,18 @@ const Navbar: React.FC = () => {
     setUnreadCount(0);
   };
 
-  const displayCount = unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "";
+  const displayCount =
+    unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "";
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="navbar-inner">
-
         {/* Logo */}
-        <Link to={isAuthenticated ? "/dashboard" : "/"} className="nav-brand" aria-label="StrengthOut Home">
+        <Link
+          to={isAuthenticated ? "/dashboard" : "/"}
+          className="nav-brand"
+          aria-label="StrengthOut Home"
+        >
           <img src={logoImg} alt="StrengthOut" className="nav-brand-logo" />
           {isAdmin() && (
             <span className={`brand-role-tag ${isSuperAdmin ? "super" : ""}`}>
@@ -124,7 +185,7 @@ const Navbar: React.FC = () => {
 
         {/* Nav links */}
         <div className="nav-links">
-          {navLinks().map(link => (
+          {navLinks().map((link) => (
             <Link
               key={link.to + link.label}
               to={link.to}
@@ -143,7 +204,7 @@ const Navbar: React.FC = () => {
             type="search"
             placeholder="Search profiles, skills..."
             value={searchQuery}
-            
+            onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search"
           />
           <button type="submit" className="nav-search-btn" aria-label="Search">
@@ -154,7 +215,7 @@ const Navbar: React.FC = () => {
         {/* Hamburger (mobile only) */}
         <button
           className="nav-hamburger"
-          onClick={() => setMobileOpen(o => !o)}
+          onClick={() => setMobileOpen((o) => !o)}
           aria-label="Toggle navigation menu"
           aria-expanded={mobileOpen}
         >
@@ -162,10 +223,15 @@ const Navbar: React.FC = () => {
         </button>
 
         {/* Mobile Drawer */}
-        {mobileOpen && <div className="mobile-backdrop" onClick={() => setMobileOpen(false)} />}
+        {mobileOpen && (
+          <div
+            className="mobile-backdrop"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
         <div className={`mobile-drawer ${mobileOpen ? "open" : ""}`}>
           <div className="mobile-drawer-links">
-            {navLinks().map(link => (
+            {navLinks().map((link) => (
               <Link
                 key={link.to + link.label}
                 to={link.to}
@@ -176,29 +242,104 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
           </div>
+
+          {/* Mobile Theme Toggle */}
+          <div
+            className="mobile-theme-row"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.6rem 0.5rem",
+              borderTop: "1px solid var(--border-subtle, #f1f5f9)",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                color: "var(--text-secondary, #4b5563)",
+              }}
+            >
+              {theme === "dark" ? "Dark Theme" : "Light Theme"}
+            </span>
+            <button
+              type="button"
+              className="nav-icon-btn"
+              onClick={toggleTheme}
+              aria-label={
+                theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+              }
+              title={
+                theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+              }
+            >
+              {theme === "dark" ? (
+                <FiSun size={18} color="#f59e0b" />
+              ) : (
+                <FiMoon size={18} />
+              )}
+            </button>
+          </div>
+
           {isAuthenticated && (
             <div className="mobile-drawer-search">
-              <form onSubmit={(e) => { handleSearch(e); setMobileOpen(false); }}>
+              <form
+                onSubmit={(e) => {
+                  handleSearch(e);
+                  setMobileOpen(false);
+                }}
+              >
                 <input
                   type="search"
                   className="mobile-search-input"
                   placeholder="Search profiles, skills..."
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </form>
             </div>
           )}
           {!isAuthenticated && (
             <div className="mobile-auth-btns">
-              <Link to="/login" className="nav-btn-login" onClick={() => setMobileOpen(false)}>Sign In</Link>
-              <Link to="/register" className="nav-btn-register" onClick={() => setMobileOpen(false)}>Get Started</Link>
+              <Link
+                to="/login"
+                className="nav-btn-login"
+                onClick={() => setMobileOpen(false)}
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="nav-btn-register"
+                onClick={() => setMobileOpen(false)}
+              >
+                Get Started
+              </Link>
             </div>
           )}
         </div>
 
         {/* Right cluster */}
         <div className="nav-right">
+          {/* Theme of icon / Theme Mode Switcher */}
+          <button
+            type="button"
+            className="nav-icon-btn theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label={
+              theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+            }
+            title={
+              theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
+            }
+          >
+            {theme === "dark" ? (
+              <FiSun size={18} color="#f59e0b" />
+            ) : (
+              <FiMoon size={18} />
+            )}
+          </button>
 
           {/* Bell with unread badge */}
           {isAuthenticated && (
@@ -223,7 +364,7 @@ const Navbar: React.FC = () => {
             <div className="nav-user" ref={menuRef}>
               <button
                 className="nav-user-trigger"
-                onClick={() => setMenuOpen(o => !o)}
+                onClick={() => setMenuOpen((o) => !o)}
                 aria-expanded={menuOpen}
                 aria-haspopup="true"
                 aria-label="User menu"
@@ -231,7 +372,9 @@ const Navbar: React.FC = () => {
                 <div className={`nav-avatar ${isSuperAdmin ? "super" : ""}`}>
                   {isSuperAdmin ? "SA" : userInitial}
                 </div>
-                <span className="user-firstname">{user?.fullName?.split(" ")[0]}</span>
+                <span className="user-firstname">
+                  {user?.fullName?.split(" ")[0]}
+                </span>
                 <FiChevronDown
                   size={13}
                   strokeWidth={2.5}
@@ -244,32 +387,60 @@ const Navbar: React.FC = () => {
                   <div className="dropdown-user-header">
                     <div className="dropdown-user-name">{user?.fullName}</div>
                     <div className="dropdown-user-email">{user?.email}</div>
-                    <span className={`role-badge-tag ${isSuperAdmin ? "super" : ""}`}>
-                      {isSuperAdmin ? "SUPER ADMIN" : (user?.role || "").replace("ROLE_", "")}
+                    <span
+                      className={`role-badge-tag ${isSuperAdmin ? "super" : ""}`}
+                    >
+                      {isSuperAdmin
+                        ? "SUPER ADMIN"
+                        : (user?.role || "").replace("ROLE_", "")}
                     </span>
                   </div>
                   <hr className="dropdown-divider" />
 
-                  <Link to="/profile" className="dropdown-link" onClick={() => setMenuOpen(false)} role="menuitem">
+                  <Link
+                    to="/profile"
+                    className="dropdown-link"
+                    onClick={() => setMenuOpen(false)}
+                    role="menuitem"
+                  >
                     <HiOutlineUser size={14} /> View My Profile
                   </Link>
 
                   {isAdmin() && (
                     <>
-                      <Link to="/admin/requests" className="dropdown-link" onClick={() => setMenuOpen(false)} role="menuitem">
+                      <Link
+                        to="/admin/requests"
+                        className="dropdown-link"
+                        onClick={() => setMenuOpen(false)}
+                        role="menuitem"
+                      >
                         <HiOutlineClipboardList size={14} /> Admin Request Queue
                       </Link>
-                      <Link to="/admin/users" className="dropdown-link" onClick={() => setMenuOpen(false)} role="menuitem">
+                      <Link
+                        to="/admin/users"
+                        className="dropdown-link"
+                        onClick={() => setMenuOpen(false)}
+                        role="menuitem"
+                      >
                         <HiOutlineUsers size={14} /> User Management
                       </Link>
                     </>
                   )}
 
-                  <Link to="/settings" className="dropdown-link" onClick={() => setMenuOpen(false)} role="menuitem">
+                  <Link
+                    to="/settings"
+                    className="dropdown-link"
+                    onClick={() => setMenuOpen(false)}
+                    role="menuitem"
+                  >
                     <FiSettings size={14} /> Settings
                   </Link>
                   <hr className="dropdown-divider" />
-                  <button className="dropdown-link logout-btn" onClick={handleLogout} role="menuitem">
+                  <button
+                    className="dropdown-link logout-btn"
+                    onClick={handleLogout}
+                    role="menuitem"
+                  >
                     <FiLogOut size={14} /> Sign Out
                   </button>
                 </div>
@@ -280,12 +451,15 @@ const Navbar: React.FC = () => {
           {/* Unauthenticated */}
           {!isAuthenticated && (
             <div className="nav-auth-actions">
-              <Link to="/login"    className="nav-btn-login">Sign In</Link>
-              <Link to="/register" className="nav-btn-register">Get Started</Link>
+              <Link to="/login" className="nav-btn-login">
+                Sign In
+              </Link>
+              <Link to="/register" className="nav-btn-register">
+                Get Started
+              </Link>
             </div>
           )}
         </div>
-
       </div>
     </nav>
   );

@@ -1,5 +1,5 @@
-﻿import React, { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
@@ -24,79 +24,107 @@ const PageLoader = () => (
   </div>
 );
 
-const AppLayout: React.FC<{ children: React.ReactNode; showFooter?: boolean }> = ({
-  children,
-  showFooter = true,
-}) => (
-  <div className="app-shell">
-    <Navbar />
-    <main className="app-main">
-      <Suspense fallback={<PageLoader />}>
-        {children}
-      </Suspense>
-    </main>
-    {showFooter && <Footer />}
-  </div>
-);
+const PersistentAppLayout: React.FC = () => {
+  const location = useLocation();
+  const noFooterPaths = ["/dashboard", "/admin/requests", "/admin/users", "/admin/audit"];
+  const showFooter = !noFooterPaths.some((p) => location.pathname === p || location.pathname.startsWith("/admin/"));
+
+  return (
+    <div className="app-shell">
+      <Navbar />
+      <main className="app-main">
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
+      </main>
+      {showFooter && <Footer />}
+    </div>
+  );
+};
 
 const App: React.FC = () => (
   <BrowserRouter>
     <AuthProvider>
       <Routes>
-        <Route path="/"         element={<AppLayout><CandidateProfilePage /></AppLayout>} />
-        <Route path="/profile"  element={<AppLayout><CandidateProfilePage /></AppLayout>} />
-        <Route path="/about"    element={<AppLayout><CandidateProfilePage /></AppLayout>} />
-        <Route path="/careers"  element={<AppLayout><CandidateProfilePage /></AppLayout>} />
-        <Route path="/services" element={<AppLayout><CandidateProfilePage /></AppLayout>} />
-        <Route path="/contact"  element={<AppLayout><CandidateProfilePage /></AppLayout>} />
-
-        <Route path="/login"    element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
+        {/* Auth routes without top navbar */}
+        <Route path="/login" element={<Suspense fallback={<PageLoader />}><LoginPage /></Suspense>} />
         <Route path="/register" element={<Suspense fallback={<PageLoader />}><RegisterPage /></Suspense>} />
         <Route path="/forgot-password" element={<Suspense fallback={<PageLoader />}><ForgotPasswordPage /></Suspense>} />
 
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <AppLayout showFooter={false}><DashboardPage /></AppLayout>
-          </ProtectedRoute>
-        } />
+        {/* All application routes with fixed persistent navbar */}
+        <Route element={<PersistentAppLayout />}>
+          <Route path="/" element={<CandidateProfilePage />} />
+          <Route path="/profile" element={<CandidateProfilePage />} />
+          <Route path="/about" element={<CandidateProfilePage />} />
+          <Route path="/careers" element={<CandidateProfilePage />} />
+          <Route path="/services" element={<CandidateProfilePage />} />
+          <Route path="/contact" element={<CandidateProfilePage />} />
 
-        <Route path="/notifications" element={
-          <ProtectedRoute>
-            <AppLayout><NotificationsPage /></AppLayout>
-          </ProtectedRoute>
-        } />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/discover" element={
-          <ProtectedRoute roles={["ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
-            <AppLayout><DiscoverPage /></AppLayout>
-          </ProtectedRoute>
-        } />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/my-requests" element={
-          <ProtectedRoute roles={["ROLE_COMPANY"]}>
-            <AppLayout><MyRequestsPage /></AppLayout>
-          </ProtectedRoute>
-        } />
+          <Route
+            path="/discover"
+            element={
+              <ProtectedRoute roles={["ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
+                <DiscoverPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/admin/requests" element={
-          <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
-            <AppLayout showFooter={false}><AdminQueuePage /></AppLayout>
-          </ProtectedRoute>
-        } />
+          <Route
+            path="/my-requests"
+            element={
+              <ProtectedRoute roles={["ROLE_COMPANY"]}>
+                <MyRequestsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/admin/users" element={
-          <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
-            <AppLayout showFooter={false}><AdminUsersPage /></AppLayout>
-          </ProtectedRoute>
-        } />
+          <Route
+            path="/admin/requests"
+            element={
+              <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
+                <AdminQueuePage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/admin/audit" element={
-          <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
-            <AppLayout showFooter={false}><AdminAuditPage /></AppLayout>
-          </ProtectedRoute>
-        } />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="/admin/audit"
+            element={
+              <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
+                <AdminAuditPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Routes>
     </AuthProvider>
   </BrowserRouter>

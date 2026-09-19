@@ -1,4 +1,4 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -40,8 +40,37 @@
   --card-shadow-hover: 0 10px 30px -4px rgba(0, 0, 0, 0.1);
 }
 
+/* ============================================================
+   DARK THEME PALETTE
+   ============================================================ */
+[data-theme="dark"],
+body.dark {
+  --bg-primary: #0f172a;
+  --bg-body: #090d16;
+  --bg-surface: #1e293b;
+  --bg-dark-header: #0f172a;
+  --bg-mint: #064e3b;
+  --border-mint: #047857;
+
+  --bg-dark-card: #0b1120;
+  --border-dark-card: #1e293b;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-white: #ffffff;
+  --text-link: #38bdf8;
+
+  --border-subtle: #1e293b;
+  --border-card: #334155;
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+  --card-shadow-hover: 0 10px 30px -4px rgba(0, 0, 0, 0.65);
+}
+
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
 }
 
 body {
@@ -52,22 +81,28 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  width: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
   min-height: 100vh;
+  width: 100%;
 }
 
 .app-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
   background: var(--bg-body);
+  transition: background-color 0.2s ease;
 }
 
 .app-main {
   flex: 1;
   padding: 0;
+  width: 100%;
 }
 
 /* Global spinner */
@@ -101,6 +136,10 @@ body {
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #090d16; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #334155; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
 /* Focus outline */
 :focus-visible {
   outline: 2px solid var(--secondary-blue);
@@ -112,16 +151,22 @@ a { color: inherit; text-decoration: none; }
 
 input, select, textarea, button { font-family: inherit; }
 
-/* ============================================================
-   RESPONSIVE — Global
-   ============================================================ */
-html {
-  overflow-x: hidden;
+/* Dark mode global tweaks for common elements */
+[data-theme="dark"] .site-footer,
+[data-theme="dark"] footer {
+  background: #0f172a;
+  border-top-color: #1e293b;
+  color: #94a3b8;
 }
 
-body, #root {
-  overflow-x: hidden;
-  width: 100%;
+[data-theme="dark"] .dashboard-card,
+[data-theme="dark"] .discover-card,
+[data-theme="dark"] .notification-card,
+[data-theme="dark"] .admin-card,
+[data-theme="dark"] .filter-box {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
 }
 
 @media (max-width: 768px) {

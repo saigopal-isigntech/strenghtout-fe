@@ -3,19 +3,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth";
 import logoImg from "../../assets/logo.png";
 import authBg from "../../assets/auth-bg.jpg";
-import { FiTarget, FiUsers, FiBriefcase, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight } from "react-icons/fi";
+import { FiAward, FiBriefcase, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { validateEmail, validatePassword, validateRequired } from "../../utils/validators";
 import "./Auth.css";
 
 const FEATURES = [
   {
-    icon: <FiTarget size={20} color="#70c144" />,
-    title: "Skills that speak louder than words",
-    desc: "Our challenge system lets your real abilities shine — not just what you write on paper.",
-  },
-  {
-    icon: <FiUsers size={20} color="#70c144" />,
-    title: "A network built on verified talent",
-    desc: "Every profile on StrengthOut is backed by demonstrated, assessed skills.",
+    icon: <FiAward size={20} color="#70c144" />,
+    title: "Prove your strength, not just your resume",
+    desc: "Complete real-world skill challenges that let companies see exactly what you can do.",
   },
   {
     icon: <FiBriefcase size={20} color="#70c144" />,
@@ -37,30 +33,96 @@ const RegisterPage: React.FC = () => {
   const [companyName, setCompanyName]   = useState("");
   const [email, setEmail]               = useState("");
   const [password, setPassword]         = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd]           = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState("");
 
+  const [fieldErrors, setFieldErrors]   = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  const [touched, setTouched]           = useState<{
+    name?: boolean;
+    email?: boolean;
+    password?: boolean;
+    confirmPassword?: boolean;
+  }>({});
+
   const isCompany = role === "COMPANY";
+
+  const validateForm = () => {
+    const errors: typeof fieldErrors = {};
+
+    const nameToValidate = isCompany ? companyName : fullName;
+    const nameLabel = isCompany ? "Company name" : "Full name";
+    const nameErr = validateRequired(nameToValidate, nameLabel, 2);
+    if (nameErr) errors.name = nameErr;
+
+    const emailErr = validateEmail(email, isCompany ? "Work email" : "Email");
+    if (emailErr) errors.email = emailErr;
+
+    const pwdErr = validatePassword(password, 8);
+    if (pwdErr) errors.password = pwdErr;
+
+    if (!confirmPassword) {
+      errors.confirmPassword = "Please confirm your password.";
+    } else if (password !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleBlur = (field: keyof typeof touched) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    if (field === 'name') {
+      const nameToValidate = isCompany ? companyName : fullName;
+      const nameLabel = isCompany ? "Company name" : "Full name";
+      const err = validateRequired(nameToValidate, nameLabel, 2);
+      setFieldErrors(prev => ({ ...prev, name: err || undefined }));
+    } else if (field === 'email') {
+      const err = validateEmail(email, isCompany ? "Work email" : "Email");
+      setFieldErrors(prev => ({ ...prev, email: err || undefined }));
+    } else if (field === 'password') {
+      const err = validatePassword(password, 8);
+      setFieldErrors(prev => ({ ...prev, password: err || undefined }));
+    } else if (field === 'confirmPassword') {
+      let err: string | undefined;
+      if (!confirmPassword) err = "Please confirm your password.";
+      else if (password !== confirmPassword) err = "Passwords do not match.";
+      setFieldErrors(prev => ({ ...prev, confirmPassword: err }));
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
+
+    if (!validateForm()) {
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
       await authApi.register({
-        fullName: isCompany ? companyName : fullName,
-        email,
+        fullName: isCompany ? companyName.trim() : fullName.trim(),
+        email: email.trim(),
         password,
         role,
       });
 
       navigate("/login", {
         state: {
-          registeredEmail: email,
-          successMsg: "Account created! Sign in to start your StrengthOut journey.",
+          registeredEmail: email.trim(),
+          successMsg: "Account created successfully! Please sign in with your credentials.",
         },
       });
     } catch (err: any) {
@@ -127,20 +189,20 @@ const RegisterPage: React.FC = () => {
               <button
                 type="button"
                 className={`role-toggle-btn ${!isCompany ? "active" : ""}`}
-                onClick={() => setRole("CANDIDATE")}
+                onClick={() => { setRole("CANDIDATE"); setFieldErrors({}); }}
               >
                 Candidate
               </button>
               <button
                 type="button"
                 className={`role-toggle-btn ${isCompany ? "active" : ""}`}
-                onClick={() => setRole("COMPANY")}
+                onClick={() => { setRole("COMPANY"); setFieldErrors({}); }}
               >
                 Employer / Company
               </button>
             </div>
 
-            <form onSubmit={handleRegister} className="auth-form">
+            <form onSubmit={handleRegister} className="auth-form" noValidate>
 
               {isCompany ? (
                 <div className="form-group">
@@ -151,10 +213,22 @@ const RegisterPage: React.FC = () => {
                     id="reg-company"
                     type="text"
                     value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
+                    onChange={(e) => {
+                      setCompanyName(e.target.value);
+                      if (touched.name) {
+                        const err = validateRequired(e.target.value, "Company name", 2);
+                        setFieldErrors(prev => ({ ...prev, name: err || undefined }));
+                      }
+                    }}
+                    onBlur={() => handleBlur('name')}
                     placeholder="Acme Corp"
-                    required
+                    className={touched.name && fieldErrors.name ? "is-invalid" : ""}
                   />
+                  {touched.name && fieldErrors.name && (
+                    <span className="field-hint error">
+                      <FiAlertCircle size={13} /> {fieldErrors.name}
+                    </span>
+                  )}
                 </div>
               ) : (
                 <div className="form-group">
@@ -165,10 +239,22 @@ const RegisterPage: React.FC = () => {
                     id="reg-fullname"
                     type="text"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (touched.name) {
+                        const err = validateRequired(e.target.value, "Full name", 2);
+                        setFieldErrors(prev => ({ ...prev, name: err || undefined }));
+                      }
+                    }}
+                    onBlur={() => handleBlur('name')}
                     placeholder="Alex Morgan"
-                    required
+                    className={touched.name && fieldErrors.name ? "is-invalid" : ""}
                   />
+                  {touched.name && fieldErrors.name && (
+                    <span className="field-hint error">
+                      <FiAlertCircle size={13} /> {fieldErrors.name}
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -181,26 +267,48 @@ const RegisterPage: React.FC = () => {
                   id="reg-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (touched.email) {
+                      const err = validateEmail(e.target.value, isCompany ? "Work email" : "Email");
+                      setFieldErrors(prev => ({ ...prev, email: err || undefined }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('email')}
                   placeholder={isCompany ? "hr@acme.com" : "you@example.com"}
-                  required
+                  className={touched.email && fieldErrors.email ? "is-invalid" : ""}
                   autoComplete="email"
                 />
+                {touched.email && fieldErrors.email && (
+                  <span className="field-hint error">
+                    <FiAlertCircle size={13} /> {fieldErrors.email}
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="reg-password">
                   Password <span className="required-star">*</span>
                 </label>
-                <div className="password-wrapper">
+                <div className={`password-wrapper ${touched.password && fieldErrors.password ? "is-invalid-wrap" : ""}`}>
                   <input
                     id="reg-password"
                     type={showPwd ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (touched.password) {
+                        const err = validatePassword(e.target.value, 8);
+                        setFieldErrors(prev => ({ ...prev, password: err || undefined }));
+                      }
+                      if (touched.confirmPassword && confirmPassword) {
+                        const match = e.target.value === confirmPassword;
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: match ? undefined : "Passwords do not match." }));
+                      }
+                    }}
+                    onBlur={() => handleBlur('password')}
                     placeholder="Min 8 characters"
-                    required
-                    minLength={8}
+                    className={touched.password && fieldErrors.password ? "is-invalid" : ""}
                     autoComplete="new-password"
                   />
                   <button
@@ -213,13 +321,55 @@ const RegisterPage: React.FC = () => {
                     {showPwd ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                   </button>
                 </div>
-                {password && password.length < 8 && (
+                {touched.password && fieldErrors.password && (
                   <span className="field-hint error">
-                    Password must be at least 8 characters long.
+                    <FiAlertCircle size={13} /> {fieldErrors.password}
                   </span>
                 )}
               </div>
 
+              <div className="form-group">
+                <label htmlFor="reg-confirm-password">
+                  Confirm Password <span className="required-star">*</span>
+                </label>
+                <div className={`password-wrapper ${touched.confirmPassword && fieldErrors.confirmPassword ? "is-invalid-wrap" : ""}`}>
+                  <input
+                    id="reg-confirm-password"
+                    type={showConfirmPwd ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (touched.confirmPassword) {
+                        const match = password === e.target.value;
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: match ? undefined : "Passwords do not match." }));
+                      }
+                    }}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    placeholder="Confirm password"
+                    className={touched.confirmPassword && fieldErrors.confirmPassword ? "is-invalid" : ""}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="pwd-toggle"
+                    onClick={() => setShowConfirmPwd((v) => !v)}
+                    aria-label={showConfirmPwd ? "Hide password" : "Show password"}
+                    tabIndex={-1}
+                  >
+                    {showConfirmPwd ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
+                {touched.confirmPassword && fieldErrors.confirmPassword && (
+                  <span className="field-hint error">
+                    <FiAlertCircle size={13} /> {fieldErrors.confirmPassword}
+                  </span>
+                )}
+                {confirmPassword && password === confirmPassword && password.length >= 8 && (
+                  <span className="field-hint success">
+                    <FiCheck size={13} /> Passwords match
+                  </span>
+                )}
+              </div>
 
               <button
                 id="reg-submit-btn"

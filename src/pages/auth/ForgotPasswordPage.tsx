@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth";
 import logoImg from "../../assets/logo.png";
 import authBg from "../../assets/auth-bg.jpg";
-import { FiShield, FiKey, FiLock, FiEye, FiEyeOff, FiArrowRight, FiArrowLeft, FiCheck } from "react-icons/fi";
+import { FiShield, FiKey, FiLock, FiEye, FiEyeOff, FiArrowRight, FiArrowLeft, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { validateEmail, validatePassword } from "../../utils/validators";
 import "./Auth.css";
 
 const FEATURES = [
@@ -30,6 +31,9 @@ const ForgotPasswordPage: React.FC = () => {
   const [step, setStep] = useState<"email" | "otp" | "reset">("email");
 
   const [email, setEmail]                     = useState("");
+  const [emailError, setEmailError]           = useState("");
+  const [emailTouched, setEmailTouched]       = useState(false);
+
   const [otp, setOtp]                         = useState(["", "", "", "", "", ""]);
   const [resetToken, setResetToken]           = useState("");
   const [newPassword, setNewPassword]         = useState("");
@@ -56,11 +60,18 @@ const ForgotPasswordPage: React.FC = () => {
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmailTouched(true);
+    const err = validateEmail(email);
+    if (err) {
+      setEmailError(err);
+      return;
+    }
+    setEmailError("");
     setError("");
     setSuccess("");
     setLoading(true);
     try {
-      await authApi.forgotPasswordSendOtp(email);
+      await authApi.forgotPasswordSendOtp(email.trim());
       setSuccess("OTP sent to your email. Please check your inbox.");
       setStep("otp");
       startResendTimer();
@@ -72,7 +83,7 @@ const ForgotPasswordPage: React.FC = () => {
   };
 
   const handleOtpChange = (idx: number, val: string) => {
-    if (!/^d*$/.test(val)) return;
+    if (!/^\d*$/.test(val)) return;
     const nextOtp = [...otp];
     nextOtp[idx] = val.slice(-1);
     setOtp(nextOtp);
@@ -93,12 +104,34 @@ const ForgotPasswordPage: React.FC = () => {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (!pasted) return;
     const nextOtp = [...otp];
-    for (let i = 0; i < 6; i++) {
-      nextOtp[i] = pasted[i] || "";
-    }
+    pasted.split("").forEach((ch, i) => { nextOtp[i] = ch; });
     setOtp(nextOtp);
-    const focusIdx = Math.min(pasted.length, 5);
+    const nextEmpty = nextOtp.findIndex(v => !v);
+    const focusIdx = nextEmpty === -1 ? 5 : nextEmpty;
     otpRefs.current[focusIdx]?.focus();
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otpCode = otp.join("");
+    if (otpCode.length < 6) {
+      setError("Please enter the complete 6-digit OTP code.");
+      return;
+    }
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      const res = await authApi.forgotPasswordVerifyOtp(email.trim(), otpCode);
+      const token = (res.data as any)?.data?.resetToken || (res.data as any)?.resetToken || "";
+      setResetToken(token);
+      setSuccess("OTP verified successfully. Please enter your new password.");
+      setStep("reset");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "Invalid or expired OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResend = async () => {
@@ -107,9 +140,8 @@ const ForgotPasswordPage: React.FC = () => {
     setSuccess("");
     setLoading(true);
     try {
-      await authApi.forgotPasswordSendOtp(email);
-      setSuccess("A new OTP has been sent to your email.");
-      setOtp(["", "", "", "", "", ""]);
+      await authApi.forgotPasswordSendOtp(email.trim());
+      setSuccess("New OTP sent to your email.");
       startResendTimer();
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to resend OTP.");
@@ -118,46 +150,26 @@ const ForgotPasswordPage: React.FC = () => {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otp.join("");
-    if (code.length < 6) {
-      setError("Please enter the full 6-digit OTP.");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    try {
-      const res = await authApi.forgotPasswordVerifyOtp(email, code);
-      setResetToken(res.data.data.resetToken);
-      setSuccess("OTP verified! Now enter your new password.");
-      setStep("reset");
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Invalid or expired OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+    const pwdErr = validatePassword(newPassword, 8);
+    if (pwdErr) {
+      setError(pwdErr);
       return;
     }
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
     setError("");
     setSuccess("");
     setLoading(true);
     try {
-      await authApi.resetPassword(email, resetToken, newPassword);
+      await authApi.resetPassword(email.trim(), resetToken, newPassword);
       navigate("/login", {
         state: {
-          registeredEmail: email,
-          successMsg: "Password reset successful! Sign in with your new password.",
+          registeredEmail: email.trim(),
+          successMsg: "Password reset successful! Please sign in with your new password.",
         },
       });
     } catch (err: any) {
@@ -181,12 +193,12 @@ const ForgotPasswordPage: React.FC = () => {
             <img src={logoImg} alt="StrengthOut" />
           </Link>
           <h1 className="auth-panel-headline">
-            Account recovery.<br />
-            Quick &amp; secure.<br />
-            <span>Get back in.</span>
+            Recover your account.<br />
+            Secure your future.<br />
+            <span>Stay connected.</span>
           </h1>
           <p className="auth-panel-sub">
-            Follow the simple steps to reset your password and regain access to your StrengthOut account.
+            Follow our verified 3-step recovery process to reset your password and get back to growing your career on StrengthOut.
           </p>
           <ul className="auth-features">
             {FEATURES.map((f) => (
@@ -207,31 +219,57 @@ const ForgotPasswordPage: React.FC = () => {
 
       {/* --------------- RIGHT PANEL --------------- */}
       <div className="auth-right">
-
         <div className="auth-right-inner">
           <div className="auth-form-wrapper">
+
+            {/* Step progress bar */}
+            <div className="fp-steps-indicator" style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+              <div className={`fp-step-dot ${step === "email" ? "active" : "done"}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: "#70c144" }} />
+              <div className={`fp-step-dot ${step === "otp" ? "active" : step === "reset" ? "done" : ""}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: step === "otp" || step === "reset" ? "#70c144" : "#e2e8f0" }} />
+              <div className={`fp-step-dot ${step === "reset" ? "active" : ""}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: step === "reset" ? "#70c144" : "#e2e8f0" }} />
+            </div>
 
             {/* ---- STEP 1: Email ---- */}
             {step === "email" && (
               <>
-                <h2 className="auth-form-title">Reset Password</h2>
+                <h2 className="auth-form-title">Reset password</h2>
                 <p className="auth-form-sub">
-                  Enter your registered email and we&apos;ll send a 6-digit OTP.
+                  Enter your registered email address to receive a secure 6-digit OTP code.
                 </p>
+
                 {error && <div className="auth-error">{error}</div>}
-                <form onSubmit={handleSendOtp} className="auth-form">
+
+                <form onSubmit={handleSendOtp} className="auth-form" noValidate>
                   <div className="form-group">
-                    <label htmlFor="fp-email">Email Address <span className="required-star">*</span></label>
+                    <label htmlFor="fp-email">
+                      Email Address <span className="required-star">*</span>
+                    </label>
                     <input
                       id="fp-email"
                       type="email"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={e => {
+                        setEmail(e.target.value);
+                        if (emailTouched) {
+                          const err = validateEmail(e.target.value);
+                          setEmailError(err || "");
+                        }
+                      }}
+                      onBlur={() => {
+                        setEmailTouched(true);
+                        const err = validateEmail(email);
+                        setEmailError(err || "");
+                      }}
                       placeholder="you@example.com"
-                      required
+                      className={emailTouched && emailError ? "is-invalid" : ""}
                       autoComplete="email"
                       autoFocus
                     />
+                    {emailTouched && emailError && (
+                      <span className="field-hint error">
+                        <FiAlertCircle size={13} /> {emailError}
+                      </span>
+                    )}
                   </div>
                   <button
                     id="fp-send-otp-btn"
@@ -309,7 +347,7 @@ const ForgotPasswordPage: React.FC = () => {
                 </p>
                 {error && <div className="auth-error">{error}</div>}
                 {success && <div className="auth-success"><span><FiCheck size={14} /></span>&nbsp;{success}</div>}
-                <form onSubmit={handleResetPassword} className="auth-form">
+                <form onSubmit={handleResetPassword} className="auth-form" noValidate>
                   <div className="form-group">
                     <label htmlFor="fp-new-pwd">New Password <span className="required-star">*</span></label>
                     <div className="password-wrapper">

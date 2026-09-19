@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { companiesApi } from "../api/companies";
 import { useAuth } from "../context/AuthContext";
 import type { CompanyProfile, CompanyContact } from "../types";
+import { validateEmail, validatePhone, validateRequired, validateUrl } from "../utils/validators";
+import { FiAlertCircle, FiTrash2, FiMail, FiPhone, FiMapPin, FiCheckCircle } from "react-icons/fi";
 import "./CompanyProfileView.css";
 
 const CompanyProfileView: React.FC = () => {
@@ -10,6 +12,7 @@ const CompanyProfileView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<CompanyProfile>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -20,6 +23,7 @@ const CompanyProfileView: React.FC = () => {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactTitle, setContactTitle] = useState("");
+  const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
 
   const loadProfile = async () => {
     setLoading(true);
@@ -27,7 +31,7 @@ const CompanyProfileView: React.FC = () => {
       const res = await companiesApi.getMyProfile();
       setProfile(res.data.data);
       setForm(res.data.data);
-    } catch (err: any) {
+    } catch {
       // Fallback draft based on authenticated user info
       const fallback: CompanyProfile = {
         id: "draft",
@@ -55,6 +59,24 @@ const CompanyProfileView: React.FC = () => {
   }, []);
 
   const handleSave = async () => {
+    const errors: Record<string, string> = {};
+    const dErr = validateRequired(form.displayName || "", "Company display name", 2);
+    if (dErr) errors.displayName = dErr;
+
+    const lErr = validateRequired(form.legalName || "", "Legal company name", 2);
+    if (lErr) errors.legalName = lErr;
+
+    if (form.website) {
+      const wErr = validateUrl(form.website, "Website URL");
+      if (wErr) errors.website = wErr;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
     setSaving(true);
     setError("");
     setSuccess("");
@@ -74,13 +96,31 @@ const CompanyProfileView: React.FC = () => {
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactName || !contactEmail) return;
+    const errors: Record<string, string> = {};
+
+    const nameErr = validateRequired(contactName, "Contact name", 2);
+    if (nameErr) errors.name = nameErr;
+
+    const emailErr = validateEmail(contactEmail, "Contact work email");
+    if (emailErr) errors.email = emailErr;
+
+    if (contactPhone.trim()) {
+      const phErr = validatePhone(contactPhone, "Phone number");
+      if (phErr) errors.phone = phErr;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setContactErrors(errors);
+      return;
+    }
+
+    setContactErrors({});
     try {
       await companiesApi.addContact({
-        name: contactName,
-        email: contactEmail,
-        phone: contactPhone,
-        jobTitle: contactTitle,
+        name: contactName.trim(),
+        email: contactEmail.trim(),
+        phone: contactPhone.trim(),
+        jobTitle: contactTitle.trim(),
         isPrimary: false
       });
       setShowAddContact(false);
@@ -89,6 +129,8 @@ const CompanyProfileView: React.FC = () => {
       setContactPhone("");
       setContactTitle("");
       loadProfile();
+      setSuccess("Recruitment contact added successfully!");
+      setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to add contact.");
     }
@@ -98,6 +140,8 @@ const CompanyProfileView: React.FC = () => {
     try {
       await companiesApi.deleteContact(contactId);
       loadProfile();
+      setSuccess("Contact removed.");
+      setTimeout(() => setSuccess(""), 2500);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to remove contact.");
     }
@@ -105,7 +149,12 @@ const CompanyProfileView: React.FC = () => {
 
   const setField = (field: keyof CompanyProfile) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => setForm(f => ({ ...f, [field]: e.target.value }));
+  ) => {
+    setForm(f => ({ ...f, [field]: e.target.value }));
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
 
   if (loading) {
     return (
@@ -123,7 +172,7 @@ const CompanyProfileView: React.FC = () => {
 
       <div className="company-action-bar">
         <div className="badge-role-company">COMPANY ACCOUNT</div>
-        <button className="btn-edit-company" onClick={() => setEditing(!editing)}>
+        <button className="btn-edit-company" onClick={() => { setEditing(!editing); setFormErrors({}); }}>
           {editing ? "Cancel Editing" : "✎ Edit Company Profile"}
         </button>
       </div>
@@ -133,22 +182,34 @@ const CompanyProfileView: React.FC = () => {
           <h2 className="edit-heading">Edit Company Profile</h2>
           <div className="edit-form-grid">
             <div className="form-group">
-              <label>Company Display Name</label>
+              <label>Company Display Name *</label>
               <input
                 type="text"
                 value={form.displayName || ""}
                 onChange={setField("displayName")}
                 placeholder="Brand name"
+                className={formErrors.displayName ? "is-invalid" : ""}
               />
+              {formErrors.displayName && (
+                <span className="field-hint error" style={{ color: "#dc2626", fontSize: "0.8rem", marginTop: 3 }}>
+                  <FiAlertCircle size={12} /> {formErrors.displayName}
+                </span>
+              )}
             </div>
             <div className="form-group">
-              <label>Legal Name</label>
+              <label>Legal Name *</label>
               <input
                 type="text"
                 value={form.legalName || ""}
                 onChange={setField("legalName")}
                 placeholder="Full legal entity name"
+                className={formErrors.legalName ? "is-invalid" : ""}
               />
+              {formErrors.legalName && (
+                <span className="field-hint error" style={{ color: "#dc2626", fontSize: "0.8rem", marginTop: 3 }}>
+                  <FiAlertCircle size={12} /> {formErrors.legalName}
+                </span>
+              )}
             </div>
             <div className="form-group">
               <label>Website URL</label>
@@ -157,7 +218,13 @@ const CompanyProfileView: React.FC = () => {
                 value={form.website || ""}
                 onChange={setField("website")}
                 placeholder="https://company.com"
+                className={formErrors.website ? "is-invalid" : ""}
               />
+              {formErrors.website && (
+                <span className="field-hint error" style={{ color: "#dc2626", fontSize: "0.8rem", marginTop: 3 }}>
+                  <FiAlertCircle size={12} /> {formErrors.website}
+                </span>
+              )}
             </div>
             <div className="form-group">
               <label>Industry</label>
@@ -210,7 +277,7 @@ const CompanyProfileView: React.FC = () => {
             <button className="btn-save-company" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Save Changes"}
             </button>
-            <button className="btn-cancel-company" onClick={() => setEditing(false)}>
+            <button className="btn-cancel-company" onClick={() => { setEditing(false); setFormErrors({}); }}>
               Cancel
             </button>
           </div>
@@ -227,8 +294,8 @@ const CompanyProfileView: React.FC = () => {
               <div className="company-tags">
                 <span className="info-chip industry">{profile?.industry || "Technology"}</span>
                 <span className="info-chip size">{profile?.companySize || "10-50 Employees"}</span>
-                <span className="info-chip location">📍 {profile?.city ? `${profile.city}, ${profile?.country || ""}` : "Remote"}</span>
-                <span className="info-chip status">● {profile?.status || "ACTIVE"}</span>
+                <span className="info-chip location"><FiMapPin size={13} /> {profile?.city ? `${profile.city}, ${profile?.country || ""}` : "Remote"}</span>
+                <span className="info-chip status"><FiCheckCircle size={13} /> {profile?.status || "ACTIVE"}</span>
               </div>
             </div>
           </div>
@@ -245,39 +312,53 @@ const CompanyProfileView: React.FC = () => {
               <div className="detail-section">
                 <div className="contacts-header">
                   <h3>Hiring & Recruitment Contacts</h3>
-                  <button className="btn-add-contact-sm" onClick={() => setShowAddContact(!showAddContact)}>
+                  <button className="btn-add-contact-sm" onClick={() => { setShowAddContact(!showAddContact); setContactErrors({}); }}>
                     {showAddContact ? "Cancel" : "+ Add Contact"}
                   </button>
                 </div>
 
                 {showAddContact && (
-                  <form className="add-contact-box" onSubmit={handleAddContact}>
-                    <input
-                      type="text"
-                      placeholder="Contact Name *"
-                      required
-                      value={contactName}
-                      onChange={e => setContactName(e.target.value)}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Work Email *"
-                      required
-                      value={contactEmail}
-                      onChange={e => setContactEmail(e.target.value)}
-                    />
+                  <form className="add-contact-box" onSubmit={handleAddContact} noValidate>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      <input
+                        type="text"
+                        placeholder="Contact Name *"
+                        value={contactName}
+                        onChange={e => { setContactName(e.target.value); if (contactErrors.name) setContactErrors(p => ({ ...p, name: "" })); }}
+                        className={contactErrors.name ? "is-invalid" : ""}
+                      />
+                      {contactErrors.name && <span style={{ color: "#dc2626", fontSize: "0.78rem" }}>{contactErrors.name}</span>}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      <input
+                        type="email"
+                        placeholder="Work Email *"
+                        value={contactEmail}
+                        onChange={e => { setContactEmail(e.target.value); if (contactErrors.email) setContactErrors(p => ({ ...p, email: "" })); }}
+                        className={contactErrors.email ? "is-invalid" : ""}
+                      />
+                      {contactErrors.email && <span style={{ color: "#dc2626", fontSize: "0.78rem" }}>{contactErrors.email}</span>}
+                    </div>
+
                     <input
                       type="text"
                       placeholder="Job Title (e.g. Lead Recruiter)"
                       value={contactTitle}
                       onChange={e => setContactTitle(e.target.value)}
                     />
-                    <input
-                      type="tel"
-                      placeholder="Phone Number"
-                      value={contactPhone}
-                      onChange={e => setContactPhone(e.target.value)}
-                    />
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                      <input
+                        type="tel"
+                        placeholder="Phone Number (e.g. 9876543210)"
+                        value={contactPhone}
+                        onChange={e => { setContactPhone(e.target.value); if (contactErrors.phone) setContactErrors(p => ({ ...p, phone: "" })); }}
+                        className={contactErrors.phone ? "is-invalid" : ""}
+                      />
+                      {contactErrors.phone && <span style={{ color: "#dc2626", fontSize: "0.78rem" }}>{contactErrors.phone}</span>}
+                    </div>
+
                     <button type="submit" className="btn-save-contact">Save Contact</button>
                   </form>
                 )}
@@ -289,11 +370,11 @@ const CompanyProfileView: React.FC = () => {
                         <div className="contact-info">
                           <strong>{c.name}</strong>
                           {c.jobTitle && <span className="contact-title">{c.jobTitle}</span>}
-                          <span className="contact-email">✉ {c.email}</span>
-                          {c.phone && <span className="contact-phone">📞 {c.phone}</span>}
+                          <span className="contact-email"><FiMail size={13} /> {c.email}</span>
+                          {c.phone && <span className="contact-phone"><FiPhone size={13} /> {c.phone}</span>}
                         </div>
-                        <button className="btn-delete-contact" onClick={() => handleDeleteContact(c.id)}>
-                          ✕
+                        <button className="btn-delete-contact" onClick={() => handleDeleteContact(c.id)} title="Delete Contact">
+                          <FiTrash2 size={15} />
                         </button>
                       </div>
                     ))

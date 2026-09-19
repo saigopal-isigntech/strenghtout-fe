@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { candidatesApi } from "../../api/candidates";
 import { connectionsApi } from "../../api/connections";
 import type { CandidateProfile, Evidence } from "../../types";
-import { FiMapPin, FiBriefcase, FiCalendar, FiExternalLink, FiX, FiCheckCircle, FiUserPlus } from "react-icons/fi";
+import { FiMapPin, FiBriefcase, FiCalendar, FiExternalLink, FiX, FiCheckCircle, FiUserPlus, FiVideo, FiAlertCircle } from "react-icons/fi";
+import { validateRequired } from "../../utils/validators";
 import "./Discover.css";
 
 const DiscoverPage: React.FC = () => {
@@ -15,13 +16,15 @@ const DiscoverPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(qParam);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
+  const [_page, setPage] = useState(0); void _page;
 
   // Connect modal state
   const [connectModal, setConnectModal] = useState<{ candidateId: string; name: string } | null>(null);
   const [roleTitle, setRoleTitle] = useState("");
   const [opportunitySummary, setOpportunitySummary] = useState("");
   const [workType, setWorkType] = useState("REMOTE");
+  const [connectErrors, setConnectErrors] = useState<Record<string, string>>({});
+  const [connectTouched, setConnectTouched] = useState(false);
   const [sending, setSending] = useState(false);
 
   // Evaluation / Profile Detail modal state
@@ -102,12 +105,27 @@ const DiscoverPage: React.FC = () => {
 
   const submitRequest = async () => {
     if (!connectModal) return;
+    setConnectTouched(true);
+
+    const errors: Record<string, string> = {};
+    const rErr = validateRequired(roleTitle, "Role title", 3);
+    if (rErr) errors.roleTitle = rErr;
+
+    const oErr = validateRequired(opportunitySummary, "Opportunity summary", 10);
+    if (oErr) errors.opportunitySummary = oErr;
+
+    if (Object.keys(errors).length > 0) {
+      setConnectErrors(errors);
+      return;
+    }
+
+    setConnectErrors({});
     setSending(true);
     try {
       await connectionsApi.submit({
         candidateId: connectModal.candidateId,
-        roleTitle,
-        opportunitySummary,
+        roleTitle: roleTitle.trim(),
+        opportunitySummary: opportunitySummary.trim(),
         workType,
       });
       setToastMsg(`Connection request sent to ${connectModal.name}!`);
@@ -115,6 +133,7 @@ const DiscoverPage: React.FC = () => {
       setRoleTitle("");
       setOpportunitySummary("");
       setWorkType("REMOTE");
+      setConnectTouched(false);
       setTimeout(() => { setToastMsg(""); navigate('/my-requests'); }, 2500);
     } catch (err: any) {
       setToastMsg(err?.response?.data?.message || "Failed to send connection request.");
@@ -231,6 +250,8 @@ const DiscoverPage: React.FC = () => {
                       onClick={e => {
                         e.stopPropagation();
                         setConnectModal({ candidateId: c.id!, name: c.fullName });
+                        setConnectErrors({});
+                        setConnectTouched(false);
                       }}
                     >
                       <FiUserPlus size={16} />
@@ -291,6 +312,20 @@ const DiscoverPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Candidate Video Introduction if uploaded */}
+            {activeCandidate.videoUrl && (
+              <div style={{ marginBottom: "1.25rem" }}>
+                <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <FiVideo size={16} color="#70c144" /> Introduction Video
+                </h4>
+                <div style={{ width: "100%", borderRadius: "8px", overflow: "hidden", background: "#0f172a", maxHeight: "240px" }}>
+                  <video controls src={activeCandidate.videoUrl} style={{ width: "100%", maxHeight: "240px", display: "block" }}>
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            )}
 
             {/* Summary */}
             <div style={{ marginBottom: "1.25rem" }}>
@@ -384,6 +419,8 @@ const DiscoverPage: React.FC = () => {
                   const candidateToConnect = activeCandidate;
                   setEvalModal(null);
                   setConnectModal({ candidateId: candidateToConnect.id!, name: candidateToConnect.fullName });
+                  setConnectErrors({});
+                  setConnectTouched(false);
                 }}
               >
                 Connect with Candidate
@@ -407,10 +444,25 @@ const DiscoverPage: React.FC = () => {
               <input
                 type="text"
                 value={roleTitle}
-                onChange={e => setRoleTitle(e.target.value)}
+                onChange={e => {
+                  setRoleTitle(e.target.value);
+                  if (connectErrors.roleTitle) setConnectErrors(prev => ({ ...prev, roleTitle: "" }));
+                }}
                 placeholder="e.g. Senior Frontend Engineer"
-                style={{ width: "100%", padding: "0.6rem", border: "1px solid #cbd5e1", borderRadius: "6px", boxSizing: "border-box" as const }}
+                style={{
+                  width: "100%",
+                  padding: "0.6rem",
+                  border: `1px solid ${connectTouched && connectErrors.roleTitle ? "#ef4444" : "#cbd5e1"}`,
+                  borderRadius: "6px",
+                  boxSizing: "border-box" as const,
+                  outline: "none"
+                }}
               />
+              {connectTouched && connectErrors.roleTitle && (
+                <span style={{ color: "#dc2626", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "3px" }}>
+                  <FiAlertCircle size={12} /> {connectErrors.roleTitle}
+                </span>
+              )}
             </div>
 
             <div style={{ marginBottom: "1rem" }}>
@@ -435,9 +487,20 @@ const DiscoverPage: React.FC = () => {
               <textarea
                 rows={4}
                 value={opportunitySummary}
-                onChange={e => setOpportunitySummary(e.target.value)}
+                onChange={e => {
+                  setOpportunitySummary(e.target.value);
+                  if (connectErrors.opportunitySummary) setConnectErrors(prev => ({ ...prev, opportunitySummary: "" }));
+                }}
                 placeholder="Share information about the role, technical requirements, and why you are interested in their profile..."
+                style={{
+                  border: `1px solid ${connectTouched && connectErrors.opportunitySummary ? "#ef4444" : "#cbd5e1"}`
+                }}
               />
+              {connectTouched && connectErrors.opportunitySummary && (
+                <span style={{ color: "#dc2626", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "3px" }}>
+                  <FiAlertCircle size={12} /> {connectErrors.opportunitySummary}
+                </span>
+              )}
             </div>
 
             <div className="modal-actions">
@@ -447,7 +510,7 @@ const DiscoverPage: React.FC = () => {
               <button
                 className="btn-modal-submit"
                 onClick={submitRequest}
-                disabled={sending || !roleTitle.trim() || !opportunitySummary.trim()}
+                disabled={sending}
               >
                 {sending ? "Sending..." : "Send Request"}
               </button>

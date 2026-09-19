@@ -3,7 +3,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import logoImg from "../../assets/logo.png";
 import authBg from "../../assets/auth-bg.jpg";
-import { FiAward, FiBriefcase, FiZap, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiCheck } from "react-icons/fi";
+import { FiAward, FiBriefcase, FiZap, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { validateEmail, validatePassword } from "../../utils/validators";
 import "./Auth.css";
 
 const FEATURES = [
@@ -44,12 +45,45 @@ const LoginPage: React.FC = () => {
   const [success]                 = useState(initialSuccess);
   const [loading, setLoading]     = useState(false);
 
+  // Field errors & touched states
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [touched, setTouched]         = useState<{ email?: boolean; password?: boolean }>({});
+
+  const validateForm = () => {
+    const emailErr = validateEmail(email);
+    const pwdErr   = validatePassword(password, 1);
+    const errors: { email?: string; password?: string } = {};
+
+    if (emailErr) errors.email = emailErr;
+    if (pwdErr) errors.password = pwdErr;
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleBlur = (field: 'email' | 'password') => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    if (field === 'email') {
+      const err = validateEmail(email);
+      setFieldErrors(prev => ({ ...prev, email: err || undefined }));
+    } else if (field === 'password') {
+      const err = validatePassword(password, 1);
+      setFieldErrors(prev => ({ ...prev, password: err || undefined }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ email: true, password: true });
+
+    if (!validateForm()) {
+      return;
+    }
+
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       navigate("/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Login failed. Please check your credentials.");
@@ -114,7 +148,7 @@ const LoginPage: React.FC = () => {
             )}
             {error && <div className="auth-error">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="auth-form">
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <div className="form-group">
                 <label htmlFor="login-email">
                   Email <span className="required-star">*</span>
@@ -123,11 +157,23 @@ const LoginPage: React.FC = () => {
                   id="login-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (touched.email) {
+                      const err = validateEmail(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, email: err || undefined }));
+                    }
+                  }}
+                  onBlur={() => handleBlur('email')}
                   placeholder="you@example.com"
-                  required
+                  className={touched.email && fieldErrors.email ? "is-invalid" : ""}
                   autoComplete="email"
                 />
+                {touched.email && fieldErrors.email && (
+                  <span className="field-hint error">
+                    <FiAlertCircle size={13} /> {fieldErrors.email}
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -139,14 +185,21 @@ const LoginPage: React.FC = () => {
                     Forgot password?
                   </Link>
                 </div>
-                <div className="password-wrapper">
+                <div className={`password-wrapper ${touched.password && fieldErrors.password ? "is-invalid-wrap" : ""}`}>
                   <input
                     id="login-password"
                     type={showPwd ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (touched.password) {
+                        const err = validatePassword(e.target.value, 1);
+                        setFieldErrors(prev => ({ ...prev, password: err || undefined }));
+                      }
+                    }}
+                    onBlur={() => handleBlur('password')}
                     placeholder="Your password"
-                    required
+                    className={touched.password && fieldErrors.password ? "is-invalid" : ""}
                     autoComplete="current-password"
                   />
                   <button
@@ -159,6 +212,11 @@ const LoginPage: React.FC = () => {
                     {showPwd ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                   </button>
                 </div>
+                {touched.password && fieldErrors.password && (
+                  <span className="field-hint error">
+                    <FiAlertCircle size={13} /> {fieldErrors.password}
+                  </span>
+                )}
               </div>
 
               <button

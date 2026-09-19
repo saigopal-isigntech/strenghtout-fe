@@ -1,4 +1,4 @@
-﻿export interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
@@ -144,6 +144,9 @@ export interface CandidateProfile {
   resumeUrl?: string;
   resumeName?: string;
   resumeUploadedDate?: string;
+  videoUrl?: string;
+  videoName?: string;
+  videoUploadedDate?: string;
   disabilityStatus?: string;
   gender?: string;
   dateOfBirth?: string;
@@ -238,6 +241,9 @@ export interface Notification {
   type: string;
   title: string;
   body: string;
+  relatedType?: string;
+  relatedId?: string;
   isRead: boolean;
   createdAt: string;
 }
+
