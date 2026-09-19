@@ -2,7 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/logo.png";
+import defaultProfileImg from "../assets/image.png";
 import { notificationsApi } from "../api/notifications";
+import { candidatesApi } from "../api/candidates";
+import { companiesApi } from "../api/companies";
 
 /* react-icons */
 import {
@@ -10,7 +13,6 @@ import {
   FiBell,
   FiChevronDown,
   FiLogOut,
-  FiSettings,
   FiMenu,
   FiX,
   FiSun,
@@ -21,7 +23,7 @@ import { HiOutlineUser, HiOutlineUsers, HiOutlineClipboardList } from "react-ico
 import "./Navbar.css";
 
 const Navbar: React.FC = () => {
-  const { user, isAuthenticated, logout, isAdmin } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin, updateUserAvatar } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,6 +34,72 @@ const Navbar: React.FC = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const isFetchingUnreadRef = useRef(false);
   const lastFetchedPathRef = useRef<string>("");
+
+  /* Profile Avatar Image resolution */
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(() => {
+    if (!user) return null;
+    if (user.avatarUrl) return user.avatarUrl;
+    if (user.role === "ROLE_CANDIDATE") return defaultProfileImg;
+    return null;
+  });
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+    if (!user) {
+      setAvatarSrc(null);
+      return;
+    }
+    if (user.avatarUrl) {
+      setAvatarSrc(user.avatarUrl);
+    } else if (user.role === "ROLE_CANDIDATE") {
+      setAvatarSrc(defaultProfileImg);
+    } else {
+      setAvatarSrc(null);
+    }
+  }, [user]);
+
+  /* Listen for real-time photo update events across the app */
+  useEffect(() => {
+    const handleAvatarUpdate = (e: any) => {
+      if (e.detail?.avatarUrl) {
+        setAvatarSrc(e.detail.avatarUrl);
+        setImgError(false);
+      }
+    };
+    window.addEventListener("profilePhotoUpdated", handleAvatarUpdate);
+    return () => window.removeEventListener("profilePhotoUpdated", handleAvatarUpdate);
+  }, []);
+
+  /* Fetch live candidate/company avatar if not yet in auth state */
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    if (user.role === "ROLE_CANDIDATE" && !user.avatarUrl) {
+      candidatesApi
+        .getMyProfile()
+        .then((res) => {
+          const pic = res.data?.data?.avatarUrl;
+          if (pic) {
+            setAvatarSrc(pic);
+            setImgError(false);
+            updateUserAvatar(pic);
+          }
+        })
+        .catch(() => {});
+    } else if (user.role === "ROLE_COMPANY" && !user.avatarUrl) {
+      companiesApi
+        .getMyProfile()
+        .then((res) => {
+          const logo = res.data?.data?.logoUrl;
+          if (logo) {
+            setAvatarSrc(logo);
+            setImgError(false);
+            updateUserAvatar(logo);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated, user, updateUserAvatar]);
 
   /* Theme state: default is 'light' */
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -369,8 +437,21 @@ const Navbar: React.FC = () => {
                 aria-haspopup="true"
                 aria-label="User menu"
               >
-                <div className={`nav-avatar ${isSuperAdmin ? "super" : ""}`}>
-                  {isSuperAdmin ? "SA" : userInitial}
+                <div
+                  className={`nav-avatar ${isSuperAdmin ? "super" : ""} ${
+                    avatarSrc && !imgError ? "has-image" : ""
+                  }`}
+                >
+                  {avatarSrc && !imgError ? (
+                    <img
+                      src={avatarSrc}
+                      alt={user?.fullName || "User Avatar"}
+                      className="nav-avatar-img"
+                      onError={() => setImgError(true)}
+                    />
+                  ) : (
+                    <span>{isSuperAdmin ? "SA" : userInitial}</span>
+                  )}
                 </div>
                 <span className="user-firstname">
                   {user?.fullName?.split(" ")[0]}
@@ -385,15 +466,36 @@ const Navbar: React.FC = () => {
               {menuOpen && (
                 <div className="nav-dropdown" role="menu">
                   <div className="dropdown-user-header">
-                    <div className="dropdown-user-name">{user?.fullName}</div>
-                    <div className="dropdown-user-email">{user?.email}</div>
-                    <span
-                      className={`role-badge-tag ${isSuperAdmin ? "super" : ""}`}
-                    >
-                      {isSuperAdmin
-                        ? "SUPER ADMIN"
-                        : (user?.role || "").replace("ROLE_", "")}
-                    </span>
+                    <div className="dropdown-user-profile-row">
+                      <div
+                        className={`dropdown-avatar ${
+                          avatarSrc && !imgError ? "has-image" : ""
+                        }`}
+                      >
+                        {avatarSrc && !imgError ? (
+                          <img
+                            src={avatarSrc}
+                            alt={user?.fullName || "User Avatar"}
+                            className="dropdown-avatar-img"
+                          />
+                        ) : (
+                          <span>{isSuperAdmin ? "SA" : userInitial}</span>
+                        )}
+                      </div>
+                      <div className="dropdown-user-info">
+                        <div className="dropdown-user-name">{user?.fullName}</div>
+                        <div className="dropdown-user-email">{user?.email}</div>
+                        <span
+                          className={`role-badge-tag ${
+                            isSuperAdmin ? "super" : ""
+                          }`}
+                        >
+                          {isSuperAdmin
+                            ? "SUPER ADMIN"
+                            : (user?.role || "").replace("ROLE_", "")}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <hr className="dropdown-divider" />
 
@@ -427,14 +529,6 @@ const Navbar: React.FC = () => {
                     </>
                   )}
 
-                  <Link
-                    to="/settings"
-                    className="dropdown-link"
-                    onClick={() => setMenuOpen(false)}
-                    role="menuitem"
-                  >
-                    <FiSettings size={14} /> Settings
-                  </Link>
                   <hr className="dropdown-divider" />
                   <button
                     className="dropdown-link logout-btn"

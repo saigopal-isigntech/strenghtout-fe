@@ -1,9 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { adminApi } from "../../api/admin";
 import type { AdminUserItem, CompanyProfile, CandidateProfile, CompanyContact } from "../../types";
+import {
+  FiRefreshCw,
+  FiSearch,
+  FiAward,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiMapPin,
+  FiMail,
+  FiPhone,
+  FiExternalLink,
+  FiX,
+  FiBriefcase,
+  FiCalendar,
+  FiChevronLeft,
+  FiChevronRight,
+} from "react-icons/fi";
 import "./AdminUsers.css";
 
 type AdminTab = "USERS" | "COMPANIES" | "CANDIDATES";
+
+const PAGE_SIZE = 10;
 
 const AdminUsersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>("USERS");
@@ -11,6 +29,8 @@ const AdminUsersPage: React.FC = () => {
   // Users state
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [userTotal, setUserTotal] = useState(0);
+  const [userTotalPages, setUserTotalPages] = useState(0);
+  const [userPage, setUserPage] = useState(0);
   const [userLoading, setUserLoading] = useState(true);
   const [userSearch, setUserSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -19,6 +39,8 @@ const AdminUsersPage: React.FC = () => {
   // Companies state
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [companyTotal, setCompanyTotal] = useState(0);
+  const [companyTotalPages, setCompanyTotalPages] = useState(0);
+  const [companyPage, setCompanyPage] = useState(0);
   const [companyLoading, setCompanyLoading] = useState(false);
   const [companySearch, setCompanySearch] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<CompanyProfile | null>(null);
@@ -26,6 +48,8 @@ const AdminUsersPage: React.FC = () => {
   // Candidates state
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
   const [candidateTotal, setCandidateTotal] = useState(0);
+  const [candidateTotalPages, setCandidateTotalPages] = useState(0);
+  const [candidatePage, setCandidatePage] = useState(0);
   const [candidateLoading, setCandidateLoading] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
@@ -38,12 +62,14 @@ const AdminUsersPage: React.FC = () => {
   };
 
   // Load User Accounts
-  const loadUsers = async () => {
+  const loadUsers = async (page = userPage) => {
     setUserLoading(true);
     try {
-      const res = await adminApi.getUsers({ page: 0, size: 50 });
+      const res = await adminApi.getUsers({ page, size: PAGE_SIZE });
       setUsers(res.data.data.content || []);
       setUserTotal(res.data.data.totalElements || 0);
+      setUserTotalPages(res.data.data.totalPages || Math.ceil((res.data.data.totalElements || 0) / PAGE_SIZE));
+      setUserPage(page);
     } catch (err: any) {
       showToast(err?.response?.data?.message || "Failed to load platform users");
     } finally {
@@ -52,12 +78,14 @@ const AdminUsersPage: React.FC = () => {
   };
 
   // Load Registered Companies
-  const loadCompanies = async () => {
+  const loadCompanies = async (page = companyPage) => {
     setCompanyLoading(true);
     try {
-      const res = await adminApi.getCompanies({ page: 0, size: 50, search: companySearch });
+      const res = await adminApi.getCompanies({ page, size: PAGE_SIZE, search: companySearch });
       setCompanies(res.data.data.content || []);
       setCompanyTotal(res.data.data.totalElements || 0);
+      setCompanyTotalPages(res.data.data.totalPages || Math.ceil((res.data.data.totalElements || 0) / PAGE_SIZE));
+      setCompanyPage(page);
     } catch (err: any) {
       showToast(err?.response?.data?.message || "Failed to load companies");
     } finally {
@@ -66,12 +94,14 @@ const AdminUsersPage: React.FC = () => {
   };
 
   // Load Registered Candidates
-  const loadCandidates = async () => {
+  const loadCandidates = async (page = candidatePage) => {
     setCandidateLoading(true);
     try {
-      const res = await adminApi.getCandidates({ page: 0, size: 50, search: candidateSearch });
+      const res = await adminApi.getCandidates({ page, size: PAGE_SIZE, search: candidateSearch });
       setCandidates(res.data.data.content || []);
       setCandidateTotal(res.data.data.totalElements || 0);
+      setCandidateTotalPages(res.data.data.totalPages || Math.ceil((res.data.data.totalElements || 0) / PAGE_SIZE));
+      setCandidatePage(page);
     } catch (err: any) {
       showToast(err?.response?.data?.message || "Failed to load candidate profiles");
     } finally {
@@ -80,9 +110,9 @@ const AdminUsersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (activeTab === "USERS") loadUsers();
-    else if (activeTab === "COMPANIES") loadCompanies();
-    else if (activeTab === "CANDIDATES") loadCandidates();
+    if (activeTab === "USERS") loadUsers(0);
+    else if (activeTab === "COMPANIES") loadCompanies(0);
+    else if (activeTab === "CANDIDATES") loadCandidates(0);
   }, [activeTab]);
 
   const handleToggleStatus = async (u: AdminUserItem) => {
@@ -91,7 +121,7 @@ const AdminUsersPage: React.FC = () => {
     try {
       await adminApi.updateUserStatus(u.id, nextStatus as any);
       showToast(`User ${u.email} is now ${nextStatus === "SUSPENDED" ? "INACTIVE" : nextStatus}`);
-      loadUsers();
+      loadUsers(userPage);
     } catch (err: any) {
       showToast(err?.response?.data?.message || "Failed to update user status");
     } finally {
@@ -115,6 +145,89 @@ const AdminUsersPage: React.FC = () => {
     return list.map((s: any) => typeof s === "string" ? s : (s.skillName || s.canonicalName || s.name || "")).filter(Boolean);
   };
 
+  const renderPagination = (
+    currentPage: number,
+    totalPages: number,
+    totalItems: number,
+    onPageChange: (newPage: number) => void
+  ) => {
+    if (totalItems <= 0 || totalPages <= 1) return null;
+
+    const startItem = currentPage * PAGE_SIZE + 1;
+    const endItem = Math.min((currentPage + 1) * PAGE_SIZE, totalItems);
+
+    const pages: number[] = [];
+    const maxButtons = 5;
+    let start = Math.max(0, currentPage - Math.floor(maxButtons / 2));
+    let end = Math.min(totalPages - 1, start + maxButtons - 1);
+    if (end - start + 1 < maxButtons) {
+      start = Math.max(0, end - maxButtons + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="admin-pagination-bar">
+        <div className="pagination-info">
+          Showing <strong>{startItem}</strong> - <strong>{endItem}</strong> of <strong>{totalItems}</strong> entries (10 per page)
+        </div>
+        <div className="pagination-controls">
+          <button
+            type="button"
+            className="pagination-btn nav"
+            disabled={currentPage === 0}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            <FiChevronLeft size={16} /> Previous
+          </button>
+          {start > 0 && (
+            <>
+              <button
+                type="button"
+                className={`pagination-btn num ${currentPage === 0 ? "active" : ""}`}
+                onClick={() => onPageChange(0)}
+              >
+                1
+              </button>
+              {start > 1 && <span className="pagination-ellipsis">...</span>}
+            </>
+          )}
+          {pages.map(p => (
+            <button
+              key={p}
+              type="button"
+              className={`pagination-btn num ${p === currentPage ? "active" : ""}`}
+              onClick={() => onPageChange(p)}
+            >
+              {p + 1}
+            </button>
+          ))}
+          {end < totalPages - 1 && (
+            <>
+              {end < totalPages - 2 && <span className="pagination-ellipsis">...</span>}
+              <button
+                type="button"
+                className={`pagination-btn num ${currentPage === totalPages - 1 ? "active" : ""}`}
+                onClick={() => onPageChange(totalPages - 1)}
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className="pagination-btn nav"
+            disabled={currentPage >= totalPages - 1}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next <FiChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="admin-users-page">
       {toast && <div className="admin-toast">{toast}</div>}
@@ -128,13 +241,14 @@ const AdminUsersPage: React.FC = () => {
         </div>
         <button
           className="btn-refresh"
+          style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
           onClick={() => {
             if (activeTab === "USERS") loadUsers();
             if (activeTab === "COMPANIES") loadCompanies();
             if (activeTab === "CANDIDATES") loadCandidates();
           }}
         >
-          ↻ Refresh Directory
+          <FiRefreshCw size={14} /> Refresh Directory
         </button>
       </div>
 
@@ -164,13 +278,17 @@ const AdminUsersPage: React.FC = () => {
       {activeTab === "USERS" && (
         <div className="tab-section">
           <div className="filter-toolbar">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by email..."
-              value={userSearch}
-              onChange={e => setUserSearch(e.target.value)}
-            />
+            <div style={{ position: "relative", flex: 1, maxWidth: "340px" }}>
+              <input
+                type="text"
+                className="search-input"
+                style={{ width: "100%", paddingLeft: "2.2rem" }}
+                placeholder="Search by email..."
+                value={userSearch}
+                onChange={e => setUserSearch(e.target.value)}
+              />
+              <FiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+            </div>
             <div className="role-filter-btns">
               {["ALL", "ADMIN", "CANDIDATE", "COMPANY"].map(r => (
                 <button
@@ -209,7 +327,7 @@ const AdminUsersPage: React.FC = () => {
                       <tr key={u.id}>
                         <td className="user-email-col">
                           <strong>{u.email}</strong>
-                          {isSuper && <span className="super-crown">👑</span>}
+                          {isSuper && <FiAward size={14} color="#f59e0b" style={{ marginLeft: "6px", verticalAlign: "middle" }} title="Super Admin" />}
                         </td>
                         <td>
                           <span className="type-badge">{u.accountType}</span>
@@ -227,8 +345,8 @@ const AdminUsersPage: React.FC = () => {
                           </div>
                         </td>
                         <td>
-                          <span className={`status-pill ${u.status.toLowerCase()}`}>
-                            ● {u.status}
+                          <span className={`status-pill ${u.status.toLowerCase()}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                            {u.status === "ACTIVE" ? <FiCheckCircle size={12} /> : <FiAlertCircle size={12} />} {u.status}
                           </span>
                         </td>
                         <td className="date-col">{new Date(u.createdAt).toLocaleDateString()}</td>
@@ -250,6 +368,7 @@ const AdminUsersPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
+              {renderPagination(userPage, userTotalPages, userTotal, p => loadUsers(p))}
             </div>
           )}
         </div>
@@ -259,15 +378,19 @@ const AdminUsersPage: React.FC = () => {
       {activeTab === "COMPANIES" && (
         <div className="tab-section">
           <div className="filter-toolbar">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search companies by name, industry, city..."
-              value={companySearch}
-              onChange={e => setCompanySearch(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && loadCompanies()}
-            />
-            <button className="filter-btn active" onClick={loadCompanies}>
+            <div style={{ position: "relative", flex: 1, maxWidth: "380px" }}>
+              <input
+                type="text"
+                className="search-input"
+                style={{ width: "100%", paddingLeft: "2.2rem" }}
+                placeholder="Search companies by name, industry, city..."
+                value={companySearch}
+                onChange={e => setCompanySearch(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && loadCompanies(0)}
+              />
+              <FiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+            </div>
+            <button className="filter-btn active" onClick={() => loadCompanies(0)}>
               Search
             </button>
           </div>
@@ -305,15 +428,19 @@ const AdminUsersPage: React.FC = () => {
                         <span className="type-badge">{c.industry || "General"}</span>
                       </td>
                       <td>{c.companySize || "11-50"}</td>
-                      <td>📍 {c.city ? `${c.city}, ${c.country || ""}` : "Not set"}</td>
+                      <td>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                          <FiMapPin size={13} color="#70c144" /> {c.city ? `${c.city}, ${c.country || ""}` : "Not set"}
+                        </span>
+                      </td>
                       <td>
                         <span style={{ fontSize: "0.85rem", color: "#475569" }}>
                           {c.contacts?.length || 0} contact(s)
                         </span>
                       </td>
                       <td>
-                        <span className={`status-pill ${(c.status || "ACTIVE").toLowerCase()}`}>
-                          ● {c.status || "ACTIVE"}
+                        <span className={`status-pill ${(c.status || "ACTIVE").toLowerCase()}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                          <FiCheckCircle size={12} /> {c.status || "ACTIVE"}
                         </span>
                       </td>
                       <td>
@@ -328,6 +455,7 @@ const AdminUsersPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              {renderPagination(companyPage, companyTotalPages, companyTotal, p => loadCompanies(p))}
             </div>
           )}
         </div>
@@ -337,15 +465,19 @@ const AdminUsersPage: React.FC = () => {
       {activeTab === "CANDIDATES" && (
         <div className="tab-section">
           <div className="filter-toolbar">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search candidates by name, email, headline, skills..."
-              value={candidateSearch}
-              onChange={e => setCandidateSearch(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && loadCandidates()}
-            />
-            <button className="filter-btn active" onClick={loadCandidates}>
+            <div style={{ position: "relative", flex: 1, maxWidth: "420px" }}>
+              <input
+                type="text"
+                className="search-input"
+                style={{ width: "100%", paddingLeft: "2.2rem" }}
+                placeholder="Search candidates by name, email, headline, skills..."
+                value={candidateSearch}
+                onChange={e => setCandidateSearch(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && loadCandidates(0)}
+              />
+              <FiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+            </div>
+            <button className="filter-btn active" onClick={() => loadCandidates(0)}>
               Search
             </button>
           </div>
@@ -360,39 +492,56 @@ const AdminUsersPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Candidate Name</th>
-                    <th>Email ID</th>
-                    <th>Mobile Number</th>
-                    <th>Headline / Role</th>
+                    <th>Email</th>
                     <th>Location</th>
-                    <th>Skills Preview</th>
                     <th>Experience</th>
+                    <th>Skills Overview</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {candidates.map(cand => {
-                    const candSkills = extractSkills(cand);
-                    const expMonths = cand.totalExperienceMonths || (cand.totalExperienceYears ? cand.totalExperienceYears * 12 : 0);
+                    const skillList = extractSkills(cand);
                     return (
                       <tr key={cand.id}>
                         <td>
                           <strong>{cand.fullName}</strong>
+                          {cand.headline && (
+                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{cand.headline}</div>
+                          )}
                         </td>
                         <td>{cand.email || "N/A"}</td>
-                        <td>{cand.phone || "Not provided"}</td>
-                        <td>{cand.headline || "Candidate"}</td>
-                        <td>📍 {cand.currentLocation || cand.location || "N/A"}</td>
                         <td>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem", maxWidth: "200px" }}>
-                            {candSkills.slice(0, 3).map(s => (
-                              <span key={s} className="skill-chip">{s}</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                            <FiMapPin size={13} color="#70c144" /> {cand.currentLocation || cand.location || "Not set"}
+                          </span>
+                        </td>
+                        <td>{Math.round((cand.totalExperienceMonths || 24) / 12)} Years</td>
+                        <td>
+                          <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+                            {skillList.slice(0, 3).map(s => (
+                              <span
+                                key={s}
+                                style={{
+                                  background: "#f0fdf4",
+                                  color: "#15803d",
+                                  border: "1px solid #bbf7d0",
+                                  padding: "0.15rem 0.45rem",
+                                  borderRadius: "4px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {s}
+                              </span>
                             ))}
-                            {candSkills.length > 3 && (
-                              <span className="skill-chip">+{candSkills.length - 3}</span>
+                            {skillList.length > 3 && (
+                              <span style={{ fontSize: "0.75rem", color: "#64748b", alignSelf: "center" }}>
+                                +{skillList.length - 3} more
+                              </span>
                             )}
                           </div>
                         </td>
-                        <td>{Math.round(expMonths / 12)} yr(s)</td>
                         <td>
                           <button
                             className="btn-action activate"
@@ -406,6 +555,7 @@ const AdminUsersPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
+              {renderPagination(candidatePage, candidateTotalPages, candidateTotal, p => loadCandidates(p))}
             </div>
           )}
         </div>
@@ -417,77 +567,88 @@ const AdminUsersPage: React.FC = () => {
           <div className="modal-box" style={{ maxWidth: "680px" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.2rem" }}>
               <div>
-                <span className="type-badge" style={{ background: "#ede9fe", color: "#6366f1", fontWeight: 700 }}>
+                <span className="type-badge" style={{ background: "#dbeafe", color: "#1e40af", fontWeight: 700 }}>
                   REGISTERED COMPANY PROFILE
                 </span>
-                <h2 style={{ fontSize: "1.8rem", margin: "0.4rem 0 0.2rem", color: "#0f172a" }}>
+                <h2 style={{ fontSize: "1.8rem", margin: "0.4rem 0 0.2rem", color: "var(--text-primary, #0f172a)" }}>
                   {selectedCompany.displayName || selectedCompany.legalName}
                 </h2>
-                <p style={{ color: "#64748b", margin: 0 }}>Legal Name: {selectedCompany.legalName}</p>
+                {selectedCompany.legalName && (
+                  <p style={{ color: "var(--text-muted, #64748b)", margin: 0, fontSize: "0.9rem" }}>
+                    Legal Name: {selectedCompany.legalName}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => setSelectedCompany(null)}
-                style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "#64748b" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted, #64748b)", padding: "4px" }}
               >
-                ✕
+                <FiX size={22} />
               </button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "#f8fafc", padding: "1.25rem", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "1.25rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "var(--bg-surface, #f8fafc)", padding: "1.25rem", borderRadius: "8px", border: "1px solid var(--border-card, #e2e8f0)", marginBottom: "1.25rem" }}>
               <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Official Email</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>{selectedCompany.email || "Not specified"}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Industry & Size</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                  {selectedCompany.industry || "Technology"} • {selectedCompany.companySize || "11-50"}
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Official Email</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiMail size={13} color="#70c144" /> {selectedCompany.email || "Not specified"}
                 </div>
               </div>
               <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Headquarters</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                  📍 {selectedCompany.city ? `${selectedCompany.city}, ${selectedCompany.country || ""}` : "Not provided"}
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Industry & Size</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiBriefcase size={13} color="#70c144" /> {selectedCompany.industry || "Information Tech"} ({selectedCompany.companySize || "50-200"})
                 </div>
               </div>
               <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Website</span>
-                <div style={{ fontWeight: 600, color: "#2563eb" }}>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Headquarters</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiMapPin size={13} color="#70c144" /> {selectedCompany.city ? `${selectedCompany.city}, ${selectedCompany.country || ""}` : "Not provided"}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Website</span>
+                <div style={{ fontWeight: 600 }}>
                   {selectedCompany.website ? (
-                    <a href={selectedCompany.website} target="_blank" rel="noreferrer">
-                      {selectedCompany.website}
+                    <a href={selectedCompany.website} target="_blank" rel="noreferrer" style={{ color: "#2563eb", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                      {selectedCompany.website} <FiExternalLink size={12} />
                     </a>
-                  ) : "None"}
+                  ) : (
+                    <span style={{ color: "var(--text-muted, #64748b)" }}>None</span>
+                  )}
                 </div>
               </div>
             </div>
 
             <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ margin: "0 0 0.5rem", color: "#1e293b" }}>About the Organization</h4>
-              <p style={{ color: "#475569", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>
+              <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>About the Organization</h4>
+              <p style={{ color: "var(--text-secondary, #475569)", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>
                 {selectedCompany.description || "No detailed description provided by this company."}
               </p>
             </div>
 
             <div>
-              <h4 style={{ margin: "0 0 0.75rem", color: "#1e293b" }}>Recruitment Contacts</h4>
+              <h4 style={{ margin: "0 0 0.75rem", color: "var(--text-primary, #1e293b)" }}>Recruitment Contacts</h4>
               {selectedCompany.contacts && selectedCompany.contacts.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {selectedCompany.contacts.map((contact: CompanyContact) => (
-                    <div key={contact.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "0.6rem 0.85rem", borderRadius: "6px", display: "flex", justifyContent: "space-between" }}>
+                    <div key={contact.id} style={{ background: "var(--bg-surface, #f8fafc)", border: "1px solid var(--border-card, #e2e8f0)", padding: "0.6rem 0.85rem", borderRadius: "6px", display: "flex", justifyContent: "space-between" }}>
                       <div>
-                        <strong>{contact.name}</strong> {contact.jobTitle && <span style={{ color: "#64748b", fontSize: "0.85rem" }}>({contact.jobTitle})</span>}
-                        <div style={{ fontSize: "0.85rem", color: "#475569" }}>✉ {contact.email} {contact.phone && `• 📞 ${contact.phone}`}</div>
+                        <strong>{contact.name}</strong> {contact.jobTitle && <span style={{ color: "var(--text-muted, #64748b)", fontSize: "0.85rem" }}>({contact.jobTitle})</span>}
+                        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary, #475569)", display: "flex", alignItems: "center", gap: "0.8rem", marginTop: "0.25rem" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}><FiMail size={12} /> {contact.email}</span>
+                          {contact.phone && <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}><FiPhone size={12} /> {contact.phone}</span>}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p style={{ color: "#64748b", fontStyle: "italic", margin: 0 }}>No recruitment contacts listed.</p>
+                <p style={{ color: "var(--text-muted, #64748b)", fontStyle: "italic", margin: 0 }}>No recruitment contacts listed.</p>
               )}
             </div>
 
-            <div className="modal-actions" style={{ marginTop: "1.5rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
+            <div className="modal-actions" style={{ marginTop: "1.5rem", borderTop: "1px solid var(--border-card, #e2e8f0)", paddingTop: "1rem" }}>
               <button className="btn-modal-cancel" onClick={() => setSelectedCompany(null)}>
                 Close Profile
               </button>
@@ -505,63 +666,67 @@ const AdminUsersPage: React.FC = () => {
                 <span className="type-badge" style={{ background: "#dcfce7", color: "#15803d", fontWeight: 700 }}>
                   REGISTERED CANDIDATE PROFILE
                 </span>
-                <h2 style={{ fontSize: "1.8rem", margin: "0.4rem 0 0.2rem", color: "#0f172a" }}>
+                <h2 style={{ fontSize: "1.8rem", margin: "0.4rem 0 0.2rem", color: "var(--text-primary, #0f172a)" }}>
                   {selectedCandidate.fullName}
                 </h2>
-                <p style={{ color: "#64748b", margin: 0 }}>{selectedCandidate.headline || "Professional Candidate"}</p>
+                <p style={{ color: "var(--text-muted, #64748b)", margin: 0 }}>{selectedCandidate.headline || "Professional Candidate"}</p>
               </div>
               <button
                 onClick={() => setSelectedCandidate(null)}
-                style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "#64748b" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted, #64748b)", padding: "4px" }}
               >
-                ✕
+                <FiX size={22} />
               </button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "#f8fafc", padding: "1.25rem", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "1.25rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "var(--bg-surface, #f8fafc)", padding: "1.25rem", borderRadius: "8px", border: "1px solid var(--border-card, #e2e8f0)", marginBottom: "1.25rem" }}>
               <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Email Address</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>{selectedCandidate.email || "Not specified"}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Mobile Number</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>{selectedCandidate.phone || "Not provided"}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Location</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                  📍 {selectedCandidate.currentLocation || selectedCandidate.location || "Not set"}
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Email Address</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiMail size={13} color="#70c144" /> {selectedCandidate.email || "Not specified"}
                 </div>
               </div>
               <div>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Total Experience</span>
-                <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                  {Math.round((selectedCandidate.totalExperienceMonths || 36) / 12)} Years ({selectedCandidate.totalExperienceMonths || 36} months)
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Mobile Number</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiPhone size={13} color="#70c144" /> {selectedCandidate.phone || "Not provided"}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Location</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiMapPin size={13} color="#70c144" /> {selectedCandidate.currentLocation || selectedCandidate.location || "Not set"}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Total Experience</span>
+                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <FiCalendar size={13} color="#70c144" /> {Math.round((selectedCandidate.totalExperienceMonths || 36) / 12)} Years ({selectedCandidate.totalExperienceMonths || 36} months)
                 </div>
               </div>
             </div>
 
             <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ margin: "0 0 0.5rem", color: "#1e293b" }}>Professional Summary & Bio</h4>
-              <p style={{ color: "#475569", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>
+              <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>Professional Summary & Bio</h4>
+              <p style={{ color: "var(--text-secondary, #475569)", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>
                 {selectedCandidate.summary || selectedCandidate.bio || "No summary provided by this candidate."}
               </p>
             </div>
 
             <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ margin: "0 0 0.5rem", color: "#1e293b" }}>Technical Skills</h4>
+              <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>Technical Skills</h4>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                 {extractSkills(selectedCandidate).map(s => (
                   <span
                     key={s}
                     style={{
-                      background: "#06080a",
-                      color: "#66cc33",
-                      border: "1px solid #1a2026",
+                      background: "var(--bg-mint, #f0fdf4)",
+                      color: "#15803d",
+                      border: "1px solid var(--border-mint, #bbf7d0)",
                       padding: "0.3rem 0.65rem",
                       borderRadius: "4px",
                       fontSize: "0.85rem",
-                      fontWeight: 600
+                      fontWeight: 600,
                     }}
                   >
                     {s}
@@ -572,23 +737,23 @@ const AdminUsersPage: React.FC = () => {
 
             {(selectedCandidate.linkedinUrl || selectedCandidate.portfolioUrl) && (
               <div style={{ marginBottom: "1.25rem" }}>
-                <h4 style={{ margin: "0 0 0.5rem", color: "#1e293b" }}>Professional Links</h4>
+                <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>Professional Links</h4>
                 <div style={{ display: "flex", gap: "1rem" }}>
                   {selectedCandidate.linkedinUrl && (
-                    <a href={selectedCandidate.linkedinUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600 }}>
-                      LinkedIn Profile ↗
+                    <a href={selectedCandidate.linkedinUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                      LinkedIn Profile <FiExternalLink size={13} />
                     </a>
                   )}
                   {selectedCandidate.portfolioUrl && (
-                    <a href={selectedCandidate.portfolioUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600 }}>
-                      GitHub / Portfolio ↗
+                    <a href={selectedCandidate.portfolioUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                      GitHub / Portfolio <FiExternalLink size={13} />
                     </a>
                   )}
                 </div>
               </div>
             )}
 
-            <div className="modal-actions" style={{ marginTop: "1.5rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
+            <div className="modal-actions" style={{ marginTop: "1.5rem", borderTop: "1px solid var(--border-card, #e2e8f0)", paddingTop: "1rem" }}>
               <button className="btn-modal-cancel" onClick={() => setSelectedCandidate(null)}>
                 Close Profile
               </button>

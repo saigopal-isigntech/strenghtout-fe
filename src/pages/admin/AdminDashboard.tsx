@@ -1,9 +1,21 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { adminApi } from "../../api/admin";
 import { connectionsApi } from "../../api/connections";
 import type { PlatformOverview, ConnectionRequest } from "../../types";
+import {
+  FiShield,
+  FiAward,
+  FiCheckCircle,
+  FiClock,
+  FiUsers,
+  FiLayers,
+  FiArrowRight,
+  FiInbox,
+  FiSearch,
+  FiBriefcase,
+} from "react-icons/fi";
 import "./AdminDashboard.css";
 
 const AdminDashboard: React.FC = () => {
@@ -17,18 +29,16 @@ const AdminDashboard: React.FC = () => {
   const isSuperAdmin = user?.role === "ROLE_SUPER_ADMIN" || user?.accountType === "SUPER_ADMIN";
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      const [ovRes, reqRes] = await Promise.allSettled([
+      const [ovRes, queueRes] = await Promise.all([
         adminApi.getOverview(),
-        connectionsApi.getAdminQueue({ page: 0, size: 5, status: "PENDING_REVIEW" }),
+        connectionsApi.getAdminQueue({ page: 0, size: 5, status: "SUBMITTED" }),
       ]);
-
-      if (ovRes.status === "fulfilled") {
-        setOverview(ovRes.value.data.data);
-      }
-      if (reqRes.status === "fulfilled") {
-        setPendingRequests(reqRes.value.data.data.content || []);
-      }
+      setOverview(ovRes.data.data);
+      setPendingRequests(queueRes.data.data.content || []);
+    } catch {
+      /* silent */
     } finally {
       setLoading(false);
     }
@@ -43,7 +53,7 @@ const AdminDashboard: React.FC = () => {
     try {
       await connectionsApi.updateStatus(id, newStatus);
       setToast(`Request status updated to ${newStatus}`);
-      setTimeout(() => setToast(""), 3000);
+      setTimeout(() => setToast(""), 3500);
       loadData();
     } catch (err: any) {
       setToast(err?.response?.data?.message || "Failed to update status");
@@ -61,7 +71,9 @@ const AdminDashboard: React.FC = () => {
       <div className={`admin-hero ${isSuperAdmin ? "super-hero" : ""}`}>
         <div className="hero-left">
           <div className="admin-role-tag">
-            <span className="sparkle">{isSuperAdmin ? "👑" : "🛡️"}</span>
+            <span className="sparkle" style={{ display: "inline-flex", alignItems: "center", marginRight: "0.35rem" }}>
+              {isSuperAdmin ? <FiAward size={15} color="#f59e0b" /> : <FiShield size={14} color="#38bdf8" />}
+            </span>
             {isSuperAdmin ? "SUPER ADMIN PORTAL" : "ADMIN CONTROL CENTER"}
           </div>
           <h1 className="admin-welcome">
@@ -72,8 +84,6 @@ const AdminDashboard: React.FC = () => {
           </p>
           <div className="admin-meta-chips">
             <span className="chip">Signed in: <strong>{user?.email}</strong></span>
-            <span className="chip live">● System Live</span>
-            <span className="chip db">DB: PostgreSQL 18.6</span>
           </div>
         </div>
 
@@ -95,80 +105,135 @@ const AdminDashboard: React.FC = () => {
       {/* KPI Stats Cards */}
       <div className="kpi-grid">
         <div className="kpi-card highlight-amber">
-          <div className="kpi-icon">⏳</div>
-          <div className="kpi-info">
-            <div className="kpi-value">{loading ? "..." : overview?.pendingReviewRequests ?? 0}</div>
-            <div className="kpi-label">Pending Review Queue</div>
-            <Link to="/admin/requests" className="kpi-link">View Queue →</Link>
+          <div className="kpi-header-row">
+            <div className="kpi-icon-pill amber">
+              <FiClock size={20} />
+            </div>
+            <Link to="/admin/requests" className="kpi-action-link">
+              View Queue <FiArrowRight size={12} />
+            </Link>
           </div>
+          <div className="kpi-value">{loading ? "..." : overview?.pendingReviewRequests ?? 0}</div>
+          <div className="kpi-label">Pending Review Queue</div>
+          <div className="kpi-sub">Awaiting admin review</div>
         </div>
 
-        <div className="kpi-card highlight-purple">
-          <div className="kpi-icon">🤝</div>
-          <div className="kpi-info">
-            <div className="kpi-value">{loading ? "..." : overview?.totalConnectionRequests ?? 0}</div>
-            <div className="kpi-label">Total Connection Requests</div>
-            <span className="kpi-sub">{overview?.approvedRequests ?? 0} Approved</span>
+        <div className="kpi-card highlight-green">
+          <div className="kpi-header-row">
+            <div className="kpi-icon-pill green">
+              <FiLayers size={20} />
+            </div>
+            <span className="kpi-tag green">{overview?.approvedRequests ?? 0} Approved</span>
           </div>
+          <div className="kpi-value">{loading ? "..." : overview?.totalConnectionRequests ?? 0}</div>
+          <div className="kpi-label">Total Connection Requests</div>
+          <div className="kpi-sub">Inbound introductions & requests</div>
         </div>
 
         <div className="kpi-card highlight-blue">
-          <div className="kpi-icon">👥</div>
-          <div className="kpi-info">
-            <div className="kpi-value">{loading ? "..." : overview?.totalUsers ?? 1}</div>
-            <div className="kpi-label">Total Platform Users</div>
-            <Link to="/admin/users" className="kpi-link">Manage Users →</Link>
+          <div className="kpi-header-row">
+            <div className="kpi-icon-pill blue">
+              <FiUsers size={20} />
+            </div>
+            <Link to="/admin/users" className="kpi-action-link">
+              Manage <FiArrowRight size={12} />
+            </Link>
           </div>
+          <div className="kpi-value">{loading ? "..." : overview?.totalUsers ?? 1}</div>
+          <div className="kpi-label">Total Platform Users</div>
+          <div className="kpi-sub">Registered accounts directory</div>
         </div>
 
-        <div className="kpi-card highlight-emerald">
-          <div className="kpi-icon">🏢</div>
-          <div className="kpi-info">
-            <div className="kpi-value">{loading ? "..." : (overview?.candidateCount ?? 0) + " / " + (overview?.companyCount ?? 0)}</div>
-            <div className="kpi-label">Candidates / Companies</div>
-            <span className="kpi-sub">Active platform directory</span>
+        <div className="kpi-card highlight-teal">
+          <div className="kpi-header-row">
+            <div className="kpi-icon-pill teal">
+              <FiBriefcase size={20} />
+            </div>
+            <span className="kpi-tag teal">Live Registry</span>
           </div>
+          <div className="kpi-value">
+            {loading ? "..." : `${overview?.candidateCount ?? 0} / ${overview?.companyCount ?? 0}`}
+          </div>
+          <div className="kpi-label">Candidates / Companies</div>
+          <div className="kpi-sub">Active talent & employer profiles</div>
         </div>
       </div>
 
       {/* Admin Quick Action Hub */}
       <div className="admin-actions-section">
-        <h2 className="section-title">Administrative Modules</h2>
+        <div className="section-header-row">
+          <div>
+            <h2 className="section-title">Administrative Modules</h2>
+            <p className="section-sub">Core operational management portals and governance tools</p>
+          </div>
+        </div>
         <div className="action-cards-grid">
           <Link to="/admin/requests" className="action-card">
-            <div className="action-icon">📋</div>
-            <div className="action-text">
-              <h3>Connection Request Queue</h3>
-              <p>Review inbound company introductions, inspect messages, and approve or reject requests.</p>
+            <div className="action-card-top">
+              <div className="action-icon-wrap amber">
+                <FiInbox size={22} />
+              </div>
+              <span className="action-badge">Queue</span>
             </div>
-            <span className="action-arrow">→</span>
+            <div className="action-card-body">
+              <h3 className="action-card-title">Connection Requests</h3>
+              <p className="action-card-desc">Review inbound company introductions, inspect candidate requests, and authorize connection status.</p>
+            </div>
+            <div className="action-card-footer">
+              <span>Open Queue</span>
+              <FiArrowRight size={15} className="action-arrow" />
+            </div>
           </Link>
 
           <Link to="/admin/users" className="action-card">
-            <div className="action-icon">👥</div>
-            <div className="action-text">
-              <h3>Platform User Directory</h3>
-              <p>Browse candidates, company accounts, and admin users. Suspend or activate accounts.</p>
+            <div className="action-card-top">
+              <div className="action-icon-wrap blue">
+                <FiUsers size={22} />
+              </div>
+              <span className="action-badge">Directory</span>
             </div>
-            <span className="action-arrow">→</span>
+            <div className="action-card-body">
+              <h3 className="action-card-title">User Governance</h3>
+              <p className="action-card-desc">Inspect candidates, registered companies, and system administrators. Manage permissions and status.</p>
+            </div>
+            <div className="action-card-footer">
+              <span>Manage Users</span>
+              <FiArrowRight size={15} className="action-arrow" />
+            </div>
           </Link>
 
           <Link to="/admin/audit" className="action-card">
-            <div className="action-icon">🛡️</div>
-            <div className="action-text">
-              <h3>Audit & Security Logs</h3>
-              <p>Immutable event log tracking logins, status changes, and administrative actions.</p>
+            <div className="action-card-top">
+              <div className="action-icon-wrap purple">
+                <FiShield size={22} />
+              </div>
+              <span className="action-badge">Security</span>
             </div>
-            <span className="action-arrow">→</span>
+            <div className="action-card-body">
+              <h3 className="action-card-title">Audit & Security Stream</h3>
+              <p className="action-card-desc">Cryptographically ordered immutable event logs tracking authentication, modifications, and actions.</p>
+            </div>
+            <div className="action-card-footer">
+              <span>View Logs</span>
+              <FiArrowRight size={15} className="action-arrow" />
+            </div>
           </Link>
 
           <Link to="/discover" className="action-card">
-            <div className="action-icon">🔍</div>
-            <div className="action-text">
-              <h3>Candidate Talent Discovery</h3>
-              <p>Search and inspect public candidate profiles, skill badges, and verified evidence.</p>
+            <div className="action-card-top">
+              <div className="action-icon-wrap green">
+                <FiSearch size={22} />
+              </div>
+              <span className="action-badge">Discovery</span>
             </div>
-            <span className="action-arrow">→</span>
+            <div className="action-card-body">
+              <h3 className="action-card-title">Talent Discovery</h3>
+              <p className="action-card-desc">Search and inspect public candidate profiles, skill badges, verified achievements, and video profiles.</p>
+            </div>
+            <div className="action-card-footer">
+              <span>Explore Talent</span>
+              <FiArrowRight size={15} className="action-arrow" />
+            </div>
           </Link>
         </div>
       </div>
@@ -180,14 +245,16 @@ const AdminDashboard: React.FC = () => {
             <h2 className="section-title">Urgent Review Queue</h2>
             <p className="section-sub">Company connection requests awaiting administrative authorization</p>
           </div>
-          <Link to="/admin/requests" className="btn-outline">Open Full Queue ({overview?.pendingReviewRequests ?? 0})</Link>
+          <Link to="/admin/requests" className="btn-outline">
+            Open Full Queue ({overview?.pendingReviewRequests ?? 0})
+          </Link>
         </div>
 
         {loading ? (
           <div className="table-loading"><div className="spinner" /> Loading requests...</div>
         ) : pendingRequests.length === 0 ? (
           <div className="empty-state-box">
-            <span className="empty-icon">✨</span>
+            <FiCheckCircle size={38} className="empty-icon" style={{ color: "#70c144", marginBottom: "0.5rem" }} />
             <h3>Queue is Clear!</h3>
             <p>No connection requests currently require pending review.</p>
           </div>
@@ -238,4 +305,3 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
-

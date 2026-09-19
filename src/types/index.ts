@@ -27,6 +27,7 @@ export interface AuthUser {
   accountType?: string;
   role: UserRole;
   roles?: UserRole[];
+  avatarUrl?: string;
 }
 
 export interface AuthResponseData {
@@ -246,4 +247,3 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
-

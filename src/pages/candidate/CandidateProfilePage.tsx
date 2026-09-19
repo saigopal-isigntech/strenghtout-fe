@@ -20,6 +20,7 @@ import {
   FiMail,
   FiCheckCircle,
   FiDownload,
+  FiEye,
   FiTrash2,
   FiGithub,
   FiPlus,
@@ -108,12 +109,11 @@ const DEFAULT_PROJECTS: CandidateProject[] = [
 ];
 
 const CandidateProfilePage: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateUserAvatar } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const hasFetched = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -209,8 +209,6 @@ const CandidateProfilePage: React.FC = () => {
   const [personalErrors, setPersonalErrors] = useState<Record<string, string>>({});
 
   const fetchProfile = useCallback(async () => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
     try {
       setLoading(true);
       const res = await candidatesApi.getMyProfile();
@@ -295,6 +293,10 @@ const CandidateProfilePage: React.FC = () => {
         videoUrl: p.videoUrl || '',
       });
 
+      if (p.avatarUrl) {
+        updateUserAvatar(p.avatarUrl);
+      }
+
       setSkillsList(pSkills);
     } catch {
       setSkillsList(DEFAULT_SKILLS);
@@ -307,9 +309,7 @@ const CandidateProfilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.userId]);
-
-  const lastUserIdRef = useRef<string | null>(null);
+  }, [user?.userId, updateUserAvatar]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -320,10 +320,7 @@ const CandidateProfilePage: React.FC = () => {
       navigate('/dashboard');
       return;
     }
-    if (lastUserIdRef.current !== user.userId) {
-      hasFetched.current = false;
-      lastUserIdRef.current = user.userId;
-    }
+
     fetchProfile();
   }, [isAuthenticated, user?.userId, user?.role, fetchProfile, navigate]);
 
@@ -343,6 +340,8 @@ const CandidateProfilePage: React.FC = () => {
       reader.onload = async () => {
         const base64 = reader.result as string;
         setDisplayData(prev => ({ ...prev, avatarUrl: base64 }));
+        updateUserAvatar(base64);
+        window.dispatchEvent(new CustomEvent('profilePhotoUpdated', { detail: { avatarUrl: base64 } }));
         try {
           await candidatesApi.updateMyProfile({ avatarUrl: base64 });
           setAlertMsg({ type: 'success', text: 'Profile photo updated and saved successfully!' });
@@ -415,6 +414,31 @@ const CandidateProfilePage: React.FC = () => {
       setAlertMsg({ type: 'info', text: 'Resume removed from your profile.' });
     } catch {
       setAlertMsg({ type: 'error', text: 'Failed to remove resume from server.' });
+    }
+  };
+
+  const handleViewResume = () => {
+    if (!displayData.resumeUrl) return;
+
+    if (displayData.resumeUrl.startsWith('data:')) {
+      try {
+        const arr = displayData.resumeUrl.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      } catch {
+        window.open(displayData.resumeUrl, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      window.open(displayData.resumeUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -1121,6 +1145,48 @@ const CandidateProfilePage: React.FC = () => {
           </div>
         </div>
 
+        {/* Card: Resume */}
+        {displayData.resumeName && (
+          <div className="pv-dark-card pv-card-span2">
+            <div className="pv-card-header-row">
+              <h2 className="pv-card-title">
+                <FiFileText size={18} /> Resume
+              </h2>
+              <button className="section-action-link" onClick={goToEdit}>
+                <FiEdit3 size={13} /> Update Resume
+              </button>
+            </div>
+            <div className="resume-uploaded-box" style={{ margin: 0 }}>
+              <div className="resume-file-info">
+                <span className="resume-file-name">{displayData.resumeName}</span>
+                <span className="resume-upload-date">{displayData.resumeDate}</span>
+              </div>
+              <div className="resume-file-actions">
+                {displayData.resumeUrl && (
+                  <button
+                    type="button"
+                    className="btn-resume-icon view"
+                    title="View Resume"
+                    onClick={handleViewResume}
+                  >
+                    <FiEye size={16} />
+                  </button>
+                )}
+                {displayData.resumeUrl && (
+                  <a
+                    href={displayData.resumeUrl}
+                    download={displayData.resumeName || 'Resume.pdf'}
+                    className="btn-resume-icon"
+                    title="Download Resume"
+                  >
+                    <FiDownload size={16} />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Card: Personal Details */}
         <div className="pv-dark-card pv-card-span2">
           <div className="pv-card-header-row">
@@ -1302,9 +1368,19 @@ const CandidateProfilePage: React.FC = () => {
                 </div>
                 <div className="resume-file-actions">
                   {displayData.resumeUrl && (
+                    <button
+                      type="button"
+                      className="btn-resume-icon view"
+                      title="View Resume"
+                      onClick={handleViewResume}
+                    >
+                      <FiEye size={16} />
+                    </button>
+                  )}
+                  {displayData.resumeUrl && (
                     <a
                       href={displayData.resumeUrl}
-                      download={displayData.resumeName}
+                      download={displayData.resumeName || 'Resume.pdf'}
                       className="btn-resume-icon"
                       title="Download Resume"
                     >
@@ -1312,6 +1388,7 @@ const CandidateProfilePage: React.FC = () => {
                     </a>
                   )}
                   <button
+                    type="button"
                     className="btn-resume-icon delete"
                     title="Delete Resume"
                     onClick={handleDeleteResume}
@@ -1686,7 +1763,7 @@ const CandidateProfilePage: React.FC = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="modal-grid-2col">
                 <div className="form-group">
                   <label>First Name <span className="required-star">*</span></label>
                   <input
@@ -1769,7 +1846,7 @@ const CandidateProfilePage: React.FC = () => {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="modal-grid-2col">
                 <div className="form-group">
                   <label>Experience Status <span className="required-star">*</span></label>
                   <select
@@ -2209,7 +2286,7 @@ const CandidateProfilePage: React.FC = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="modal-grid-2col">
                 <div className="form-group">
                   <label>Gender <span className="required-star">*</span></label>
                   <select

@@ -1,7 +1,15 @@
-﻿import React from "react";
+import React from "react";
 import { useAuth } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 import AdminDashboard from "../admin/AdminDashboard";
+import {
+  FiUser,
+  FiAward,
+  FiBell,
+  FiSearch,
+  FiSend,
+  FiArrowRight,
+} from "react-icons/fi";
 import "./Dashboard.css";
 
 const DashboardPage: React.FC = () => {
@@ -13,15 +21,45 @@ const DashboardPage: React.FC = () => {
   }
 
   const candidateCards = [
-    { icon: "👤", label: "My Profile", desc: "Manage your public candidate profile and strength tags", link: "/profile" },
-    { icon: "🏆", label: "My Evidence", desc: "Showcase your work, projects & verifiable achievements", link: "/evidence" },
-    { icon: "🔔", label: "Notifications", desc: "Company connection requests and status updates", link: "/notifications" },
+    {
+      icon: <FiUser size={24} />,
+      label: "My Profile",
+      desc: "Manage your public candidate profile, video introduction, and strength tags",
+      link: "/profile",
+    },
+    {
+      icon: <FiAward size={24} />,
+      label: "My Key Strengths",
+      desc: "Showcase your work, projects & verifiable technical achievements",
+      link: "/profile",
+    },
+    {
+      icon: <FiBell size={24} />,
+      label: "Notifications",
+      desc: "Company connection requests, interviews, and status updates",
+      link: "/notifications",
+    },
   ];
 
   const companyCards = [
-    { icon: "🔍", label: "Discover Talent", desc: "Search and explore candidate strength profiles", link: "/discover" },
-    { icon: "🤝", label: "My Requests", desc: "Track your connection request pipeline", link: "/my-requests" },
-    { icon: "🔔", label: "Notifications", desc: "Status updates and system alerts", link: "/notifications" },
+    {
+      icon: <FiSearch size={24} />,
+      label: "Discover Talent",
+      desc: "Search and explore candidate strength profiles and intro videos",
+      link: "/discover",
+    },
+    {
+      icon: <FiSend size={24} />,
+      label: "My Requests",
+      desc: "Track your candidate connection request pipeline and statuses",
+      link: "/my-requests",
+    },
+    {
+      icon: <FiBell size={24} />,
+      label: "Notifications",
+      desc: "Status updates, candidate acceptances, and system alerts",
+      link: "/notifications",
+    },
   ];
 
   const cards = user?.role === "ROLE_COMPANY" ? companyCards : candidateCards;
@@ -41,8 +79,8 @@ const DashboardPage: React.FC = () => {
           <h1 className="hero-name">{user?.fullName || "User"}</h1>
           <p className="hero-sub">
             {user?.role === "ROLE_COMPANY"
-              ? "Discover verified talent backed by authentic evidence."
-              : "Build your credible strength profile and get discovered."}
+              ? "Discover verified talent backed by authentic evidence and video introductions."
+              : "Build your credible strength profile, upload your intro video, and get discovered."}
           </p>
         </div>
         <div className="hero-badge">
@@ -51,14 +89,16 @@ const DashboardPage: React.FC = () => {
       </div>
 
       <div className="dashboard-grid">
-        {cards.map(card => (
-          <Link key={card.link} to={card.link} className="dash-card">
+        {cards.map((card) => (
+          <Link key={card.link + card.label} to={card.link} className="dash-card">
             <div className="dash-card-icon">{card.icon}</div>
             <div className="dash-card-content">
               <h3>{card.label}</h3>
               <p>{card.desc}</p>
             </div>
-            <span className="dash-card-arrow">→</span>
+            <span className="dash-card-arrow">
+              <FiArrowRight size={18} />
+            </span>
           </Link>
         ))}
       </div>

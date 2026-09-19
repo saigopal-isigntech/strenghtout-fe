@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { authApi } from "../api/auth";
 import type { AuthUser, UserRole } from "../types";
 
@@ -11,6 +11,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
   isAdmin: () => boolean;
+  updateUserAvatar: (avatarUrl: string) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -32,6 +33,7 @@ function mapAuthDataToUser(data: any): AuthUser {
     accountType: data.accountType || "",
     role: primaryRole,
     roles: roles.length > 0 ? roles : [primaryRole],
+    avatarUrl: data.avatarUrl || data.profilePictureUrl || "",
   };
 }
 
@@ -50,6 +52,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     setIsLoading(false);
+  }, []);
+
+  const updateUserAvatar = useCallback((avatarUrl: string) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, avatarUrl };
+      localStorage.setItem("authUser", JSON.stringify(updated));
+      return updated;
+    });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -89,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user.roles ? user.roles.includes(role) : user.role === role;
   }, [user]);
 
-    const isAdmin = useCallback((): boolean => {
+  const isAdmin = useCallback((): boolean => {
     if (!user) return false;
     return Boolean(
       user.role === "ROLE_SUPER_ADMIN" ||
@@ -101,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, hasRole, isAdmin }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, hasRole, isAdmin, updateUserAvatar }}>
       {children}
     </AuthContext.Provider>
   );
@@ -112,4 +123,3 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 };
-
