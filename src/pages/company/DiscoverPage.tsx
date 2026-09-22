@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { candidatesApi } from "../../api/candidates";
 import { connectionsApi } from "../../api/connections";
-import type { CandidateProfile, Evidence } from "../../types";
-import { FiMapPin, FiBriefcase, FiCalendar, FiExternalLink, FiX, FiCheckCircle, FiUserPlus, FiVideo, FiAlertCircle } from "react-icons/fi";
+import type { CandidateProfile, RoleCatalogItem } from "../../types";
+import { FiMapPin, FiUserPlus } from "react-icons/fi";
 import { validateRequired } from "../../utils/validators";
 import "./Discover.css";
 
@@ -13,8 +13,12 @@ const DiscoverPage: React.FC = () => {
   const qParam = searchParams.get("q") || "";
 
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
+  const [rolesCatalog, setRolesCatalog] = useState<RoleCatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(qParam);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [selectedExpRange, setSelectedExpRange] = useState<string>("");
+  const [selectedWorkType, setSelectedWorkType] = useState<string>("");
   const [total, setTotal] = useState(0);
   const [_page, setPage] = useState(0); void _page;
 
@@ -27,13 +31,18 @@ const DiscoverPage: React.FC = () => {
   const [connectTouched, setConnectTouched] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // Evaluation / Profile Detail modal state
-  const [evalModal, setEvalModal] = useState<CandidateProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [fullProfile, setFullProfile] = useState<CandidateProfile | null>(null);
-  const [evidences, setEvidences] = useState<Evidence[]>([]);
+  // Direct candidate profile routing handles full candidate profile inspection
 
   const [toastMsg, setToastMsg] = useState("");
+
+  // Load roles catalog on mount
+  useEffect(() => {
+    candidatesApi.getRolesCatalog().then(res => {
+      if (res.data?.data) {
+        setRolesCatalog(res.data.data);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Sync state if URL query parameter changes
   useEffect(() => {
@@ -43,8 +52,20 @@ const DiscoverPage: React.FC = () => {
   const search = useCallback(async (p = 0, searchTerms = query) => {
     setLoading(true);
     try {
-      const params: Record<string, string | number> = { page: p, size: 50 };
+      const params: Record<string, any> = { page: p, size: 50 };
       if (searchTerms.trim()) params.q = searchTerms.trim();
+      if (selectedRoleId) params.roleIds = [selectedRoleId];
+      if (selectedWorkType) params.workTypes = [selectedWorkType];
+
+      if (selectedExpRange === "entry") {
+        params.maxExperienceMonths = 24;
+      } else if (selectedExpRange === "mid") {
+        params.minExperienceMonths = 24;
+        params.maxExperienceMonths = 60;
+      } else if (selectedExpRange === "senior") {
+        params.minExperienceMonths = 60;
+      }
+
       const res = await candidatesApi.search(params);
       const list = res.data?.data?.content || [];
       setCandidates(list);
@@ -56,7 +77,7 @@ const DiscoverPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [query, selectedRoleId, selectedExpRange, selectedWorkType]);
 
   // Live letter-by-letter search trigger with 150ms debounce
   useEffect(() => {
@@ -64,7 +85,7 @@ const DiscoverPage: React.FC = () => {
       search(0, query);
     }, 150);
     return () => clearTimeout(timer);
-  }, [query, search]);
+  }, [query, selectedRoleId, selectedExpRange, selectedWorkType, search]);
 
   const handleInputChange = (val: string) => {
     setQuery(val);
@@ -75,31 +96,9 @@ const DiscoverPage: React.FC = () => {
     }
   };
 
-  const handleOpenProfile = async (c: CandidateProfile) => {
-    setEvalModal(c);
-    setFullProfile(null);
-    setEvidences([]);
-    setLoadingProfile(true);
-
-    try {
-      if (c.id) {
-        const [profRes, evRes] = await Promise.allSettled([
-          candidatesApi.getProfile(c.id),
-          candidatesApi.getEvidences(c.id),
-        ]);
-        if (profRes.status === "fulfilled" && profRes.value?.data) {
-          const fetched = (profRes.value.data as any).data || profRes.value.data;
-          setFullProfile(fetched);
-        }
-        if (evRes.status === "fulfilled" && evRes.value?.data) {
-          const evList = (evRes.value.data as any).data || evRes.value.data;
-          if (Array.isArray(evList)) setEvidences(evList);
-        }
-      }
-    } catch {
-      // fallback to basic candidate object
-    } finally {
-      setLoadingProfile(false);
+  const handleOpenProfile = (c: CandidateProfile) => {
+    if (c.id) {
+      navigate('/candidates/' + c.id);
     }
   };
 
@@ -149,7 +148,6 @@ const DiscoverPage: React.FC = () => {
     return list.map((s: any) => typeof s === "string" ? s : (s.skillName || s.canonicalName || s.name || "")).filter(Boolean);
   };
 
-  const activeCandidate = fullProfile || evalModal;
 
   // Instant letter-by-letter client filter fallback
   const filteredCandidates = useMemo(() => {
@@ -177,7 +175,7 @@ const DiscoverPage: React.FC = () => {
         <p>Explore enrolled candidates, review verified skills, and evaluate top talent for recruitment</p>
       </div>
 
-      <div className="discover-filters">
+      <div className="discover-filters" style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
         <input
           type="search"
           placeholder="Search by candidate name, headline, skills, or location..."
@@ -185,9 +183,50 @@ const DiscoverPage: React.FC = () => {
           onChange={e => handleInputChange(e.target.value)}
           onKeyDown={e => e.key === "Enter" && search(0, query)}
           className="filter-input"
+          style={{ flex: "1 1 280px" }}
         />
+
+        {/* Target Role Filter */}
+        <select
+          value={selectedRoleId}
+          onChange={e => setSelectedRoleId(e.target.value)}
+          className="filter-select"
+          style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
+        >
+          <option value="">All Target Roles</option>
+          {rolesCatalog.map(r => (
+            <option key={r.id} value={r.id}>{r.roleName}</option>
+          ))}
+        </select>
+
+        {/* Experience Level Filter */}
+        <select
+          value={selectedExpRange}
+          onChange={e => setSelectedExpRange(e.target.value)}
+          className="filter-select"
+          style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
+        >
+          <option value="">All Experience Levels</option>
+          <option value="entry">Entry / Fresher (&lt; 2 yrs)</option>
+          <option value="mid">Mid-Level (2 – 5 yrs)</option>
+          <option value="senior">Senior (5+ yrs)</option>
+        </select>
+
+        {/* Work Type Filter */}
+        <select
+          value={selectedWorkType}
+          onChange={e => setSelectedWorkType(e.target.value)}
+          className="filter-select"
+          style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
+        >
+          <option value="">All Work Types</option>
+          <option value="REMOTE">Remote</option>
+          <option value="HYBRID">Hybrid</option>
+          <option value="ONSITE">On-Site</option>
+        </select>
+
         <button className="btn-search" onClick={() => search(0, query)} disabled={loading}>
-          {loading ? <span className="spinner" /> : "Search Candidates"}
+          {loading ? <span className="spinner" /> : "Search"}
         </button>
       </div>
 
@@ -217,9 +256,13 @@ const DiscoverPage: React.FC = () => {
                   title="Click to view full candidate profile"
                 >
                   <div className="card-top">
-                    <div className="card-avatar-placeholder">
-                      {c.fullName?.[0]?.toUpperCase() || "C"}
-                    </div>
+                    {c.avatarUrl ? (
+                      <img src={c.avatarUrl} alt={c.fullName} className="card-avatar" />
+                    ) : (
+                      <div className="card-avatar-placeholder">
+                        {c.fullName?.[0]?.toUpperCase() || "C"}
+                      </div>
+                    )}
                     <div className="card-meta">
                       <h3 className="card-name">{c.fullName}</h3>
                       <p className="card-headline">{c.headline || "Professional Candidate"}</p>
@@ -264,172 +307,6 @@ const DiscoverPage: React.FC = () => {
           )}
       </div>
 
-      {/* Profile Detail / Evaluation Modal */}
-      {evalModal && activeCandidate && (
-        <div className="modal-overlay" onClick={() => setEvalModal(null)}>
-          <div className="modal-box candidate-eval-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-row">
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div className="modal-avatar-lg">
-                  {activeCandidate.fullName?.[0]?.toUpperCase() || "C"}
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: "1.35rem", color: "#0f172a" }}>{activeCandidate.fullName}</h3>
-                  <p style={{ margin: "2px 0 0", color: "#64748b", fontSize: "0.9rem" }}>{activeCandidate.headline || "Professional Candidate"}</p>
-                </div>
-              </div>
-              <button className="btn-modal-close" onClick={() => setEvalModal(null)}>
-                <FiX size={20} />
-              </button>
-            </div>
-
-            {loadingProfile && (
-              <div style={{ padding: "1rem 0", color: "#64748b", fontSize: "0.9rem" }}>
-                Loading full candidate details...
-              </div>
-            )}
-
-            {/* Core Candidate Overview Info */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "#f8fafc", padding: "1rem", borderRadius: "8px", margin: "1rem 0" }}>
-              <div>
-                <span style={{ fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Current Location</span>
-                <strong style={{ fontSize: "0.9rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                  <FiMapPin size={14} color="#70c144" /> {activeCandidate.currentLocation || activeCandidate.location || "Location not specified"}
-                </strong>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Experience Level</span>
-                <strong style={{ fontSize: "0.9rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                  <FiBriefcase size={14} color="#70c144" /> {activeCandidate.experienceStatus || "Entry / Fresher"}
-                </strong>
-              </div>
-              {(activeCandidate.availability || activeCandidate.noticePeriod) && (
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <span style={{ fontSize: "0.78rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>Availability / Notice Period</span>
-                  <strong style={{ fontSize: "0.9rem", color: "#1e293b", display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                    <FiCalendar size={14} color="#70c144" /> {activeCandidate.availability || activeCandidate.noticePeriod}
-                  </strong>
-                </div>
-              )}
-            </div>
-
-            {/* Candidate Video Introduction if uploaded */}
-            {activeCandidate.videoUrl && (
-              <div style={{ marginBottom: "1.25rem" }}>
-                <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <FiVideo size={16} color="#70c144" /> Introduction Video
-                </h4>
-                <div style={{ width: "100%", borderRadius: "8px", overflow: "hidden", background: "#0f172a", maxHeight: "240px" }}>
-                  <video controls src={activeCandidate.videoUrl} style={{ width: "100%", maxHeight: "240px", display: "block" }}>
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-              </div>
-            )}
-
-            {/* Summary */}
-            <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.4rem" }}>Professional Overview</h4>
-              <p style={{ color: "#475569", fontSize: "0.9rem", lineHeight: 1.6, margin: 0, background: "#fff", padding: "0.75rem", borderRadius: "6px", border: "1px solid #f1f5f9" }}>
-                {activeCandidate.summary || activeCandidate.bio || "Candidate has registered their profile on StrengthOut and validated core technical competencies."}
-              </p>
-            </div>
-
-            {/* Skills */}
-            <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>Verified Competencies & Skills</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
-                {extractSkills(activeCandidate).map((s: string) => (
-                  <span
-                    key={s}
-                    style={{
-                      background: "#f0fdf4",
-                      color: "#15803d",
-                      border: "1px solid #bbf7d0",
-                      padding: "0.3rem 0.65rem",
-                      borderRadius: "6px",
-                      fontSize: "0.84rem",
-                      fontWeight: 600
-                    }}
-                  >
-                    <FiCheckCircle size={12} style={{ marginRight: 4 }} />
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Projects */}
-            {Array.isArray(activeCandidate.projects) && activeCandidate.projects.length > 0 && (
-              <div style={{ marginBottom: "1.25rem" }}>
-                <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>Featured Projects</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                  {activeCandidate.projects.map((proj: any, idx: number) => (
-                    <div key={idx} style={{ background: "#f8fafc", padding: "0.75rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                      <strong style={{ fontSize: "0.88rem", color: "#0f172a" }}>{proj.name || proj.title}</strong>
-                      {proj.summary && <p style={{ fontSize: "0.83rem", color: "#475569", margin: "0.2rem 0 0" }}>{proj.summary}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Evidences */}
-            {evidences.length > 0 && (
-              <div style={{ marginBottom: "1.25rem" }}>
-                <h4 style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.5rem" }}>Verifiable Evidences</h4>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                  {evidences.map((ev: any) => (
-                    <a
-                      key={ev.id}
-                      href={ev.url || ev.mediaUrl || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.35rem",
-                        background: "#eff6ff",
-                        color: "#1d4ed8",
-                        border: "1px solid #bfdbfe",
-                        padding: "0.35rem 0.65rem",
-                        borderRadius: "6px",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        textDecoration: "none"
-                      }}
-                    >
-                      <FiExternalLink size={13} /> {ev.title || "Evidence Attachment"}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="modal-actions" style={{ borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
-              <button
-                className="btn-modal-cancel"
-                onClick={() => setEvalModal(null)}
-              >
-                Close
-              </button>
-              <button
-                className="btn-modal-submit"
-                onClick={() => {
-                  const candidateToConnect = activeCandidate;
-                  setEvalModal(null);
-                  setConnectModal({ candidateId: candidateToConnect.id!, name: candidateToConnect.fullName });
-                  setConnectErrors({});
-                  setConnectTouched(false);
-                }}
-              >
-                Connect with Candidate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Connect Modal */}
       {connectModal && (
         <div className="modal-overlay" onClick={() => setConnectModal(null)}>
@@ -448,71 +325,64 @@ const DiscoverPage: React.FC = () => {
                   setRoleTitle(e.target.value);
                   if (connectErrors.roleTitle) setConnectErrors(prev => ({ ...prev, roleTitle: "" }));
                 }}
-                placeholder="e.g. Senior Frontend Engineer"
-                style={{
-                  width: "100%",
-                  padding: "0.6rem",
-                  border: `1px solid ${connectTouched && connectErrors.roleTitle ? "#ef4444" : "#cbd5e1"}`,
-                  borderRadius: "6px",
-                  boxSizing: "border-box" as const,
-                  outline: "none"
-                }}
+                placeholder="e.g. Senior Java Developer"
+                style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1" }}
               />
               {connectTouched && connectErrors.roleTitle && (
-                <span style={{ color: "#dc2626", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "3px" }}>
-                  <FiAlertCircle size={12} /> {connectErrors.roleTitle}
-                </span>
+                <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: "0.25rem 0 0" }}>{connectErrors.roleTitle}</p>
               )}
             </div>
 
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
-                Work Type
-              </label>
-              <select
-                value={workType}
-                onChange={e => setWorkType(e.target.value)}
-                style={{ width: "100%", padding: "0.6rem", border: "1px solid #cbd5e1", borderRadius: "6px" }}
-              >
-                <option value="REMOTE">Remote</option>
-                <option value="HYBRID">Hybrid</option>
-                <option value="ONSITE">On-site</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: "1.25rem" }}>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
                 Opportunity Summary <span style={{ color: "red" }}>*</span>
               </label>
               <textarea
-                rows={4}
                 value={opportunitySummary}
                 onChange={e => {
                   setOpportunitySummary(e.target.value);
                   if (connectErrors.opportunitySummary) setConnectErrors(prev => ({ ...prev, opportunitySummary: "" }));
                 }}
-                placeholder="Share information about the role, technical requirements, and why you are interested in their profile..."
-                style={{
-                  border: `1px solid ${connectTouched && connectErrors.opportunitySummary ? "#ef4444" : "#cbd5e1"}`
-                }}
+                rows={4}
+                placeholder="Describe role responsibilities, team context, and key requirements..."
+                style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1", resize: "vertical" }}
               />
               {connectTouched && connectErrors.opportunitySummary && (
-                <span style={{ color: "#dc2626", fontSize: "0.78rem", display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "3px" }}>
-                  <FiAlertCircle size={12} /> {connectErrors.opportunitySummary}
-                </span>
+                <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: "0.25rem 0 0" }}>{connectErrors.opportunitySummary}</p>
               )}
             </div>
 
+            <div style={{ marginBottom: "1.25rem" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                Work Model
+              </label>
+              <select
+                value={workType}
+                onChange={e => setWorkType(e.target.value)}
+                style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+              >
+                <option value="REMOTE">Remote</option>
+                <option value="HYBRID">Hybrid</option>
+                <option value="ONSITE">On-Site</option>
+              </select>
+            </div>
+
             <div className="modal-actions">
-              <button className="btn-modal-cancel" onClick={() => setConnectModal(null)}>
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setConnectModal(null)}
+                disabled={sending}
+              >
                 Cancel
               </button>
               <button
+                type="button"
                 className="btn-modal-submit"
                 onClick={submitRequest}
                 disabled={sending}
               >
-                {sending ? "Sending..." : "Send Request"}
+                {sending ? "Submitting..." : "Send Connection Request"}
               </button>
             </div>
           </div>

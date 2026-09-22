@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { adminApi } from "../../api/admin";
 import type { AdminUserItem, CompanyProfile, CandidateProfile, CompanyContact } from "../../types";
 import {
@@ -24,6 +25,7 @@ type AdminTab = "USERS" | "COMPANIES" | "CANDIDATES";
 const PAGE_SIZE = 10;
 
 const AdminUsersPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("USERS");
 
   // Users state
@@ -545,7 +547,7 @@ const AdminUsersPage: React.FC = () => {
                         <td>
                           <button
                             className="btn-action activate"
-                            onClick={() => setSelectedCandidate(cand)}
+                            onClick={() => navigate('/candidates/' + cand.id)}
                           >
                             View Profile
                           </button>

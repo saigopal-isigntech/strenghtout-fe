@@ -1,9 +1,125 @@
-﻿.dashboard-page {
+.dashboard-page {
   padding: 2.5rem 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
+/* ============================================================
+   Profile Setup / Modify Onboarding Banner
+   ============================================================ */
+.profile-setup-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #ffffff 100%);
+  border: 1.5px solid #fde68a;
+  border-left: 5px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.6rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.12);
+  animation: bannerFadeIn 0.3s ease;
+}
+
+@keyframes bannerFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.setup-banner-left {
+  flex: 1;
+}
+
+.setup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #b45309;
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  padding: 0.22rem 0.65rem;
+  border-radius: 9999px;
+  margin-bottom: 0.55rem;
+}
+
+.setup-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #78350f;
+  margin: 0 0 0.3rem;
+  letter-spacing: -0.01em;
+}
+
+.setup-desc {
+  color: #92400e;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 0.9rem;
+  max-width: 650px;
+}
+
+.setup-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.setup-progress-bar {
+  flex: 1;
+  max-width: 220px;
+  height: 8px;
+  background: #fde68a;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.setup-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #70c144);
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.setup-progress-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.setup-banner-right {
+  flex-shrink: 0;
+}
+
+.btn-setup-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: linear-gradient(135deg, #70c144, #5ea836);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.7rem 1.35rem;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.35);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-setup-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(112, 193, 68, 0.45);
+  opacity: 0.95;
+}
+
+/* ============================================================
+   Standard Dashboard Hero & Cards
+   ============================================================ */
 .dashboard-hero {
   background: linear-gradient(135deg, #dcf3e5 0%, #eefbf3 100%);
   border: 1px solid #c3edd3;
@@ -120,11 +236,88 @@
 }
 
 /* ============================================================
-   RESPONSIVE — Candidate Dashboard
+   DARK MODE
+   ============================================================ */
+[data-theme="dark"] .profile-setup-banner {
+  background: linear-gradient(135deg, #2a1b0a 0%, #1c1917 100%);
+  border-color: #78350f;
+  border-left-color: #f59e0b;
+}
+
+[data-theme="dark"] .setup-badge {
+  background: #451a03;
+  border-color: #78350f;
+  color: #fde68a;
+}
+
+[data-theme="dark"] .setup-title {
+  color: #fde68a;
+}
+
+[data-theme="dark"] .setup-desc {
+  color: #e7e5e4;
+}
+
+[data-theme="dark"] .setup-progress-bar {
+  background: #451a03;
+}
+
+[data-theme="dark"] .setup-progress-text {
+  color: #fde68a;
+}
+
+[data-theme="dark"] .dashboard-hero {
+  background: linear-gradient(135deg, #091e13 0%, #0f172a 100%);
+  border-color: #064e3b;
+}
+
+[data-theme="dark"] .hero-greeting {
+  color: #86efac;
+}
+
+[data-theme="dark"] .hero-name {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .hero-sub {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .dash-card {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .dash-card:hover {
+  border-color: #334155;
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .dash-card-icon {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .dash-card-content h3 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dash-card-content p {
+  color: #94a3b8;
+}
+
+/* ============================================================
+   RESPONSIVE - Candidate Dashboard
    ============================================================ */
 @media (max-width: 768px) {
   .dashboard-page {
     padding: 1.5rem 1rem 3rem;
+  }
+  .profile-setup-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 1.5rem;
   }
   .dashboard-hero {
     flex-direction: column;

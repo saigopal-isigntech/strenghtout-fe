@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/logo.png";
-import defaultProfileImg from "../assets/image.png";
 import { notificationsApi } from "../api/notifications";
 import { candidatesApi } from "../api/candidates";
 import { companiesApi } from "../api/companies";
+import { isValidUserAvatar } from "../utils/validators";
 
 /* react-icons */
 import {
+  FiEdit3,
   FiSearch,
   FiBell,
   FiChevronDown,
@@ -35,35 +36,31 @@ const Navbar: React.FC = () => {
   const isFetchingUnreadRef = useRef(false);
   const lastFetchedPathRef = useRef<string>("");
 
-  /* Profile Avatar Image resolution */
+  /* Profile Avatar Image resolution - only show user uploaded avatar, never hardcoded dummy image */
   const [avatarSrc, setAvatarSrc] = useState<string | null>(() => {
     if (!user) return null;
-    if (user.avatarUrl) return user.avatarUrl;
-    if (user.role === "ROLE_CANDIDATE") return defaultProfileImg;
-    return null;
+    return isValidUserAvatar(user.avatarUrl) ? user.avatarUrl! : null;
   });
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     setImgError(false);
-    if (!user) {
+    if (!user || !isValidUserAvatar(user.avatarUrl)) {
       setAvatarSrc(null);
-      return;
-    }
-    if (user.avatarUrl) {
-      setAvatarSrc(user.avatarUrl);
-    } else if (user.role === "ROLE_CANDIDATE") {
-      setAvatarSrc(defaultProfileImg);
     } else {
-      setAvatarSrc(null);
+      setAvatarSrc(user.avatarUrl!);
     }
-  }, [user]);
+  }, [user?.avatarUrl, user?.userId]);
 
   /* Listen for real-time photo update events across the app */
   useEffect(() => {
     const handleAvatarUpdate = (e: any) => {
-      if (e.detail?.avatarUrl) {
-        setAvatarSrc(e.detail.avatarUrl);
+      const newUrl = e.detail?.avatarUrl;
+      if (isValidUserAvatar(newUrl)) {
+        setAvatarSrc(newUrl);
+        setImgError(false);
+      } else {
+        setAvatarSrc(null);
         setImgError(false);
       }
     };
@@ -71,35 +68,45 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("profilePhotoUpdated", handleAvatarUpdate);
   }, []);
 
-  /* Fetch live candidate/company avatar if not yet in auth state */
+  /* Fetch live candidate/company avatar to ensure navbar is always synced with what is set by candidate */
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    if (user.role === "ROLE_CANDIDATE" && !user.avatarUrl) {
+    if (user.role === "ROLE_CANDIDATE") {
       candidatesApi
         .getMyProfile()
         .then((res) => {
           const pic = res.data?.data?.avatarUrl;
-          if (pic) {
+          if (isValidUserAvatar(pic)) {
             setAvatarSrc(pic);
             setImgError(false);
             updateUserAvatar(pic);
+          } else {
+            setAvatarSrc(null);
+            if (user.avatarUrl) {
+              updateUserAvatar("");
+            }
           }
         })
         .catch(() => {});
-    } else if (user.role === "ROLE_COMPANY" && !user.avatarUrl) {
+    } else if (user.role === "ROLE_COMPANY") {
       companiesApi
         .getMyProfile()
         .then((res) => {
           const logo = res.data?.data?.logoUrl;
-          if (logo) {
+          if (isValidUserAvatar(logo)) {
             setAvatarSrc(logo);
             setImgError(false);
             updateUserAvatar(logo);
+          } else {
+            setAvatarSrc(null);
+            if (user.avatarUrl) {
+              updateUserAvatar("");
+            }
           }
         })
         .catch(() => {});
     }
-  }, [isAuthenticated, user, updateUserAvatar]);
+  }, [isAuthenticated, user?.userId, user?.role, updateUserAvatar]);
 
   /* Theme state: default is 'light' */
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -179,7 +186,14 @@ const Navbar: React.FC = () => {
   };
   const isSuperAdmin =
     user?.role === "ROLE_SUPER_ADMIN" || user?.accountType === "SUPER_ADMIN";
-  const userInitial = user?.fullName?.[0]?.toUpperCase() || "U";
+  const userInitial = user?.fullName
+    ? user.fullName
+        .split(" ")
+        .filter(Boolean)
+        .map((n: string) => n.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join("")
+    : (user?.fullName?.[0]?.toUpperCase() || "U");
 
   const isActive = (path: string) => {
     if (
@@ -507,6 +521,17 @@ const Navbar: React.FC = () => {
                   >
                     <HiOutlineUser size={14} /> View My Profile
                   </Link>
+
+                  {user?.role === "ROLE_CANDIDATE" && (
+                    <Link
+                      to="/profile/edit"
+                      className="dropdown-link"
+                      onClick={() => setMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <FiEdit3 size={14} /> Edit Profile Details
+                    </Link>
+                  )}
 
                   {isAdmin() && (
                     <>

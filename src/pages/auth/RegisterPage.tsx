@@ -126,7 +126,10 @@ const RegisterPage: React.FC = () => {
         },
       });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Registration failed. Please try again.";
+      let msg = err?.response?.data?.message || err?.message || "Registration failed. Please try again.";
+      if (err?.code === "ERR_NETWORK" || !err?.response) {
+        msg = "Cannot connect to backend server. Please make sure the backend is running on port 8080.";
+      }
       setError(msg);
     } finally {
       setLoading(false);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { companiesApi } from "../api/companies";
 import { useAuth } from "../context/AuthContext";
 import type { CompanyProfile, CompanyContact } from "../types";
@@ -24,6 +24,20 @@ const CompanyProfileView: React.FC = () => {
   const [contactPhone, setContactPhone] = useState("");
   const [contactTitle, setContactTitle] = useState("");
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
+  const contactNameInputRef = useRef<HTMLInputElement>(null);
+  const legalNameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showAddContact) {
+      setTimeout(() => contactNameInputRef.current?.focus(), 60);
+    }
+  }, [showAddContact]);
+
+  useEffect(() => {
+    if (editing) {
+      setTimeout(() => legalNameInputRef.current?.focus(), 60);
+    }
+  }, [editing]);
 
   const loadProfile = async () => {
     setLoading(true);

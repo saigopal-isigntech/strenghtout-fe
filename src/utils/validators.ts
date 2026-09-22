@@ -10,10 +10,19 @@ export const isValidEmail = (email: string): boolean => {
   return EMAIL_REGEX.test(email.trim());
 };
 
+/**
+ * Validates a single phone number or multiple phone numbers separated by comma, slash, or semicolon.
+ * Supports international formats, extensions, and multiple contact numbers.
+ */
 export const isValidPhone = (phone: string): boolean => {
-  if (!phone.trim()) return false;
-  const digitsOnly = phone.replace(/\D/g, '');
-  return digitsOnly.length >= 8 && digitsOnly.length <= 15 && PHONE_REGEX.test(phone.trim());
+  if (!phone || !phone.trim()) return false;
+  const parts = phone.split(/[,/;&|]|\s+or\s+/i).map(p => p.trim()).filter(Boolean);
+  if (parts.length === 0) return false;
+  
+  return parts.every(part => {
+    const digitsOnly = part.replace(/\D/g, '');
+    return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+  });
 };
 
 export const isValidUrl = (url: string): boolean => {
@@ -28,8 +37,10 @@ export const validateEmail = (email: string, fieldLabel = 'Email'): string | nul
 };
 
 export const validatePhone = (phone: string, fieldLabel = 'Phone number'): string | null => {
-  if (!phone || !phone.trim()) return `${fieldLabel} is required.`;
-  if (!isValidPhone(phone)) return `Please enter a valid 10-15 digit ${fieldLabel.toLowerCase()}.`;
+  if (!phone || !phone.trim()) return null; // Optional if empty
+  if (!isValidPhone(phone)) {
+    return `Please enter valid ${fieldLabel.toLowerCase()} (7-15 digits per number). Multiple numbers can be separated with commas.`;
+  }
   return null;
 };
 
@@ -63,4 +74,23 @@ export const validateYearRange = (startYear: number, endYear: number): string | 
     return 'End year cannot be earlier than start year.';
   }
   return null;
+};
+
+/**
+ * Validates that an avatar URL is a real user-uploaded or user-configured image,
+ * and not empty, null, undefined, or a reference to static placeholder/dummy assets.
+ */
+export const isValidUserAvatar = (url: string | null | undefined): url is string => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return false;
+  if (
+    trimmed.includes('assets/image.png') ||
+    trimmed.includes('assets/logo') ||
+    trimmed.endsWith('/image.png') ||
+    trimmed === 'image.png'
+  ) {
+    return false;
+  }
+  return true;
 };

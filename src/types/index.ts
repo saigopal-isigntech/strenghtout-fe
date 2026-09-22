@@ -1,4 +1,4 @@
-export interface ApiResponse<T> {
+﻿export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
@@ -93,6 +93,39 @@ export interface CandidateSkillItem {
   isPrimary?: boolean;
 }
 
+export interface CandidateRoleInterest {
+  id?: string;
+  roleId: string;
+  roleName?: string;
+  priority?: number;
+  workType: string; // REMOTE, HYBRID, ONSITE
+  preferredLocation?: string;
+}
+
+export interface RoleCatalogItem {
+  id: string;
+  roleName: string;
+  active: boolean;
+}
+
+export interface SkillCatalogItem {
+  id: string;
+  canonicalName: string;
+  category?: string;
+  active: boolean;
+}
+
+
+export interface CandidateExperience {
+  id?: string;
+  companyName: string;
+  title: string;
+  startDate: string;
+  endDate?: string;
+  isCurrent?: boolean;
+  description?: string;
+}
+
 export interface CandidateEducation {
   id?: string;
   qualification: string;
@@ -117,6 +150,23 @@ export interface CandidateProject {
   startDateStr?: string;
   endDateStr?: string;
   technologies?: string[];
+  skillIds?: string[];
+}
+
+export interface CandidateEvidence {
+  id: string;
+  candidateId?: string;
+  evidenceType: string;
+  sourceSystem: string;
+  sourceRef: string;
+  title: string;
+  summary?: string;
+  score?: number;
+  status: string;
+  mediaAssetId?: string;
+  occurredAt?: string;
+  visibility: string;
+  createdAt?: string;
 }
 
 export interface CandidateProfile {
@@ -158,8 +208,10 @@ export interface CandidateProfile {
   completionPct?: number;
   overallStrengthScore?: number;
   skills: any[];
-  evidences?: Evidence[];
-  experiences?: any[];
+  roleInterests?: CandidateRoleInterest[];
+  evidence?: CandidateEvidence[];
+  evidences?: CandidateEvidence[];
+  experiences?: CandidateExperience[];
   education?: CandidateEducation[];
   projects?: CandidateProject[];
   createdAt?: string;
@@ -167,18 +219,7 @@ export interface CandidateProfile {
   publishedAt?: string;
 }
 
-export interface Evidence {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-  mediaUrl?: string;
-  externalLink?: string;
-  skillTags: string[];
-  strengthScore?: number;
-  verificationStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-}
+export type Evidence = CandidateEvidence;
 
 export interface CompanyContact {
   id: string;
@@ -235,6 +276,8 @@ export interface ConnectionRequest {
   closedAt?: string;
   version?: number;
   allowedNextStatuses?: string[];
+  history?: any[];
+  adminNotes?: any[];
 }
 
 export interface Notification {

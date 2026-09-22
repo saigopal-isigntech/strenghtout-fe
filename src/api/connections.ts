@@ -21,6 +21,12 @@ export const connectionsApi = {
   getAdminQueue: (params?: Record<string, string | number>) =>
     apiClient.get<ApiResponse<PageResponse<ConnectionRequest>>>('/admin/connection-requests', { params }),
 
-  updateStatus: (id: string, toStatus: string, adminNote?: string) =>
-    apiClient.patch<ApiResponse<ConnectionRequest>>(`/admin/connection-requests/${id}/status`, { toStatus, adminNote }),
+  updateStatus: (id: string, toStatus: string, reason?: string) =>
+    apiClient.patch<ApiResponse<ConnectionRequest>>(`/admin/connection-requests/${id}/status`, { toStatus, reason }),
+
+  addAdminNote: (id: string, note: string) =>
+    apiClient.post<ApiResponse<any>>(`/admin/connection-requests/${id}/notes`, { note }),
+
+  getHistory: (id: string) =>
+    apiClient.get<ApiResponse<any[]>>(`/admin/connection-requests/${id}/history`),
 };

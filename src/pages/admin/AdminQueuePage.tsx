@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState, Fragment } from "react";
 import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
 import { FiRefreshCw, FiInbox, FiFilter } from "react-icons/fi";
@@ -133,14 +133,14 @@ const AdminQueuePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {requests.map(r => {
+              {requests.map((r, index) => {
                 const meta   = sm(r.status);
                 const isExp  = expanded === r.id;
                 const next   = r.allowedNextStatuses || [];
+                const itemKey = r.id || `queue-${index}`;
                 return (
-                  <>
+                  <Fragment key={itemKey}>
                     <tr
-                      key={r.id}
                       className={`queue-row${isExp ? " queue-row-open" : ""}`}
                       onClick={() => setExpanded(isExp ? null : r.id)}
                     >
@@ -200,7 +200,7 @@ const AdminQueuePage: React.FC = () => {
                       </td>
                     </tr>
                     {isExp && (
-                      <tr key={r.id + "-detail"} className="queue-detail-row">
+                      <tr key={`${itemKey}-detail`} className="queue-detail-row">
                         <td colSpan={6}>
                           <div className="queue-detail-panel">
                             <div className="queue-detail-section">
@@ -237,7 +237,7 @@ const AdminQueuePage: React.FC = () => {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

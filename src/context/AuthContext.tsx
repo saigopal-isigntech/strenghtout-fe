@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { authApi } from "../api/auth";
 import type { AuthUser, UserRole } from "../types";
+import { isValidUserAvatar } from "../utils/validators";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -33,7 +34,7 @@ function mapAuthDataToUser(data: any): AuthUser {
     accountType: data.accountType || "",
     role: primaryRole,
     roles: roles.length > 0 ? roles : [primaryRole],
-    avatarUrl: data.avatarUrl || data.profilePictureUrl || "",
+    avatarUrl: isValidUserAvatar(data.avatarUrl || data.profilePictureUrl) ? (data.avatarUrl || data.profilePictureUrl) : "",
   };
 }
 
@@ -46,7 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUser = localStorage.getItem("authUser");
     if (token && storedUser && storedUser !== "undefined") {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        if (parsed && !isValidUserAvatar(parsed.avatarUrl)) {
+          parsed.avatarUrl = "";
+          localStorage.setItem("authUser", JSON.stringify(parsed));
+        }
+        setUser(parsed);
       } catch {
         localStorage.clear();
       }
@@ -57,7 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserAvatar = useCallback((avatarUrl: string) => {
     setUser((prev) => {
       if (!prev) return null;
-      const updated = { ...prev, avatarUrl };
+      const cleanAvatar = isValidUserAvatar(avatarUrl) ? avatarUrl : "";
+      const updated = { ...prev, avatarUrl: cleanAvatar };
       localStorage.setItem("authUser", JSON.stringify(updated));
       return updated;
     });

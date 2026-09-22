@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 import AdminDashboard from "../admin/AdminDashboard";
+import { candidatesApi } from "../../api/candidates";
+import type { CandidateProfile } from "../../types";
 import {
   FiUser,
   FiAward,
@@ -9,16 +11,50 @@ import {
   FiSearch,
   FiSend,
   FiArrowRight,
+  FiEdit3,
+  FiAlertCircle,
 } from "react-icons/fi";
 import "./Dashboard.css";
 
 const DashboardPage: React.FC = () => {
   const { user, isAdmin } = useAuth();
+  const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // If user is Admin or Super Admin, render the executive Admin Control Center!
   if (isAdmin()) {
     return <AdminDashboard />;
   }
+
+  const isCandidate = user?.role === "ROLE_CANDIDATE";
+
+  useEffect(() => {
+    if (isCandidate) {
+      setLoadingProfile(true);
+      candidatesApi
+        .getMyProfile()
+        .then((res) => {
+          setCandidateProfile(res.data?.data || null);
+        })
+        .catch(() => {
+          setCandidateProfile(null);
+        })
+        .finally(() => {
+          setLoadingProfile(false);
+        });
+    }
+  }, [isCandidate]);
+
+  // Determine if candidate profile is brand new / unmodified:
+  // True if headline is empty, skills list is empty, and summary is empty (or completion <= 15%)
+  const isProfileUnmodified =
+    isCandidate &&
+    !loadingProfile &&
+    candidateProfile !== null &&
+    (!candidateProfile.headline?.trim() ||
+      !candidateProfile.skills ||
+      candidateProfile.skills.length === 0) &&
+    (candidateProfile.completionPct ?? 0) <= 25;
 
   const candidateCards = [
     {
@@ -73,6 +109,37 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="dashboard-page">
+      {/* Onboarding Prompt Banner for New Candidates */}
+      {isProfileUnmodified && (
+        <div className="profile-setup-banner">
+          <div className="setup-banner-left">
+            <div className="setup-badge">
+              <FiAlertCircle size={14} /> Action Required
+            </div>
+            <h2 className="setup-title">Complete & Setup Your Profile</h2>
+            <p className="setup-desc">
+              Your candidate profile is currently unconfigured. Add your resume headline, key skills, education, and resume to get discovered by recruiters and unlock connection requests.
+            </p>
+            <div className="setup-progress-row">
+              <div className="setup-progress-bar">
+                <div
+                  className="setup-progress-fill"
+                  style={{ width: `${Math.max(candidateProfile?.completionPct ?? 0, 8)}%` }}
+                />
+              </div>
+              <span className="setup-progress-text">
+                {candidateProfile?.completionPct ?? 0}% Profile Setup
+              </span>
+            </div>
+          </div>
+          <div className="setup-banner-right">
+            <Link to="/profile" className="btn-setup-action">
+              <FiEdit3 size={16} /> Complete Profile <FiArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-hero">
         <div className="hero-content">
           <p className="hero-greeting">{greeting()},</p>

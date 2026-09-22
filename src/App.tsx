@@ -1,6 +1,6 @@
-import React, { Suspense, lazy } from "react";
+﻿import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -16,7 +16,9 @@ const DiscoverPage         = lazy(() => import("./pages/company/DiscoverPage"));
 const AdminQueuePage       = lazy(() => import("./pages/admin/AdminQueuePage"));
 const AdminUsersPage       = lazy(() => import("./pages/admin/AdminUsersPage"));
 const AdminAuditPage       = lazy(() => import("./pages/admin/AdminAuditPage"));
+const AdminDashboardPage   = lazy(() => import("./pages/admin/AdminDashboard"));
 const MyRequestsPage       = lazy(() => import("./pages/company/MyRequestsPage"));
+const CompanyProfileView   = lazy(() => import("./components/CompanyProfileView"));
 
 const PageLoader = () => (
   <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -24,9 +26,18 @@ const PageLoader = () => (
   </div>
 );
 
+// Route helper to direct candidates to CandidateProfilePage and companies to CompanyProfileView
+const ProfileRouter: React.FC = () => {
+  const { user } = useAuth();
+  if (user?.role === "ROLE_COMPANY") {
+    return <CompanyProfileView />;
+  }
+  return <CandidateProfilePage />;
+};
+
 const PersistentAppLayout: React.FC = () => {
   const location = useLocation();
-  const noFooterPaths = ["/dashboard", "/admin/requests", "/admin/users", "/admin/audit"];
+  const noFooterPaths = ["/dashboard", "/admin/requests", "/admin/users", "/admin/audit", "/admin/dashboard"];
   const showFooter = !noFooterPaths.some((p) => location.pathname === p || location.pathname.startsWith("/admin/"));
 
   return (
@@ -54,7 +65,11 @@ const App: React.FC = () => (
         {/* All application routes with fixed persistent navbar */}
         <Route element={<PersistentAppLayout />}>
           <Route path="/" element={<CandidateProfilePage />} />
-          <Route path="/profile" element={<CandidateProfilePage />} />
+          <Route path="/profile" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><ProfileRouter /></ProtectedRoute>} />
+          <Route path="/candidates/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
+          <Route path="/candidate/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
+          <Route path="/profile/edit" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage initialMode="edit" /></ProtectedRoute>} />
+          <Route path="/company/profile" element={<ProtectedRoute roles={["ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CompanyProfileView /></ProtectedRoute>} />
           <Route path="/about" element={<CandidateProfilePage />} />
           <Route path="/careers" element={<CandidateProfilePage />} />
           <Route path="/services" element={<CandidateProfilePage />} />
@@ -92,6 +107,24 @@ const App: React.FC = () => (
             element={
               <ProtectedRoute roles={["ROLE_COMPANY"]}>
                 <MyRequestsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute roles={["ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}>
+                <AdminDashboardPage />
               </ProtectedRoute>
             }
           />

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback, Fragment } from "react";
 import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
 import {
@@ -20,8 +20,15 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
 
 const sm = (s: string) => STATUS_META[s] ?? { label: s, color: "#374151", bg: "#f3f4f6", border: "#d1d5db" };
 
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return String(iso);
+  }
+};
 
 const expLabel = (months?: number) => {
   if (!months && months !== 0) return null;
@@ -136,15 +143,15 @@ const MyRequestsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(r => {
+              {filtered.map((r, index) => {
                 const meta  = sm(r.status);
                 const isExp = expanded === r.id;
                 const exp   = expLabel(r.candidateExperienceMonths);
+                const itemKey = r.id || `req-${index}`;
 
                 return (
-                  <>
+                  <Fragment key={itemKey}>
                     <tr
-                      key={r.id}
                       className={`mr-row${isExp ? " mr-row-open" : ""}`}
                       onClick={() => setExpanded(isExp ? null : r.id)}
                     >
@@ -210,7 +217,7 @@ const MyRequestsPage: React.FC = () => {
                     </tr>
 
                     {isExp && (
-                      <tr key={r.id + "-detail"} className="mr-detail-row">
+                      <tr key={`${itemKey}-detail`} className="mr-detail-row">
                         <td colSpan={5}>
                           <div className="mr-detail-panel">
                             <div className="mr-detail-section">
@@ -240,7 +247,7 @@ const MyRequestsPage: React.FC = () => {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
