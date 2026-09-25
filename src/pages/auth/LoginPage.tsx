@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import logoImg from "../../assets/logo.png";
 import authBg from "../../assets/auth-bg.jpg";
-import { FiAward, FiBriefcase, FiZap, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { FiAward, FiBriefcase, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiCheck, FiAlertCircle } from "react-icons/fi";
 import { validateEmail, validatePassword } from "../../utils/validators";
 import "./Auth.css";
 
@@ -11,22 +11,17 @@ const FEATURES = [
   {
     icon: <FiAward size={20} color="#70c144" />,
     title: "Prove your strength, not just your resume",
-    desc: "Complete real-world skill challenges that let companies see exactly what you can do.",
+    desc: "Complete real-world skill challenges that let companies see exactly what you can build.",
   },
   {
     icon: <FiBriefcase size={20} color="#70c144" />,
-    title: "Get discovered by industry leaders",
-    desc: "Top companies actively browse StrengthOut to find candidates who stand out.",
-  },
-  {
-    icon: <FiZap size={20} color="#70c144" />,
-    title: "Instant profile visibility",
-    desc: "Your verified strengths appear in company searches the moment you complete them.",
+    title: "Companies that match your ambitions",
+    desc: "Connect directly with hiring managers who value authentic engineering talent.",
   },
   {
     icon: <FiTrendingUp size={20} color="#70c144" />,
-    title: "Track your career growth",
-    desc: "Analytics show how your profile performs and how to level up faster.",
+    title: "Accelerate your hiring journey",
+    desc: "Skip initial phone screens and move straight to meaningful conversations.",
   },
 ];
 
@@ -95,40 +90,44 @@ const LoginPage: React.FC = () => {
   return (
     <div className="auth-root">
 
-      {/* --------------- LEFT PANEL --------------- */}
+            {/* --------------- LEFT PANEL --------------- */}
       <div
         className="auth-left"
         style={{ "--auth-bg": `url(${authBg})` } as React.CSSProperties}
       >
         <div className="auth-left-glow" />
-        <div className="auth-left-content">
+        <div className="auth-left-inner">
           <Link to="/" className="auth-panel-logo" title="StrengthOut Home">
             <img src={logoImg} alt="StrengthOut" />
           </Link>
-          <h1 className="auth-panel-headline">
-            Your strength.<br />
-            Your story.<br />
-            <span>Your career.</span>
-          </h1>
-          <p className="auth-panel-sub">
-            StrengthOut replaces blind CV screening with real skill validation &mdash;
-            so the right companies find <em>you</em>, not just your paper.
+
+          <div className="auth-left-hero">
+            <h1 className="auth-panel-headline">
+              Your strength.<br />
+              Your story.<br />
+              <span>Your career.</span>
+            </h1>
+            <p className="auth-panel-sub">
+              StrengthOut replaces blind CV screening with real skill validation &mdash;
+              so the right companies find <em>you</em>, not just your paper.
+            </p>
+            <ul className="auth-features">
+              {FEATURES.map((f) => (
+                <li key={f.title} className="auth-feature-item">
+                  <div className="auth-feature-icon">{f.icon}</div>
+                  <div className="auth-feature-text">
+                    <strong>{f.title}</strong>
+                    <span>{f.desc}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="auth-left-footer">
+            &copy; {new Date().getFullYear()} StrengthOut &bull; iSign Technologies
           </p>
-          <ul className="auth-features">
-            {FEATURES.map((f) => (
-              <li key={f.title} className="auth-feature-item">
-                <div className="auth-feature-icon">{f.icon}</div>
-                <div className="auth-feature-text">
-                  <strong>{f.title}</strong>
-                  <span>{f.desc}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
         </div>
-        <p className="auth-left-footer">
-          &copy; {new Date().getFullYear()} StrengthOut &bull; iSign Technologies
-        </p>
       </div>
 
       {/* --------------- RIGHT PANEL --------------- */}

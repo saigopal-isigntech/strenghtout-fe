@@ -1,4 +1,4 @@
-﻿import apiClient from './client';
+import apiClient from './client';
 import type { ApiResponse, AuthTokens } from '../types';
 
 export interface RegisterPayload {
@@ -6,6 +6,16 @@ export interface RegisterPayload {
   email: string;
   password: string;
   role: 'CANDIDATE' | 'COMPANY';
+  companyName?: string;
+  website?: string;
+  linkedinUrl?: string;
+  industry?: string;
+  companySize?: string;
+  country?: string;
+  city?: string;
+  description?: string;
+  contactName?: string;
+  contactPhone?: string;
 }
 
 export interface LoginPayload {
@@ -29,15 +39,15 @@ export const authApi = {
   me: () =>
     apiClient.get<ApiResponse<AuthTokens>>('/auth/me'),
 
-  /** Step 1 – Send 6-digit OTP to given email */
+  /** Step 1 - Send 6-digit OTP to given email */
   forgotPasswordSendOtp: (email: string) =>
     apiClient.post<ApiResponse<void>>('/auth/password/send-otp', { email }),
 
-  /** Step 2 – Verify OTP and receive a short-lived reset token */
+  /** Step 2 - Verify OTP and receive a short-lived reset token */
   forgotPasswordVerifyOtp: (email: string, otp: string) =>
     apiClient.post<ApiResponse<{ resetToken: string }>>('/auth/password/verify-otp', { email, otp }),
 
-  /** Step 3 – Reset password with the reset token */
+  /** Step 3 - Reset password with the reset token */
   resetPassword: (email: string, token: string, newPassword: string) =>
     apiClient.post<ApiResponse<void>>('/auth/password/reset', { email, token, newPassword }),
 };

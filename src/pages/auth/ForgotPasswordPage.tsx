@@ -182,39 +182,42 @@ const ForgotPasswordPage: React.FC = () => {
   return (
     <div className="auth-root">
 
-      {/* --------------- LEFT PANEL --------------- */}
+            {/* --------------- LEFT PANEL --------------- */}
       <div
         className="auth-left"
         style={{ "--auth-bg": `url(${authBg})` } as React.CSSProperties}
       >
         <div className="auth-left-glow" />
-        <div className="auth-left-content">
+        <div className="auth-left-inner">
           <Link to="/" className="auth-panel-logo" title="StrengthOut Home">
             <img src={logoImg} alt="StrengthOut" />
           </Link>
-          <h1 className="auth-panel-headline">
-            Recover your account.<br />
-            Secure your future.<br />
-            <span>Stay connected.</span>
-          </h1>
-          <p className="auth-panel-sub">
-            Follow our verified 3-step recovery process to reset your password and get back to growing your career on StrengthOut.
+
+          <div className="auth-left-hero">
+            <h1 className="auth-panel-headline">
+              Account<br />
+              <span>Recovery</span>
+            </h1>
+            <p className="auth-panel-sub">
+              Follow the quick verification steps to securely reset your password and regain access to your account.
+            </p>
+            <ul className="auth-features">
+              {FEATURES.map((f) => (
+                <li key={f.title} className="auth-feature-item">
+                  <div className="auth-feature-icon">{f.icon}</div>
+                  <div className="auth-feature-text">
+                    <strong>{f.title}</strong>
+                    <span>{f.desc}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="auth-left-footer">
+            &copy; {new Date().getFullYear()} StrengthOut &bull; iSign Technologies
           </p>
-          <ul className="auth-features">
-            {FEATURES.map((f) => (
-              <li key={f.title} className="auth-feature-item">
-                <div className="auth-feature-icon">{f.icon}</div>
-                <div className="auth-feature-text">
-                  <strong>{f.title}</strong>
-                  <span>{f.desc}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
         </div>
-        <p className="auth-left-footer">
-          &copy; {new Date().getFullYear()} StrengthOut &bull; iSign Technologies
-        </p>
       </div>
 
       {/* --------------- RIGHT PANEL --------------- */}

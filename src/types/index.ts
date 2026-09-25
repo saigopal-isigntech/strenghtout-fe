@@ -232,6 +232,7 @@ export interface CompanyContact {
 
 export interface CompanyProfile {
   id: string;
+  linkedinUrl?: string;
   userId?: string;
   email?: string;
   companyName?: string;
