@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+﻿import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/logo.png";
@@ -201,6 +201,13 @@ const Navbar: React.FC = () => {
       (location.pathname === "/dashboard" || location.pathname === "/")
     )
       return true;
+    if (path === "/profile") {
+      return (
+        location.pathname === "/profile" ||
+        location.pathname === "/profile/edit" ||
+        location.pathname.startsWith("/candidate/")
+      );
+    }
     return location.pathname === path;
   };
 
@@ -225,12 +232,13 @@ const Navbar: React.FC = () => {
         { to: "/dashboard", label: "Home" },
         { to: "/discover", label: "Discover" },
         { to: "/my-requests", label: "My Requests" },
+        { to: "/about", label: "About" },
       ];
     return [
       { to: "/dashboard", label: "Home" },
-      { to: "/discover", label: "Discover" },
-      { to: "/about", label: "About" },
+      { to: "/profile", label: "Profile" },
       { to: "/services", label: "Services" },
+      { to: "/about", label: "About" },
     ];
   };
 
@@ -244,6 +252,8 @@ const Navbar: React.FC = () => {
     /* optimistically clear badge when user navigates to notifications */
     setUnreadCount(0);
   };
+
+  const showSearch = isAdmin();
 
   const displayCount =
     unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "";
@@ -278,21 +288,23 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Search */}
-        <form className="nav-search" onSubmit={handleSearch} role="search">
-          <input
-            id="nav-search-input"
-            className="nav-search-input"
-            type="search"
-            placeholder="Search profiles, skills..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search"
-          />
-          <button type="submit" className="nav-search-btn" aria-label="Search">
-            <FiSearch size={15} strokeWidth={2.5} />
-          </button>
-        </form>
+        {/* Search - only visible for Company / Admin */}
+        {showSearch && (
+          <form className="nav-search" onSubmit={handleSearch} role="search">
+            <input
+              id="nav-search-input"
+              className="nav-search-input"
+              type="search"
+              placeholder="Search profiles, skills..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search"
+            />
+            <button type="submit" className="nav-search-btn" aria-label="Search">
+              <FiSearch size={15} strokeWidth={2.5} />
+            </button>
+          </form>
+        )}
 
         {/* Hamburger (mobile only) */}
         <button
@@ -364,7 +376,7 @@ const Navbar: React.FC = () => {
             </button>
           </div>
 
-          {isAuthenticated && (
+          {showSearch && (
             <div className="mobile-drawer-search">
               <form
                 onSubmit={(e) => {

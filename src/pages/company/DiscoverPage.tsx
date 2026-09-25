@@ -1,14 +1,25 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { candidatesApi } from "../../api/candidates";
 import { connectionsApi } from "../../api/connections";
 import type { CandidateProfile, RoleCatalogItem } from "../../types";
-import { FiMapPin, FiUserPlus } from "react-icons/fi";
+import {
+  FiMapPin,
+  FiUserPlus,
+  FiX,
+  FiBriefcase,
+  FiBookOpen,
+  FiAward,
+  FiCalendar,
+  FiGithub,
+  FiVideo,
+  FiFileText,
+  FiCheckCircle,
+} from "react-icons/fi";
 import { validateRequired } from "../../utils/validators";
 import "./Discover.css";
 
 const DiscoverPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const qParam = searchParams.get("q") || "";
 
@@ -22,6 +33,11 @@ const DiscoverPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [_page, setPage] = useState(0); void _page;
 
+  // Candidate Details Popup Modal state
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
+  const [candidateDetail, setCandidateDetail] = useState<any>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   // Connect modal state
   const [connectModal, setConnectModal] = useState<{ candidateId: string; name: string } | null>(null);
   const [roleTitle, setRoleTitle] = useState("");
@@ -30,8 +46,6 @@ const DiscoverPage: React.FC = () => {
   const [connectErrors, setConnectErrors] = useState<Record<string, string>>({});
   const [connectTouched, setConnectTouched] = useState(false);
   const [sending, setSending] = useState(false);
-
-  // Direct candidate profile routing handles full candidate profile inspection
 
   const [toastMsg, setToastMsg] = useState("");
 
@@ -96,9 +110,21 @@ const DiscoverPage: React.FC = () => {
     }
   };
 
-  const handleOpenProfile = (c: CandidateProfile) => {
+  const handleOpenProfile = async (c: CandidateProfile) => {
+    setSelectedCandidate(c);
+    setCandidateDetail(c);
     if (c.id) {
-      navigate('/candidates/' + c.id);
+      setLoadingDetail(true);
+      try {
+        const res = await candidatesApi.getProfile(c.id);
+        if (res.data?.data) {
+          setCandidateDetail(res.data.data);
+        }
+      } catch {
+        // keep summary candidate data
+      } finally {
+        setLoadingDetail(false);
+      }
     }
   };
 
@@ -118,7 +144,6 @@ const DiscoverPage: React.FC = () => {
       return;
     }
 
-    setConnectErrors({});
     setSending(true);
     try {
       await connectionsApi.submit({
@@ -127,66 +152,72 @@ const DiscoverPage: React.FC = () => {
         opportunitySummary: opportunitySummary.trim(),
         workType,
       });
-      setToastMsg(`Connection request sent to ${connectModal.name}!`);
+
+      setToastMsg(`Connection request sent successfully to ${connectModal.name}!`);
+      setTimeout(() => setToastMsg(""), 4000);
+
       setConnectModal(null);
       setRoleTitle("");
       setOpportunitySummary("");
       setWorkType("REMOTE");
+      setConnectErrors({});
       setConnectTouched(false);
-      setTimeout(() => { setToastMsg(""); navigate('/my-requests'); }, 2500);
     } catch (err: any) {
-      setToastMsg(err?.response?.data?.message || "Failed to send connection request.");
-      setTimeout(() => setToastMsg(""), 4000);
+      const msg = err.response?.data?.message || "Failed to send connection request. Please try again.";
+      setConnectErrors({ roleTitle: msg });
     } finally {
       setSending(false);
     }
   };
 
-  const extractSkills = (item: any): string[] => {
-    const list = item?.topSkills || item?.skills || [];
-    if (!Array.isArray(list)) return [];
-    return list.map((s: any) => typeof s === "string" ? s : (s.skillName || s.canonicalName || s.name || "")).filter(Boolean);
+  const extractSkills = (c: any): string[] => {
+    if (!c) return [];
+    if (Array.isArray(c.skills)) {
+      return c.skills
+        .map((s: any) => {
+          if (typeof s === "string") return s;
+          return s.skillName || s.name || (s.skill && s.skill.skillName) || "";
+        })
+        .filter(Boolean);
+    }
+    return [];
   };
 
-
-  // Instant letter-by-letter client filter fallback
-  const filteredCandidates = useMemo(() => {
-    if (!query.trim()) return candidates;
-    const qLower = query.trim().toLowerCase();
-    return candidates.filter(c => {
-      const nameMatch = c.fullName?.toLowerCase().includes(qLower);
-      const headlineMatch = c.headline?.toLowerCase().includes(qLower);
-      const locationMatch = (c.currentLocation || c.location || "").toLowerCase().includes(qLower);
-      const skills = Array.isArray(c.skills) ? c.skills.map((s: any) => (typeof s === "string" ? s : s.skillName || s.name || "").toLowerCase()) : [];
-      const skillMatch = skills.some(s => s.includes(qLower));
-      return nameMatch || headlineMatch || locationMatch || skillMatch;
-    });
-  }, [candidates, query]);
+  const filteredCandidates = useMemo(() => candidates, [candidates]);
 
   return (
     <div className="discover-page">
-      {toastMsg && <div className="discover-toast">{toastMsg}</div>}
-      
-      <div className="discover-header">
-        <div style={{ display: "inline-block", background: "#ede9fe", color: "#6366f1", fontSize: "0.75rem", fontWeight: 700, padding: "0.25rem 0.65rem", borderRadius: "9999px", marginBottom: "0.5rem" }}>
-          TALENT RECRUITMENT DIRECTORY
+      {toastMsg && (
+        <div style={{
+          position: "fixed",
+          top: "80px",
+          right: "24px",
+          background: "#15803d",
+          color: "#fff",
+          padding: "0.85rem 1.4rem",
+          borderRadius: "8px",
+          fontWeight: 600,
+          boxShadow: "0 4px 14px rgba(0,0,0,0.18)",
+          zIndex: 3000
+        }}>
+          ✓ {toastMsg}
         </div>
-        <h1>Candidate Discovery</h1>
-        <p>Explore enrolled candidates, review verified skills, and evaluate top talent for recruitment</p>
+      )}
+
+      <div className="discover-header">
+        <h1>Discover Candidates</h1>
+        <p>Explore pre-screened talent, verified skills, and background assessments</p>
       </div>
 
-      <div className="discover-filters" style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
+      <div className="discover-filters">
         <input
           type="search"
           placeholder="Search by candidate name, headline, skills, or location..."
           value={query}
           onChange={e => handleInputChange(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && search(0, query)}
           className="filter-input"
-          style={{ flex: "1 1 280px" }}
         />
 
-        {/* Target Role Filter */}
         <select
           value={selectedRoleId}
           onChange={e => setSelectedRoleId(e.target.value)}
@@ -199,7 +230,6 @@ const DiscoverPage: React.FC = () => {
           ))}
         </select>
 
-        {/* Experience Level Filter */}
         <select
           value={selectedExpRange}
           onChange={e => setSelectedExpRange(e.target.value)}
@@ -207,12 +237,11 @@ const DiscoverPage: React.FC = () => {
           style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
         >
           <option value="">All Experience Levels</option>
-          <option value="entry">Entry / Fresher (&lt; 2 yrs)</option>
-          <option value="mid">Mid-Level (2 – 5 yrs)</option>
-          <option value="senior">Senior (5+ yrs)</option>
+          <option value="entry">Entry Level (0 - 2 yrs)</option>
+          <option value="mid">Mid Level (2 - 5 yrs)</option>
+          <option value="senior">Senior Level (5+ yrs)</option>
         </select>
 
-        {/* Work Type Filter */}
         <select
           value={selectedWorkType}
           onChange={e => setSelectedWorkType(e.target.value)}
@@ -253,7 +282,7 @@ const DiscoverPage: React.FC = () => {
                   className="candidate-card"
                   onClick={() => handleOpenProfile(c)}
                   style={{ cursor: "pointer" }}
-                  title="Click to view full candidate profile"
+                  title="Click to view candidate details"
                 >
                   <div className="card-top">
                     {c.avatarUrl ? (
@@ -306,6 +335,217 @@ const DiscoverPage: React.FC = () => {
             })
           )}
       </div>
+
+      {/* Candidate Details Popup Modal */}
+      {selectedCandidate && (
+        <div className="modal-overlay" onClick={() => setSelectedCandidate(null)}>
+          <div className="candidate-detail-modal" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="cd-modal-header">
+              <div className="cd-header-left">
+                {selectedCandidate.avatarUrl ? (
+                  <img src={selectedCandidate.avatarUrl} alt={selectedCandidate.fullName} className="cd-avatar" />
+                ) : (
+                  <div className="cd-avatar-placeholder">
+                    {selectedCandidate.fullName?.[0]?.toUpperCase() || "C"}
+                  </div>
+                )}
+                <div className="cd-header-meta">
+                  <h2 className="cd-name">{selectedCandidate.fullName}</h2>
+                  <p className="cd-headline">{selectedCandidate.headline || "Professional Candidate"}</p>
+                  <div className="cd-chips-row">
+                    <span className="cd-meta-chip">
+                      <FiMapPin size={13} /> {selectedCandidate.currentLocation || "Location not set"}
+                    </span>
+                    <span className="cd-meta-chip">
+                      <FiBriefcase size={13} /> {selectedCandidate.experienceStatus || "Fresher / Entry Level"}
+                    </span>
+                    {selectedCandidate.noticePeriod && (
+                      <span className="cd-meta-chip">
+                        <FiCalendar size={13} /> Notice: {selectedCandidate.noticePeriod}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button className="cd-btn-close" onClick={() => setSelectedCandidate(null)} aria-label="Close modal">
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="cd-modal-body">
+              {loadingDetail ? (
+                <div style={{ textAlign: "center", padding: "2.5rem" }}>
+                  <div className="spinner" style={{ margin: "0 auto 1rem", width: "32px", height: "32px" }} />
+                  <p style={{ color: "#64748b", fontSize: "0.95rem" }}>Loading candidate details...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Summary / Bio */}
+                  {(candidateDetail?.summary || selectedCandidate.summary) && (
+                    <div className="cd-section">
+                      <h4 className="cd-section-title"><FiFileText size={16} color="#70c144" /> Professional Summary</h4>
+                      <p className="cd-text">{candidateDetail?.summary || selectedCandidate.summary}</p>
+                    </div>
+                  )}
+
+                  {/* Intro Video */}
+                  {candidateDetail?.videoUrl && (
+                    <div className="cd-section">
+                      <h4 className="cd-section-title"><FiVideo size={16} color="#70c144" /> Introduction Video</h4>
+                      <div className="cd-video-wrap">
+                        <video controls src={candidateDetail.videoUrl} style={{ width: "100%", borderRadius: "8px", maxHeight: "240px", background: "#000" }}>
+                          Your browser does not support HTML5 video.
+                        </video>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Skills */}
+                  <div className="cd-section">
+                    <h4 className="cd-section-title"><FiAward size={16} color="#70c144" /> Key Skills & Competencies</h4>
+                    <div className="cd-skills-grid">
+                      {extractSkills(candidateDetail || selectedCandidate).length > 0 ? (
+                        extractSkills(candidateDetail || selectedCandidate).map((s, i) => (
+                          <span key={i} className="cd-skill-pill">{s}</span>
+                        ))
+                      ) : (
+                        <p className="cd-empty-note">No specific skills listed.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Internships & Experience */}
+                  <div className="cd-section">
+                    <h4 className="cd-section-title"><FiBriefcase size={16} color="#70c144" /> Internships & Practical Experience</h4>
+                    {candidateDetail?.experiences && candidateDetail.experiences.length > 0 ? (
+                      <div className="cd-timeline">
+                        {candidateDetail.experiences.map((exp: any, idx: number) => (
+                          <div key={exp.id || idx} className="cd-timeline-item">
+                            <div className="cd-timeline-dot" />
+                            <div className="cd-timeline-content">
+                              <div className="cd-timeline-heading">
+                                <strong className="cd-item-title">{exp.title}</strong>
+                                <span className="cd-company-name">{exp.companyName}</span>
+                              </div>
+                              <span className="cd-item-date">
+                                <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? " - Present" : (exp.endDate ? ` - ${exp.endDate}` : "")}
+                                {exp.isCurrent && <span className="cd-ongoing-tag">Ongoing</span>}
+                              </span>
+                              {exp.description && <p className="cd-item-desc">{exp.description}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="cd-empty-note">No internships or experiences added yet.</p>
+                    )}
+                  </div>
+
+                  {/* Education */}
+                  <div className="cd-section">
+                    <h4 className="cd-section-title"><FiBookOpen size={16} color="#70c144" /> Education & Qualifications</h4>
+                    {candidateDetail?.education && candidateDetail.education.length > 0 ? (
+                      <div className="cd-edu-grid">
+                        {candidateDetail.education.map((edu: any, idx: number) => (
+                          <div key={edu.id || idx} className="cd-edu-card">
+                            <strong className="cd-edu-degree">{edu.qualification}</strong>
+                            <p className="cd-edu-inst">{edu.institution}</p>
+                            {(edu.fieldOfStudy || edu.startYear || edu.endYear || edu.courseType) && (
+                              <span className="cd-edu-meta">
+                                {edu.fieldOfStudy ? `${edu.fieldOfStudy} • ` : ""}
+                                {edu.startYear ? `${edu.startYear}` : ""}{edu.endYear ? ` - ${edu.endYear}` : ""}
+                                {edu.courseType ? ` (${edu.courseType})` : ""}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="cd-empty-note">No education details provided.</p>
+                    )}
+                  </div>
+
+                  {/* Projects */}
+                  <div className="cd-section">
+                    <h4 className="cd-section-title"><FiFileText size={16} color="#70c144" /> Academic & Independent Projects</h4>
+                    {candidateDetail?.projects && candidateDetail.projects.length > 0 ? (
+                      <div className="cd-projects-grid">
+                        {candidateDetail.projects.map((proj: any, idx: number) => (
+                          <div key={proj.id || idx} className="cd-project-card">
+                            <div className="cd-project-header">
+                              <strong className="cd-project-name">{proj.name}</strong>
+                              {proj.clientCompany && <span className="cd-project-client">{proj.clientCompany}</span>}
+                            </div>
+                            {(proj.startDate || proj.endDate) && (
+                              <span className="cd-project-date">
+                                <FiCalendar size={12} /> {proj.startDate ? `${proj.startDate} - ` : ""}{proj.endDate || "Present"}
+                              </span>
+                            )}
+                            {proj.summary && <p className="cd-project-summary">{proj.summary}</p>}
+                            {proj.githubUrl && (
+                              <a href={proj.githubUrl} target="_blank" rel="noreferrer" className="cd-project-link">
+                                <FiGithub size={13} /> Repository
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="cd-empty-note">No projects added yet.</p>
+                    )}
+                  </div>
+
+                  {/* Assessment Evidence */}
+                  {candidateDetail?.evidence && candidateDetail.evidence.length > 0 && (
+                    <div className="cd-section">
+                      <h4 className="cd-section-title"><FiCheckCircle size={16} color="#16a34a" /> Verified RightPath Evidence</h4>
+                      <div className="cd-evidence-grid">
+                        {candidateDetail.evidence.map((ev: any, idx: number) => (
+                          <div key={ev.id || idx} className="cd-evidence-card">
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <strong>{ev.title}</strong>
+                              {ev.score != null && <span className="cd-score-badge">Score: {ev.score}%</span>}
+                            </div>
+                            {ev.summary && <p className="cd-evidence-summary">{ev.summary}</p>}
+                            <span className="cd-verified-by">✓ Verified by {ev.sourceSystem || "RightPath"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="cd-modal-footer">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setSelectedCandidate(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn-card-primary"
+                style={{ width: "auto", padding: "0.6rem 1.4rem" }}
+                onClick={() => {
+                  const c = selectedCandidate;
+                  setSelectedCandidate(null);
+                  setConnectModal({ candidateId: c.id!, name: c.fullName });
+                  setConnectErrors({});
+                  setConnectTouched(false);
+                }}
+              >
+                <FiUserPlus size={16} /> Connect with Candidate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connect Modal */}
       {connectModal && (

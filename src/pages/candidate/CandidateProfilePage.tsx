@@ -33,6 +33,7 @@ import {
   FiFileText,
   FiAward,
   FiUser,
+  FiUserPlus,
   FiBookOpen,
 } from 'react-icons/fi';
 import type { CandidateProfile, CandidateEducation, CandidateProject, CandidateRoleInterest, Evidence, RoleCatalogItem, CandidateExperience } from '../../types';
@@ -50,6 +51,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   // External view check: when viewed by Company or Admin via /candidates/:id or /candidate/:id
   const isExternalView = Boolean(routeCandidateId);
   const isReadOnly = isExternalView || user?.role !== 'ROLE_CANDIDATE';
+
 
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [connectForm, setConnectForm] = useState({
@@ -122,6 +124,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   const [roleInterests, setRoleInterests] = useState<CandidateRoleInterest[]>([]);
   const [evidencesList, setEvidencesList] = useState<Evidence[]>([]);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
+  const isCompanyView = user?.role === 'ROLE_COMPANY' || previewMode;
   const [publishing, setPublishing] = useState<boolean>(false);
 
   const [roleForm, setRoleForm] = useState({
@@ -1123,7 +1126,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         {previewMode && (
           <div style={{ background: '#2563eb', color: '#ffffff', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' }}>
             <span style={{ fontSize: '0.92rem', fontWeight: 600 }}>
-              👀 <strong>Company-Facing Preview Mode:</strong> This is how registered recruiters and companies view your verified profile.
+              ?? <strong>Company-Facing Preview Mode:</strong> This is how registered recruiters and companies view your verified profile.
             </span>
             <button
               onClick={() => setPreviewMode(false)}
@@ -1135,7 +1138,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         )}
 
         {isExternalView ? (
-          <div style={{ marginBottom: '1.25rem' }}>
+          <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <button
               type="button"
               className="btn-toggle-edit"
@@ -1149,6 +1152,18 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
               <FiArrowLeft size={16} />
               {user?.role === 'ROLE_COMPANY' ? 'Back to Discover' : 'Back to Candidates'}
             </button>
+
+            {user?.role === 'ROLE_COMPANY' && (
+              <button
+                type="button"
+                className="btn-toggle-edit"
+                onClick={() => setShowConnectModal(true)}
+                style={{ background: '#70c144', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.1rem', borderRadius: '8px', fontWeight: 700, boxShadow: '0 2px 8px rgba(112, 193, 68, 0.35)' }}
+              >
+                <FiUserPlus size={16} />
+                Connect with Candidate
+              </button>
+            )}
           </div>
         ) : (
           <div className="profile-action-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
@@ -1274,17 +1289,19 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 <span className={`pv-detail-item ${displayData.currentLocation ? 'filled' : 'empty'}`}>
                   <FiMapPin className="detail-icon" /> {displayData.currentLocation || 'Location not specified'}
                 </span>
-                <span className={`pv-detail-item ${displayData.phone ? 'filled' : 'empty'}`}>
-                  <FiPhone className="detail-icon" /> {displayData.phone || 'Phone not specified'}
-                  {displayData.phone && <FiCheckCircle size={13} className="verified-badge" />}
+                <span className={`pv-detail-item ${isCompanyView ? 'filled' : (displayData.phone ? 'filled' : 'empty')}`}>
+                  <FiPhone className="detail-icon" /> {isCompanyView ? 'Available upon connection' : (displayData.phone || 'Phone not specified')}
+                  {(!isCompanyView && displayData.phone) && <FiCheckCircle size={13} className="verified-badge" />}
                 </span>
                 <span className={`pv-detail-item ${displayData.experienceStatus ? 'filled' : 'empty'}`}>
                   <FiBriefcase className="detail-icon" /> {displayData.experienceStatus || 'Experience not specified'}
                 </span>
                 <span className="pv-detail-item filled email-item">
                   <FiMail className="detail-icon" />{' '}
-                  {emailText.length > 22 ? emailText.substring(0, 20) + '...' : emailText}{' '}
-                  <FiCheckCircle size={13} className="verified-badge" />
+                  {isCompanyView
+                    ? 'Available upon connection'
+                    : (emailText.length > 22 ? emailText.substring(0, 20) + '...' : emailText)}{' '}
+                  {!isCompanyView && <FiCheckCircle size={13} className="verified-badge" />}
                 </span>
                 <span className={`pv-detail-item ${displayData.noticePeriod ? 'filled' : 'empty'}`}>
                   <FiCalendar className="detail-icon" /> {displayData.noticePeriod || 'Availability not specified'}
@@ -1506,7 +1523,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     </div>
                     <div className="pv-exp-meta">
                       <span className="pv-exp-date">
-                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? ' – Present' : (exp.endDate ? ` – ${exp.endDate}` : '')}
+                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? ' � Present' : (exp.endDate ? ` � ${exp.endDate}` : '')}
                       </span>
                       {exp.isCurrent && <span className="pv-exp-badge">Ongoing</span>}
                     </div>
@@ -1616,7 +1633,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     <div>
                       <strong style={{ fontSize: '0.92rem', color: '#0f172a', display: 'block' }}>{r.roleName || 'Target Role'}</strong>
                       <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        {r.workType || 'Remote'} {r.preferredLocation ? `• ${r.preferredLocation}` : ''}
+                        {r.workType || 'Remote'} {r.preferredLocation ? `� ${r.preferredLocation}` : ''}
                       </span>
                     </div>
                     {!isReadOnly && (
@@ -1667,7 +1684,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     </div>
                     {ev.summary && <p style={{ fontSize: '0.82rem', color: '#166534', margin: '0.35rem 0 0' }}>{ev.summary}</p>}
                     <span style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: 600, display: 'inline-block', marginTop: '0.4rem' }}>
-                      ✓ Verified by {ev.sourceSystem || 'RightPath'}
+                      ? Verified by {ev.sourceSystem || 'RightPath'}
                     </span>
                   </div>
                 ))}
@@ -1693,28 +1710,54 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 </button>
               )}
             </div>
-            <div className="pv-personal-grid">
-              <div className="pv-personal-field">
-                <span className="pv-label">Gender</span>
-                <span className="pv-val">{displayData.gender || 'Not specified'}</span>
+            {isCompanyView ? (
+              <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem', color: '#334155', fontWeight: 600, fontSize: '0.92rem' }}>
+                  <FiUser size={16} color="#70c144" />
+                  <span>Personal Details Protected</span>
+                </div>
+                <p style={{ margin: '0 0 0.85rem', fontSize: '0.86rem', color: '#64748b', lineHeight: 1.5 }}>
+                  Candidate personal details (Date of Birth, Marital Status, Permanent Address, and direct personal contact details) are kept private to protect candidate confidentiality until a connection request is accepted.
+                </p>
+                <div className="pv-personal-grid">
+                  <div className="pv-personal-field">
+                    <span className="pv-label">Languages Known</span>
+                    <span className="pv-val">{displayData.languages || 'English'}</span>
+                  </div>
+                  <div className="pv-personal-field">
+                    <span className="pv-label">Current Location</span>
+                    <span className="pv-val">{displayData.currentLocation || 'Location on file'}</span>
+                  </div>
+                  <div className="pv-personal-field">
+                    <span className="pv-label">Work Eligibility</span>
+                    <span className="pv-val">Verified Candidate</span>
+                  </div>
+                </div>
               </div>
-              <div className="pv-personal-field">
-                <span className="pv-label">Date of Birth</span>
-                <span className="pv-val">{displayData.dateOfBirth || 'Not specified'}</span>
+            ) : (
+              <div className="pv-personal-grid">
+                <div className="pv-personal-field">
+                  <span className="pv-label">Gender</span>
+                  <span className="pv-val">{displayData.gender || 'Not specified'}</span>
+                </div>
+                <div className="pv-personal-field">
+                  <span className="pv-label">Date of Birth</span>
+                  <span className="pv-val">{displayData.dateOfBirth || 'Not specified'}</span>
+                </div>
+                <div className="pv-personal-field">
+                  <span className="pv-label">Marital Status</span>
+                  <span className="pv-val">{displayData.maritalStatus || 'Not specified'}</span>
+                </div>
+                <div className="pv-personal-field">
+                  <span className="pv-label">Languages Known</span>
+                  <span className="pv-val">{displayData.languages || 'Not specified'}</span>
+                </div>
+                <div className="pv-personal-field" style={{ gridColumn: '1 / -1' }}>
+                  <span className="pv-label">Permanent Address</span>
+                  <span className="pv-val">{displayData.permanentAddress || 'Not specified'}</span>
+                </div>
               </div>
-              <div className="pv-personal-field">
-                <span className="pv-label">Marital Status</span>
-                <span className="pv-val">{displayData.maritalStatus || 'Not specified'}</span>
-              </div>
-              <div className="pv-personal-field">
-                <span className="pv-label">Languages Known</span>
-                <span className="pv-val">{displayData.languages || 'Not specified'}</span>
-              </div>
-              <div className="pv-personal-field" style={{ gridColumn: '1 / -1' }}>
-                <span className="pv-label">Permanent Address</span>
-                <span className="pv-val">{displayData.permanentAddress || 'Not specified'}</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -2286,7 +2329,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       <h3 className="record-title">{exp.title}</h3>
                       <p className="record-subtitle">{exp.companyName}</p>
                       <span className="record-meta">
-                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? ' – Present' : (exp.endDate ? ` – ${exp.endDate}` : '')}
+                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? ' � Present' : (exp.endDate ? ` � ${exp.endDate}` : '')}
                         {exp.isCurrent && <span className="ongoing-tag">Ongoing</span>}
                       </span>
                       {exp.description && <p className="record-desc">{exp.description}</p>}
@@ -2344,7 +2387,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                         <span className="role-work-model-badge">{r.workType || 'Remote'}</span>
                         {r.preferredLocation && (
                           <span className="role-location-text">
-                            • {r.preferredLocation}
+                            � {r.preferredLocation}
                           </span>
                         )}
                       </p>

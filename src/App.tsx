@@ -19,6 +19,8 @@ const AdminAuditPage       = lazy(() => import("./pages/admin/AdminAuditPage"));
 const AdminDashboardPage   = lazy(() => import("./pages/admin/AdminDashboard"));
 const MyRequestsPage       = lazy(() => import("./pages/company/MyRequestsPage"));
 const CompanyProfileView   = lazy(() => import("./components/CompanyProfileView"));
+const AboutPage            = lazy(() => import("./pages/AboutPage"));
+const ServicesPage         = lazy(() => import("./pages/ServicesPage"));
 
 const PageLoader = () => (
   <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -70,9 +72,9 @@ const App: React.FC = () => (
           <Route path="/candidate/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
           <Route path="/profile/edit" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage initialMode="edit" /></ProtectedRoute>} />
           <Route path="/company/profile" element={<ProtectedRoute roles={["ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CompanyProfileView /></ProtectedRoute>} />
-          <Route path="/about" element={<CandidateProfilePage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/careers" element={<CandidateProfilePage />} />
-          <Route path="/services" element={<CandidateProfilePage />} />
+          <Route path="/services" element={<ServicesPage />} />
           <Route path="/contact" element={<CandidateProfilePage />} />
 
           <Route
