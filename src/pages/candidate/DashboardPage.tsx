@@ -61,13 +61,13 @@ const DashboardPage: React.FC = () => {
       icon: <FiUser size={24} />,
       label: "My Profile",
       desc: "Manage your public candidate profile, video introduction, and strength tags",
-      link: "/profile",
+      link: "/candidate/profile",
     },
     {
       icon: <FiAward size={24} />,
       label: "My Key Strengths",
       desc: "Showcase your work, projects & verifiable technical achievements",
-      link: "/profile",
+      link: "/candidate/profile",
     },
     {
       icon: <FiBell size={24} />,
@@ -82,13 +82,13 @@ const DashboardPage: React.FC = () => {
       icon: <FiSearch size={24} />,
       label: "Discover Talent",
       desc: "Search and explore candidate strength profiles and intro videos",
-      link: "/discover",
+      link: "/company/discover",
     },
     {
       icon: <FiSend size={24} />,
       label: "My Requests",
       desc: "Track your candidate connection request pipeline and statuses",
-      link: "/my-requests",
+      link: "/company/requests",
     },
     {
       icon: <FiBell size={24} />,
@@ -133,7 +133,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="setup-banner-right">
-            <Link to="/profile" className="btn-setup-action">
+            <Link to="/candidate/profile" className="btn-setup-action">
               <FiEdit3 size={16} /> Complete Profile <FiArrowRight size={16} />
             </Link>
           </div>

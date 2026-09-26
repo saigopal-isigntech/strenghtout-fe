@@ -143,7 +143,7 @@
 }
 
 .admin-users-table th {
-  padding: 0.9rem 1.1rem;
+  padding: 0.95rem 1.15rem;
   font-size: 0.78rem;
   font-weight: 700;
   color: #64748b;
@@ -151,6 +151,7 @@
   letter-spacing: 0.05em;
   border-bottom: 2px solid #e2e8f0;
   background: #f8fafc;
+  white-space: nowrap;
 }
 
 .admin-users-table td {
@@ -176,11 +177,14 @@
 .type-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 4px;
   background: #f1f5f9;
   color: #334155;
   border: 1px solid #e2e8f0;
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .roles-list {
@@ -480,5 +484,138 @@
     left: 1rem;
     right: 1rem;
     text-align: center;
+  }
+}
+
+
+/* Clickable user links and view action */
+.user-email-clickable {
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.user-email-clickable:hover {
+  color: #16a34a;
+  text-decoration: underline;
+}
+
+.clickable-row:hover td {
+  background-color: #f8fafc;
+}
+
+.btn-action.view {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.btn-action.view:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+
+/* ============================================================
+   MODAL INSPECTION SYSTEM (Candidates, Companies, Admin)
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1.5rem;
+}
+
+.modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+  padding: 2rem;
+  position: relative;
+  animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.btn-modal-cancel {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-modal-cancel:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+
+/* Advanced Mobile Responsiveness for Admin Users */
+@media (max-width: 768px) {
+  .users-header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .role-filter-btns {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 0.25rem;
+  }
+
+  .filter-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-toolbar {
+    padding: 0.85rem;
+  }
+
+  .search-wrap {
+    width: 100%;
+  }
+
+  .table-actions {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .btn-action {
+    width: 100%;
+    justify-content: center;
   }
 }

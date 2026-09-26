@@ -271,30 +271,64 @@ const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {pendingRequests.map(req => (
-                  <tr key={req.id}>
-                    <td className="time-col">{new Date(req.submittedAt).toLocaleDateString()}</td>
-                    <td className="company-col"><strong>{req.companyName}</strong></td>
-                    <td className="candidate-col">{req.candidateName}</td>
-                    <td className="msg-col">{req.message?.slice(0, 70) || "No message"}{(req.message?.length ?? 0) > 70 ? "..." : ""}</td>
-                    <td className="actions-col">
-                      <button
-                        className="btn-quick-approve"
-                        disabled={actionLoading === req.id}
-                        onClick={() => handleQuickStatus(req.id, "UNDER_REVIEW")}
-                      >
-                        Under Review
-                      </button>
-                      <button
-                        className="btn-quick-reject"
-                        disabled={actionLoading === req.id}
-                        onClick={() => handleQuickStatus(req.id, "REJECTED")}
-                      >
-                        Reject
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {pendingRequests.map(req => {
+                  const compName = req.companyDisplayName || req.companyName || (req as any).company?.displayName || (req as any).company?.legalName || "Registered Employer";
+                  const candName = req.candidateFullName || req.candidateName || (req as any).candidate?.fullName || "Registered Candidate";
+                  const roleText = req.roleTitle ? `${req.roleTitle}` : "";
+                  const summaryText = req.opportunitySummary || req.message || "General introduction & connection request";
+                  const displaySnippet = roleText ? `${roleText} — ${summaryText}` : summaryText;
+
+                  return (
+                    <tr key={req.id}>
+                      <td className="time-col">
+                        {req.submittedAt ? new Date(req.submittedAt).toLocaleDateString() : "Recent"}
+                      </td>
+                      <td className="company-col">
+                        <span style={{ fontWeight: 700, color: "var(--text-primary, #0f172a)" }}>
+                          {compName}
+                        </span>
+                        {req.companyCity && (
+                          <span style={{ display: "block", fontSize: "0.76rem", color: "#64748b", fontWeight: 500 }}>
+                            {req.companyCity}
+                          </span>
+                        )}
+                      </td>
+                      <td className="candidate-col">
+                        <span style={{ fontWeight: 700, color: "#1d72f2" }}>
+                          {candName}
+                        </span>
+                        {req.candidateHeadline && (
+                          <span style={{ display: "block", fontSize: "0.76rem", color: "#64748b", fontWeight: 500 }}>
+                            {req.candidateHeadline}
+                          </span>
+                        )}
+                      </td>
+                      <td className="msg-col">
+                        <span title={displaySnippet}>
+                          {displaySnippet.slice(0, 65)}{displaySnippet.length > 65 ? "..." : ""}
+                        </span>
+                      </td>
+                      <td className="actions-col">
+                        <button
+                          className="btn-quick-approve"
+                          disabled={actionLoading === req.id}
+                          onClick={() => handleQuickStatus(req.id, "UNDER_REVIEW")}
+                          title="Set status to Under Review"
+                        >
+                          Under Review
+                        </button>
+                        <button
+                          className="btn-quick-reject"
+                          disabled={actionLoading === req.id}
+                          onClick={() => handleQuickStatus(req.id, "CLOSED")}
+                          title="Reject / Close request"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

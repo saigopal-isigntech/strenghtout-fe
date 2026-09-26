@@ -431,3 +431,23 @@
   }
   .mr-page-btn { width: 100%; text-align: center; }
 }
+
+
+/* Advanced Mobile Responsiveness for My Requests */
+@media (max-width: 640px) {
+  .mr-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .mr-filter-chips-row {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .mr-search-box {
+    width: 100%;
+    max-width: 100%;
+  }
+}

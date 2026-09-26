@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { adminApi } from "../api/admin";
 import { companiesApi } from "../api/companies";
 import { useAuth } from "../context/AuthContext";
 import type { CompanyProfile, CompanyContact } from "../types";
@@ -27,6 +29,10 @@ import "./CompanyProfileView.css";
 
 const CompanyProfileView: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { id: routeCompanyId } = useParams<{ id?: string }>();
+  const isExternalView = Boolean(routeCompanyId);
+  const isReadOnly = isExternalView && user?.role !== "ROLE_COMPANY";
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -61,23 +67,49 @@ const CompanyProfileView: React.FC = () => {
   const loadProfile = async () => {
     setLoading(true);
     try {
+      if (routeCompanyId) {
+        if (user?.role === "ROLE_ADMIN" || user?.role === "ROLE_SUPER_ADMIN") {
+          try {
+            const adminRes = await adminApi.getCompanyDetail(routeCompanyId);
+            if (adminRes.data?.data) {
+              setProfile(adminRes.data.data);
+              setForm(adminRes.data.data);
+              return;
+            }
+          } catch {
+            // fallback to list search
+          }
+        }
+        try {
+          const res = await adminApi.getCompanies({ search: routeCompanyId, size: 5 });
+          const list = res.data?.data?.content || [];
+          const matched = list.find((c: any) => c.id === routeCompanyId || c.email === routeCompanyId || (c as any).userId === routeCompanyId) || list[0];
+          if (matched) {
+            setProfile(matched);
+            setForm(matched);
+            return;
+          }
+        } catch {
+          // fallback
+        }
+      }
       const res = await companiesApi.getMyProfile();
       setProfile(res.data.data);
       setForm(res.data.data);
     } catch {
-      // Fallback draft based on authenticated user info
+      // Fallback draft based on authenticated user info or routeCompanyId
       const fallback: CompanyProfile = {
-        id: "draft",
-        legalName: user?.fullName || "Acme Corporation",
-        displayName: user?.fullName || "Acme Tech",
-        email: user?.email || "recruiting@company.com",
+        id: routeCompanyId || "draft",
+        legalName: user?.fullName || "company1",
+        displayName: user?.fullName || "company1",
+        email: user?.email || "company1@gmail.com",
         industry: "Information Technology & Services",
-        companySize: "11-50 Employees",
-        website: "https://example.com",
-        linkedinUrl: "",
-        description: "",
+        companySize: "1-10 Employees",
+        website: "https://www.isigntech.com/",
+        linkedinUrl: "https://linkedin.com/isigntech",
+        description: "A structured group of people who work together in a coordinated way to reach shared goals and objectives",
         country: "India",
-        city: "Hyderabad",
+        city: "Hyderabad , Chennai",
         status: "ACTIVE",
         contacts: []
       };
@@ -90,7 +122,7 @@ const CompanyProfileView: React.FC = () => {
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [routeCompanyId]);
 
   const handleSave = async () => {
     const errors: Record<string, string> = {};
@@ -197,6 +229,30 @@ const CompanyProfileView: React.FC = () => {
     return (
       <div className="company-profile-page-wrapper">
         <div className="company-profile-container">
+        {isExternalView && (
+          <div style={{ marginBottom: "1rem" }}>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/users')}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.45rem",
+                background: "#ffffff",
+                border: "1px solid #cbd5e1",
+                color: "#334155",
+                padding: "0.5rem 1rem",
+                borderRadius: "8px",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)"
+              }}
+            >
+              <FiArrowLeft size={16} /> Back to Directory
+            </button>
+          </div>
+        )}
           <div className="company-loading-card">
             <div className="spinner" />
             <p>Loading company profile details...</p>
@@ -218,6 +274,7 @@ const CompanyProfileView: React.FC = () => {
             <FiUserCheck size={14} /> COMPANY ACCOUNT
           </div>
 
+          {!isReadOnly && (
           <button
             type="button"
             className="btn-toggle-edit"
@@ -237,6 +294,7 @@ const CompanyProfileView: React.FC = () => {
               </>
             )}
           </button>
+          )}
         </div>
 
         {/* Alert Notifications */}
@@ -367,9 +425,11 @@ const CompanyProfileView: React.FC = () => {
                   <h2 className="company-section-title">
                     <FiBriefcase size={18} color="#70c144" /> Key Organization Details
                   </h2>
-                  <button className="section-action-link" onClick={() => setEditing(true)}>
-                    <FiEdit3 size={13} /> Edit Details
-                  </button>
+                  {!isReadOnly && (
+                    <button className="section-action-link" onClick={() => setEditing(true)}>
+                      <FiEdit3 size={13} /> Edit Details
+                    </button>
+                  )}
                 </div>
 
                 <div className="company-info-cards-grid">

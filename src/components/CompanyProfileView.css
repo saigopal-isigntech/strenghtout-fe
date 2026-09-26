@@ -842,3 +842,34 @@
     font-size: 1.8rem;
   }
 }
+
+
+/* Advanced Mobile Responsiveness for Company Profile View */
+@media (max-width: 600px) {
+  .company-header-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .company-header-left {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .company-meta-pills {
+    justify-content: center;
+  }
+
+  .company-details-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .company-content-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .job-postings-grid {
+    grid-template-columns: 1fr;
+  }
+}

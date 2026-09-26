@@ -793,3 +793,134 @@
   background: #1e293b;
   color: #ffffff;
 }
+
+
+/* ============================================================
+   MOBILE DRAWER ADVANCED RESPONSIVENESS & USER SECTION
+   ============================================================ */
+.mobile-drawer-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.5rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="dark"] .mobile-drawer-user {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.mobile-drawer-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #70c144, #5ea836);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.mobile-drawer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-drawer-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-drawer-user-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .mobile-drawer-user-name {
+  color: #f8fafc;
+}
+
+.mobile-drawer-user-role {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #70c144;
+  letter-spacing: 0.04em;
+}
+
+.mobile-drawer-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #fff1f2;
+  color: #dc2626;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.mobile-drawer-logout-btn:hover {
+  background: #ffe4e6;
+  color: #b91c1c;
+}
+
+[data-theme="dark"] .mobile-drawer-logout-btn {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #f87171;
+}
+
+@media (max-width: 480px) {
+  .navbar-inner {
+    padding: 0 0.6rem;
+    height: 60px;
+  }
+
+  .nav-brand-logo {
+    height: 24px;
+    max-width: 110px;
+  }
+
+  .brand-role-tag {
+    font-size: 0.6rem;
+    padding: 0.12rem 0.35rem;
+  }
+
+  .nav-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .nav-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .mobile-drawer {
+    width: min(300px, 85vw);
+    padding: 1rem;
+  }
+}

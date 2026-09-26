@@ -10,7 +10,6 @@ import { isValidUserAvatar } from "../utils/validators";
 /* react-icons */
 import {
   FiEdit3,
-  FiSearch,
   FiBell,
   FiChevronDown,
   FiLogOut,
@@ -30,8 +29,7 @@ const Navbar: React.FC = () => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [unreadCount, setUnreadCount] = useState(0);
+    const [unreadCount, setUnreadCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const isFetchingUnreadRef = useRef(false);
   const lastFetchedPathRef = useRef<string>("");
@@ -196,19 +194,41 @@ const Navbar: React.FC = () => {
     : (user?.fullName?.[0]?.toUpperCase() || "U");
 
   const isActive = (path: string) => {
-    if (
-      path === "/dashboard" &&
-      (location.pathname === "/dashboard" || location.pathname === "/")
-    )
-      return true;
-    if (path === "/profile") {
+    if (path === "/admin/dashboard" || path === "/company/dashboard" || path === "/candidate/dashboard") {
       return (
+        location.pathname === path ||
+        location.pathname === "/dashboard" ||
+        (location.pathname === "/" && isAuthenticated)
+      );
+    }
+    if (path.includes("discover")) {
+      return location.pathname === "/company/discover" || location.pathname === "/discover";
+    }
+    if (path.includes("requests")) {
+      if (path.startsWith("/admin")) {
+        return location.pathname === "/admin/requests";
+      }
+      return location.pathname === "/company/requests" || location.pathname === "/my-requests";
+    }
+    if (path.includes("profile")) {
+      if (path.startsWith("/company")) {
+        return location.pathname === "/company/profile";
+      }
+      return (
+        location.pathname === "/candidate/profile" ||
+        location.pathname === "/candidate/profile/edit" ||
         location.pathname === "/profile" ||
-        location.pathname === "/profile/edit" ||
-        location.pathname.startsWith("/candidate/")
+        location.pathname === "/profile/edit"
       );
     }
     return location.pathname === path;
+  };
+
+  const getBrandHomeLink = () => {
+    if (!user) return "/";
+    if (isAdmin()) return "/admin/dashboard";
+    if (user.role === "ROLE_COMPANY") return "/company/dashboard";
+    return "/candidate/dashboard";
   };
 
   const navLinks = () => {
@@ -216,45 +236,38 @@ const Navbar: React.FC = () => {
       return [
         { to: "/", label: "Home" },
         { to: "/about", label: "About" },
-        { to: "/careers", label: "Careers" },
         { to: "/services", label: "Services" },
-        { to: "/contact", label: "Contact" },
       ];
     if (isAdmin())
       return [
-        { to: "/dashboard", label: "Home" },
+        { to: "/admin/dashboard", label: "Home" },
         { to: "/admin/requests", label: "Requests" },
         { to: "/admin/users", label: "Users" },
         { to: "/admin/audit", label: "Audit" },
       ];
     if (user.role === "ROLE_COMPANY")
       return [
-        { to: "/dashboard", label: "Home" },
-        { to: "/discover", label: "Discover" },
-        { to: "/my-requests", label: "My Requests" },
+        { to: "/company/dashboard", label: "Home" },
+        { to: "/company/discover", label: "Discover" },
+        { to: "/company/requests", label: "Requests" },
+        { to: "/company/profile", label: "Profile" },
         { to: "/about", label: "About" },
       ];
     return [
-      { to: "/dashboard", label: "Home" },
-      { to: "/profile", label: "Profile" },
+      { to: "/candidate/dashboard", label: "Home" },
+      { to: "/candidate/profile", label: "Profile" },
       { to: "/services", label: "Services" },
       { to: "/about", label: "About" },
     ];
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim())
-      navigate(`/discover?q=${encodeURIComponent(searchQuery.trim())}`);
-  };
-
+  
   const handleBellClick = () => {
     /* optimistically clear badge when user navigates to notifications */
     setUnreadCount(0);
   };
 
-  const showSearch = isAdmin();
-
+  
   const displayCount =
     unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "";
 
@@ -263,7 +276,7 @@ const Navbar: React.FC = () => {
       <div className="navbar-inner">
         {/* Logo */}
         <Link
-          to={isAuthenticated ? "/dashboard" : "/"}
+          to={getBrandHomeLink()}
           className="nav-brand"
           aria-label="StrengthOut Home"
         >
@@ -288,23 +301,7 @@ const Navbar: React.FC = () => {
           ))}
         </div>
 
-        {/* Search - only visible for Company / Admin */}
-        {showSearch && (
-          <form className="nav-search" onSubmit={handleSearch} role="search">
-            <input
-              id="nav-search-input"
-              className="nav-search-input"
-              type="search"
-              placeholder="Search profiles, skills..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search"
-            />
-            <button type="submit" className="nav-search-btn" aria-label="Search">
-              <FiSearch size={15} strokeWidth={2.5} />
-            </button>
-          </form>
-        )}
+        
 
         {/* Hamburger (mobile only) */}
         <button
@@ -324,6 +321,28 @@ const Navbar: React.FC = () => {
           />
         )}
         <div className={`mobile-drawer ${mobileOpen ? "open" : ""}`}>
+          {isAuthenticated && (
+            <div className="mobile-drawer-user">
+              <div className="mobile-drawer-avatar">
+                {avatarSrc && !imgError ? (
+                  <img
+                    src={avatarSrc}
+                    alt={user?.fullName || "User Avatar"}
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <span>{isSuperAdmin ? "SA" : userInitial}</span>
+                )}
+              </div>
+              <div className="mobile-drawer-user-meta">
+                <span className="mobile-drawer-user-name">{user?.fullName || "User"}</span>
+                <span className="mobile-drawer-user-role">
+                  {isSuperAdmin ? "SUPER ADMIN" : (user?.role || "").replace("ROLE_", "")}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="mobile-drawer-links">
             {navLinks().map((link) => (
               <Link
@@ -335,6 +354,31 @@ const Navbar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
+
+            {isAuthenticated && (
+              <Link
+                to="/notifications"
+                className={`mobile-nav-link ${isActive("/notifications") ? "active" : ""}`}
+                onClick={() => {
+                  setMobileOpen(false);
+                  handleBellClick();
+                }}
+              >
+                <FiBell size={16} style={{ marginRight: "0.5rem" }} />
+                Notifications {unreadCount > 0 && `(${displayCount})`}
+              </Link>
+            )}
+
+            {isAuthenticated && user?.role === "ROLE_CANDIDATE" && (
+              <Link
+                to="/candidate/profile/edit"
+                className={`mobile-nav-link ${isActive("/profile/edit") ? "active" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <FiEdit3 size={16} style={{ marginRight: "0.5rem" }} />
+                Edit Profile Details
+              </Link>
+            )}
           </div>
 
           {/* Mobile Theme Toggle */}
@@ -376,25 +420,18 @@ const Navbar: React.FC = () => {
             </button>
           </div>
 
-          {showSearch && (
-            <div className="mobile-drawer-search">
-              <form
-                onSubmit={(e) => {
-                  handleSearch(e);
-                  setMobileOpen(false);
-                }}
-              >
-                <input
-                  type="search"
-                  className="mobile-search-input"
-                  placeholder="Search profiles, skills..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </form>
-            </div>
-          )}
-          {!isAuthenticated && (
+          {isAuthenticated ? (
+            <button
+              type="button"
+              className="mobile-drawer-logout-btn"
+              onClick={() => {
+                setMobileOpen(false);
+                handleLogout();
+              }}
+            >
+              <FiLogOut size={16} /> Sign Out
+            </button>
+          ) : (
             <div className="mobile-auth-btns">
               <Link
                 to="/login"
@@ -525,18 +562,20 @@ const Navbar: React.FC = () => {
                   </div>
                   <hr className="dropdown-divider" />
 
-                  <Link
-                    to="/profile"
-                    className="dropdown-link"
-                    onClick={() => setMenuOpen(false)}
-                    role="menuitem"
-                  >
-                    <HiOutlineUser size={14} /> View My Profile
-                  </Link>
+                  {!isAdmin() && (
+                    <Link
+                      to={user?.role === "ROLE_COMPANY" ? "/company/profile" : "/candidate/profile"}
+                      className="dropdown-link"
+                      onClick={() => setMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      <HiOutlineUser size={14} /> View My Profile
+                    </Link>
+                  )}
 
                   {user?.role === "ROLE_CANDIDATE" && (
                     <Link
-                      to="/profile/edit"
+                      to="/candidate/profile/edit"
                       className="dropdown-link"
                       onClick={() => setMenuOpen(false)}
                       role="menuitem"

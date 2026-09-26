@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useState, Fragment } from "react";
+import React, { useEffect, useState, useMemo, Fragment } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
-import { FiRefreshCw, FiInbox, FiFilter } from "react-icons/fi";
+import { FiRefreshCw, FiInbox, FiFilter, FiSearch, FiExternalLink } from "react-icons/fi";
 import "./AdminQueue.css";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -16,31 +17,64 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
 };
 
 const sm = (s: string) => STATUS_META[s] ?? { label: s, color: "#374151", bg: "#f3f4f6", border: "#d1d5db" };
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+const fmtDate = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return "N/A";
+  }
+};
 
 const AdminQueuePage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialStatus = searchParams.get("status") || "";
+  const initialQ = searchParams.get("q") || "";
+
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
-  const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(true);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [searchQuery, setSearchQuery]   = useState(initialQ);
   const [updating, setUpdating] = useState<string | null>(null);
   const [toast, setToast]       = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const updateUrl = (newStatus: string, newSearch: string) => {
+    const params: Record<string, string> = {};
+    if (newStatus) params.status = newStatus;
+    if (newSearch && newSearch.trim()) params.q = newSearch.trim();
+    setSearchParams(params, { replace: true });
+  };
+
   const load = async () => {
     setLoading(true);
-    const params: Record<string, string | number> = { page: 0, size: 50 };
+    const params: Record<string, string | number> = { page: 0, size: 100 };
     if (statusFilter) params.status = statusFilter;
     try {
       const res = await connectionsApi.getAdminQueue(params);
-      setRequests(res.data.data.content);
-      setTotal(res.data.data.totalElements);
+      const list = res.data.data.content || [];
+      setRequests(list);
+    } catch {
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { 
+    load(); 
+  }, [statusFilter]);
+
+  const handleStatusFilterChange = (s: string) => {
+    setStatusFilter(s);
+    updateUrl(s, searchQuery);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    updateUrl(statusFilter, val);
+  };
 
   const transition = async (id: string, toStatus: string) => {
     setUpdating(id + toStatus);
@@ -59,11 +93,30 @@ const AdminQueuePage: React.FC = () => {
 
   const statuses = Object.keys(STATUS_META);
 
+  // Real-time client search filtering
+  const filteredRequests = useMemo(() => {
+    if (!searchQuery.trim()) return requests;
+    const q = searchQuery.toLowerCase().trim();
+
+    return requests.filter(r => {
+      const companyMatch = (r.companyDisplayName || r.companyName || "").toLowerCase().includes(q);
+      const candidateMatch = (r.candidateFullName || r.candidateName || "").toLowerCase().includes(q);
+      const headlineMatch = (r.candidateHeadline || "").toLowerCase().includes(q);
+      const roleMatch = (r.roleTitle || "").toLowerCase().includes(q);
+      const workTypeMatch = (r.workType || "").toLowerCase().includes(q);
+      const locationMatch = (r.candidateLocation || r.location || "").toLowerCase().includes(q);
+      const summaryMatch = (r.opportunitySummary || r.message || "").toLowerCase().includes(q);
+      const statusLabelMatch = sm(r.status).label.toLowerCase().includes(q);
+
+      return companyMatch || candidateMatch || headlineMatch || roleMatch || workTypeMatch || locationMatch || summaryMatch || statusLabelMatch;
+    });
+  }, [requests, searchQuery]);
+
   return (
     <div className="admin-queue-page">
       {toast && <div className="admin-toast">{toast}</div>}
 
-      {/* ── Page Header ── */}
+      {/* Page Header */}
       <div className="queue-page-header">
         <div>
           <div className="queue-page-badge">ADMIN OPERATIONS</div>
@@ -76,23 +129,54 @@ const AdminQueuePage: React.FC = () => {
         </button>
       </div>
 
-      {/* ── Filter Bar ── */}
-      <div className="queue-filter-bar">
-        <div className="queue-filter-left">
-          <FiFilter size={14} style={{ color: "#64748b" }} />
-          <span className="queue-filter-label">Filter by status:</span>
+      {/* Unified Search & Filter Bar matching Admin design system */}
+      <div className="queue-search-filter-card">
+        <div className="queue-search-row">
+          <div className="queue-search-box">
+            <FiSearch size={15} className="queue-search-icon" />
+            <input
+              type="text"
+              className="queue-search-input"
+              placeholder="Search requests by company, candidate, role, location, or summary..."
+              value={searchQuery}
+              onChange={e => handleSearchChange(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="queue-clear-search-btn"
+                onClick={() => handleSearchChange("")}
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <span className="queue-count-badge">
+            {filteredRequests.length} matching request{filteredRequests.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="queue-filter-chips-row">
+          <div className="queue-filter-label-group">
+            <FiFilter size={13} style={{ color: "#64748b" }} />
+            <span className="queue-filter-label">Filter by status:</span>
+          </div>
           <div className="queue-chip-row">
             <button
+              type="button"
               className={`filter-chip${statusFilter === "" ? " active" : ""}`}
-              onClick={() => setStatusFilter("")}
+              onClick={() => handleStatusFilterChange("")}
             >
               All
             </button>
             {statuses.map(s => (
               <button
+                type="button"
                 key={s}
                 className={`filter-chip${statusFilter === s ? " active" : ""}`}
-                onClick={() => setStatusFilter(s)}
+                onClick={() => handleStatusFilterChange(s)}
                 style={statusFilter === s ? { background: sm(s).bg, color: sm(s).color, borderColor: sm(s).border } : {}}
               >
                 {sm(s).label}
@@ -100,25 +184,37 @@ const AdminQueuePage: React.FC = () => {
             ))}
           </div>
         </div>
-        <span className="queue-count-badge">{total} request{total !== 1 ? "s" : ""}</span>
       </div>
 
-      {/* ── Table Card ── */}
+      {/* Table Card */}
       <div className="queue-table-card">
         {loading ? (
           <div className="queue-loading">
             <div className="spinner-lg" />
-            <span>Loading requests…</span>
+            <span>Loading requests...</span>
           </div>
-        ) : requests.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <div className="queue-empty">
             <FiInbox size={48} className="queue-empty-icon" />
-            <h3>No requests found</h3>
+            <h3>No matching requests found</h3>
             <p>
-              {statusFilter
-                ? `No requests with status "${sm(statusFilter).label}". Try selecting a different filter.`
+              {searchQuery || statusFilter
+                ? "No connection requests match your active search or status filter. Try clearing the filters."
                 : "No connection requests have been submitted yet."}
             </p>
+            {(searchQuery || statusFilter) && (
+              <button
+                type="button"
+                className="btn-reset-queue-filters"
+                onClick={() => {
+                  setStatusFilter("");
+                  setSearchQuery("");
+                  updateUrl("", "");
+                }}
+              >
+                Reset Search & Filters
+              </button>
+            )}
           </div>
         ) : (
           <table className="queue-table">
@@ -133,11 +229,12 @@ const AdminQueuePage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {requests.map((r, index) => {
-                const meta   = sm(r.status);
-                const isExp  = expanded === r.id;
-                const next   = r.allowedNextStatuses || [];
+              {filteredRequests.map((r, index) => {
+                const meta    = sm(r.status);
+                const isExp   = expanded === r.id;
+                const next    = r.allowedNextStatuses || [];
                 const itemKey = r.id || `queue-${index}`;
+
                 return (
                   <Fragment key={itemKey}>
                     <tr
@@ -147,22 +244,50 @@ const AdminQueuePage: React.FC = () => {
                       <td>
                         <div className="queue-company-cell">
                           <div className="queue-company-avatar">
-                            {(r.companyDisplayName || "?")[0].toUpperCase()}
+                            {(r.companyDisplayName || r.companyName || "?")[0].toUpperCase()}
                           </div>
-                          <span className="queue-company-name">{r.companyDisplayName}</span>
+                          <div className="queue-company-info">
+                            <span 
+                              className="queue-company-name-link"
+                              onClick={(e) => {
+                                if (r.companyId) {
+                                  e.stopPropagation();
+                                  navigate(`/companies/${r.companyId}`);
+                                }
+                              }}
+                              title={r.companyId ? "Click to view company profile" : ""}
+                            >
+                              {r.companyDisplayName || r.companyName || "Unknown Company"}
+                              {r.companyId && <FiExternalLink size={10} style={{ marginLeft: "4px", verticalAlign: "middle" }} />}
+                            </span>
+                          </div>
                         </div>
                       </td>
                       <td>
-                        <div className="queue-candidate-name">{r.candidateFullName}</div>
+                        <div 
+                          className="queue-candidate-name-link"
+                          onClick={(e) => {
+                            if (r.candidateId) {
+                              e.stopPropagation();
+                              navigate(`/candidates/${r.candidateId}`);
+                            }
+                          }}
+                          title={r.candidateId ? "Click to view candidate profile" : ""}
+                        >
+                          {r.candidateFullName || r.candidateName || "Candidate"}
+                          {r.candidateId && <FiExternalLink size={10} style={{ marginLeft: "4px", verticalAlign: "middle" }} />}
+                        </div>
                         {r.candidateHeadline && (
                           <div className="queue-candidate-headline">{r.candidateHeadline}</div>
                         )}
                       </td>
                       <td>
-                        <span className="queue-role-text">{r.roleTitle}</span>
-                        <span className={`queue-worktype-chip queue-worktype-${r.workType?.toLowerCase()}`}>
-                          {r.workType}
-                        </span>
+                        <span className="queue-role-text">{r.roleTitle || "Opportunity"}</span>
+                        {r.workType && (
+                          <span className={`queue-worktype-chip queue-worktype-${r.workType?.toLowerCase()}`}>
+                            {r.workType}
+                          </span>
+                        )}
                       </td>
                       <td>
                         <span
@@ -176,7 +301,7 @@ const AdminQueuePage: React.FC = () => {
                       <td onClick={e => e.stopPropagation()}>
                         <div className="queue-action-btns">
                           {next.length === 0 ? (
-                            <span className="queue-no-action">—</span>
+                            <span className="queue-no-action">-</span>
                           ) : (
                             next.map(s => {
                               const btnMeta = sm(s);
@@ -205,13 +330,13 @@ const AdminQueuePage: React.FC = () => {
                           <div className="queue-detail-panel">
                             <div className="queue-detail-section">
                               <span className="queue-detail-label">Opportunity Summary</span>
-                              <p className="queue-detail-text">{r.opportunitySummary || "—"}</p>
+                              <p className="queue-detail-text">{r.opportunitySummary || r.message || "-"}</p>
                             </div>
                             <div className="queue-detail-grid">
-                              {r.candidateLocation && (
+                              {(r.candidateLocation || r.location) && (
                                 <div className="queue-detail-item">
                                   <span className="queue-detail-label">Location</span>
-                                  <span>{r.candidateLocation}</span>
+                                  <span>{r.candidateLocation || r.location}</span>
                                 </div>
                               )}
                               {r.workType && (
