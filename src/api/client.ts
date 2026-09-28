@@ -27,7 +27,21 @@ apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    if (!original) {
+      return Promise.reject(error);
+    }
+
+    // Do NOT intercept 401 on authentication/registration endpoints (e.g., login, register, refresh, password reset)
+    const url = original.url || '';
+    const isAuthEndpoint = (
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/refresh') ||
+      url.includes('/auth/password') ||
+      url.includes('/auth/logout')
+    );
+
+    if (error.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -40,7 +54,9 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) {
-        window.location.href = '/login';
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          window.location.href = '/login';
+        }
         return Promise.reject(error);
       }
       try {
@@ -53,7 +69,9 @@ apiClient.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         localStorage.clear();
-        window.location.href = '/login';
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          window.location.href = '/login';
+        }
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

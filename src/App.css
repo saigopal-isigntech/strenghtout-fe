@@ -69,9 +69,15 @@ body.dark {
 
 html {
   overflow-x: hidden;
-  scroll-behavior: smooth;
-  scrollbar-gutter: stable;
-  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 769px) {
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+  }
 }
 
 body {

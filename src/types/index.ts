@@ -1,3 +1,20 @@
+export interface ConnectionAdminNote {
+  id: string;
+  note: string;
+  createdByEmail: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ConnectionStatusHistory {
+  id: string;
+  fromStatus: string;
+  toStatus: string;
+  changedByEmail: string;
+  reason?: string;
+  changedAt: string;
+}
+
 ﻿export interface ApiResponse<T> {
   success: boolean;
   message: string;

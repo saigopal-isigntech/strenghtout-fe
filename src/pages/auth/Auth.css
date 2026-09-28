@@ -834,50 +834,169 @@
 .pwd-bar-4 { background: #22c55e; }
 
 /* ============================================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - Complete Visibility & Seamless Mobile Scrolling
    ============================================================ */
 @media (max-width: 900px) {
   .auth-root {
     flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
+
   .auth-left {
     min-height: auto;
-    padding: 2.5rem 2rem;
+    height: auto;
+    padding: 2.25rem 1.5rem 2rem;
     flex: none;
+    overflow: visible;
+    width: 100%;
   }
+
   .auth-left-inner,
   .auth-left-content {
     padding: 0;
     max-width: 100%;
+    position: relative;
+    z-index: 2;
   }
+
+  .auth-left-hero {
+    margin: 1.5rem 0 1rem;
+  }
+
+  .auth-panel-headline {
+    font-size: 1.6rem;
+    line-height: 1.25;
+    margin-bottom: 0.6rem;
+  }
+
+  .auth-panel-sub {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    margin-bottom: 1.25rem;
+  }
+
+  /* All feature cards remain completely visible with responsive mobile layout */
+  .auth-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin: 1.25rem 0 1.5rem;
+    width: 100%;
+  }
+
+  .auth-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    width: 100%;
+  }
+
+  .auth-feature-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .auth-feature-text strong {
+    font-size: 0.9rem;
+    color: #ffffff;
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  .auth-feature-text span {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    line-height: 1.45;
+    display: block;
+  }
+
+  .auth-left-footer {
+    display: block;
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 1.25rem;
+  }
+
   .auth-right {
     flex: none;
+    width: 100%;
     min-height: auto;
+    height: auto;
     box-shadow: none;
-    border-top: 3px solid rgba(112, 193, 68, 0.2);
+    overflow: visible !important;
+    overflow-y: visible !important;
+    border-top: 2px solid rgba(112, 193, 68, 0.25);
+    background: #ffffff;
   }
+
   .auth-right-inner {
-    padding: 2.75rem 2rem 2rem;
+    padding: 2.25rem 1.5rem 3rem;
+    min-height: auto;
+    height: auto;
     justify-content: flex-start;
+  }
+
+  .auth-form-wrapper {
+    max-width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   .auth-left {
-    padding: 2rem 1.25rem;
+    padding: 1.75rem 1rem 1.5rem;
   }
-  .auth-right-inner {
-    padding: 2rem 1.25rem 1.5rem;
-  }
+
   .auth-panel-headline {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
   }
+
+  .auth-panel-sub {
+    font-size: 0.84rem;
+  }
+
+  .auth-feature-item {
+    padding: 0.75rem 0.85rem;
+    gap: 0.75rem;
+  }
+
+  .auth-feature-icon {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+  }
+
+  .auth-feature-text strong {
+    font-size: 0.85rem;
+  }
+
+  .auth-feature-text span {
+    font-size: 0.76rem;
+  }
+
+  .auth-right-inner {
+    padding: 1.75rem 1rem 2.5rem;
+  }
+
   .auth-form-title {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
   }
+
   .otp-boxes-row {
     gap: 6px;
   }
+
   .otp-digit-box {
     width: 42px;
     height: 50px;

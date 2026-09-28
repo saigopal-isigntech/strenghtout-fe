@@ -410,7 +410,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
       setDisplayData({
         firstName: p.firstName || userFirstName,
         lastName: p.lastName || userLastName,
-        email: p.email || (isExternalView ? 'saicharan@gmail.com' : (user?.email || '')),
+        email: p.email || (p as any).user?.email || (isExternalView ? '' : (user?.email || '')),
         phone: p.phone || '',
         currentLocation: p.currentLocation || p.location || '',
         experienceStatus: p.experienceStatus || '',
@@ -1084,7 +1084,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
   const fullName =
     `${displayData.firstName} ${displayData.lastName}`.trim() || user?.fullName || 'Candidate Profile';
-  const emailText = displayData.email || (isExternalView ? 'saicharan@gmail.com' : (user?.email || 'saicharan@gmail.com'));
+  const emailText = displayData.email || (isExternalView ? '' : (user?.email || ''));
   const candidateInitials = displayData.firstName
     ? `${displayData.firstName.charAt(0).toUpperCase()}${displayData.lastName ? displayData.lastName.charAt(0).toUpperCase() : ''}`
     : user?.fullName

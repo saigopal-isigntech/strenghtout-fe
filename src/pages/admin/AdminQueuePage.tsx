@@ -1,8 +1,24 @@
 import React, { useEffect, useState, useMemo, Fragment } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { connectionsApi } from "../../api/connections";
-import type { ConnectionRequest } from "../../types";
-import { FiRefreshCw, FiInbox, FiFilter, FiSearch, FiExternalLink } from "react-icons/fi";
+import type { ConnectionRequest, ConnectionAdminNote, ConnectionStatusHistory } from "../../types";
+import {
+  FiRefreshCw,
+  FiInbox,
+  FiFilter,
+  FiSearch,
+  FiExternalLink,
+  FiFileText,
+  FiClock,
+  FiCheckCircle,
+  FiArrowRight,
+  FiUser,
+  FiBriefcase,
+  FiMapPin,
+  FiCalendar,
+  FiX,
+  FiSend,
+} from "react-icons/fi";
 import "./AdminQueue.css";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -16,14 +32,32 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
   CLOSED:               { label: "Closed",               color: "#374151", bg: "#f3f4f6", border: "#d1d5db" },
 };
 
-const sm = (s: string) => STATUS_META[s] ?? { label: s, color: "#374151", bg: "#f3f4f6", border: "#d1d5db" };
-const fmtDate = (iso: string) => {
+const sm = (s: string) => STATUS_META[s] ?? { label: s || "Unknown", color: "#374151", bg: "#f3f4f6", border: "#d1d5db" };
+
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "N/A";
   try {
     return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   } catch {
     return "N/A";
   }
 };
+
+const fmtDateTime = (iso?: string | null) => {
+  if (!iso) return "N/A";
+  try {
+    const d = new Date(iso);
+    return (
+      d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) +
+      " • " +
+      d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
+    );
+  } catch {
+    return "N/A";
+  }
+};
+
+type DetailTab = "OVERVIEW" | "NOTES" | "HISTORY";
 
 const AdminQueuePage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,12 +67,27 @@ const AdminQueuePage: React.FC = () => {
   const initialQ = searchParams.get("q") || "";
 
   const [requests, setRequests] = useState<ConnectionRequest[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState(initialStatus);
-  const [searchQuery, setSearchQuery]   = useState(initialQ);
+  const [searchQuery, setSearchQuery] = useState(initialQ);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [toast, setToast]       = useState("");
+  const [toast, setToast] = useState("");
+  
+  // Detail expansion & Tab state
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [activeDetailTabs, setActiveDetailTabs] = useState<Record<string, DetailTab>>({});
+  
+  // Live cache of request details (with notes and history)
+  const [detailCache, setDetailCache] = useState<Record<string, ConnectionRequest>>({});
+  const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
+
+  // Internal note inputs per request
+  const [newNoteTexts, setNewNoteTexts] = useState<Record<string, string>>({});
+  const [submittingNote, setSubmittingNote] = useState<Record<string, boolean>>({});
+
+  // Transition reason modal state
+  const [transitionTarget, setTransitionTarget] = useState<{ id: string; toStatus: string } | null>(null);
+  const [transitionReason, setTransitionReason] = useState("");
 
   const updateUrl = (newStatus: string, newSearch: string) => {
     const params: Record<string, string> = {};
@@ -62,9 +111,48 @@ const AdminQueuePage: React.FC = () => {
     }
   };
 
-  useEffect(() => { 
-    load(); 
+  useEffect(() => {
+    load();
   }, [statusFilter]);
+
+  // Sync statusFilter and searchQuery when searchParams change on navigation
+  useEffect(() => {
+    const sParam = searchParams.get("status") || "";
+    if (sParam !== statusFilter) {
+      setStatusFilter(sParam);
+    }
+    const qParam = searchParams.get("q") || "";
+    if (qParam !== searchQuery) {
+      setSearchQuery(qParam);
+    }
+  }, [searchParams]);
+
+  // Fetch full details (notes and history) when a request row is expanded
+  const fetchRequestDetail = async (id: string) => {
+    setLoadingDetails(prev => ({ ...prev, [id]: true }));
+    try {
+      const res = await connectionsApi.getRequestDetail(id);
+      if (res.data?.data) {
+        setDetailCache(prev => ({ ...prev, [id]: res.data.data }));
+      }
+    } catch {
+      // fallback
+    } finally {
+      setLoadingDetails(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const toggleExpand = (id: string) => {
+    if (expanded === id) {
+      setExpanded(null);
+    } else {
+      setExpanded(id);
+      if (!activeDetailTabs[id]) {
+        setActiveDetailTabs(prev => ({ ...prev, [id]: "OVERVIEW" }));
+      }
+      fetchRequestDetail(id);
+    }
+  };
 
   const handleStatusFilterChange = (s: string) => {
     setStatusFilter(s);
@@ -76,18 +164,46 @@ const AdminQueuePage: React.FC = () => {
     updateUrl(statusFilter, val);
   };
 
-  const transition = async (id: string, toStatus: string) => {
+  // Perform status transition
+  const executeTransition = async (id: string, toStatus: string, reason?: string) => {
     setUpdating(id + toStatus);
+    setTransitionTarget(null);
+    setTransitionReason("");
     try {
-      await connectionsApi.updateStatus(id, toStatus);
-      setToast("Status updated to " + (sm(toStatus).label));
-      setTimeout(() => setToast(""), 3000);
-      load();
+      await connectionsApi.updateStatus(id, toStatus, reason?.trim() || undefined);
+      setToast(`Status successfully moved to ${sm(toStatus).label}`);
+      setTimeout(() => setToast(""), 3500);
+      await load();
+      if (expanded === id) {
+        await fetchRequestDetail(id);
+      }
     } catch (err: any) {
-      setToast(err?.response?.data?.message || "Update failed");
-      setTimeout(() => setToast(""), 4000);
+      setToast(err?.response?.data?.message || "Status transition failed.");
+      setTimeout(() => setToast(""), 4500);
     } finally {
       setUpdating(null);
+    }
+  };
+
+  // Add Internal Admin Note (FR-ADM-04)
+  const handleAddNote = async (id: string) => {
+    const text = (newNoteTexts[id] || "").trim();
+    if (!text) return;
+
+    setSubmittingNote(prev => ({ ...prev, [id]: true }));
+    try {
+      const res = await connectionsApi.addAdminNote(id, text);
+      if (res.data?.data) {
+        setToast("Internal operational note added successfully.");
+        setTimeout(() => setToast(""), 3000);
+        setNewNoteTexts(prev => ({ ...prev, [id]: "" }));
+        await fetchRequestDetail(id);
+      }
+    } catch (err: any) {
+      setToast(err?.response?.data?.message || "Failed to add internal note.");
+      setTimeout(() => setToast(""), 4000);
+    } finally {
+      setSubmittingNote(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -108,95 +224,138 @@ const AdminQueuePage: React.FC = () => {
       const summaryMatch = (r.opportunitySummary || r.message || "").toLowerCase().includes(q);
       const statusLabelMatch = sm(r.status).label.toLowerCase().includes(q);
 
-      return companyMatch || candidateMatch || headlineMatch || roleMatch || workTypeMatch || locationMatch || summaryMatch || statusLabelMatch;
+      return (
+        companyMatch ||
+        candidateMatch ||
+        headlineMatch ||
+        roleMatch ||
+        workTypeMatch ||
+        locationMatch ||
+        summaryMatch ||
+        statusLabelMatch
+      );
     });
   }, [requests, searchQuery]);
 
   return (
     <div className="admin-queue-page">
-      {toast && <div className="admin-toast">{toast}</div>}
+      {/* Toast Notification */}
+      {toast && (
+        <div className="admin-queue-toast" role="status" aria-live="polite">
+          <FiCheckCircle size={18} />
+          <span>{toast}</span>
+        </div>
+      )}
 
       {/* Page Header */}
       <div className="queue-page-header">
         <div>
-          <div className="queue-page-badge">ADMIN OPERATIONS</div>
+          <span className="queue-badge">
+            <FiFilter size={13} style={{ marginRight: 5, verticalAlign: "middle" }} />
+            ADMIN OPERATIONS
+          </span>
           <h1 className="queue-title">Connection Request Queue</h1>
-          <p className="queue-sub">Review and action inbound company-to-candidate connection requests</p>
+          <p className="queue-sub">
+            Review, track, and action inbound company-to-candidate connection requests with full audit history and internal notes.
+          </p>
         </div>
-        <button className="queue-refresh-btn" onClick={load} disabled={loading} title="Refresh">
+        <button
+          type="button"
+          className="queue-refresh-btn"
+          onClick={() => {
+            load();
+            if (expanded) fetchRequestDetail(expanded);
+          }}
+          disabled={loading}
+          title="Refresh Queue"
+        >
           <FiRefreshCw size={15} className={loading ? "spin" : ""} />
-          Refresh
+          <span>Refresh</span>
         </button>
       </div>
 
-      {/* Unified Search & Filter Bar matching Admin design system */}
+      {/* Unified Search & Status Filter Bar */}
       <div className="queue-search-filter-card">
+        {/* Search input row */}
         <div className="queue-search-row">
           <div className="queue-search-box">
-            <FiSearch size={15} className="queue-search-icon" />
+            <FiSearch size={16} className="queue-search-icon" />
             <input
               type="text"
-              className="queue-search-input"
-              placeholder="Search requests by company, candidate, role, location, or summary..."
+              placeholder="Search by company, candidate name, headline, role, location, or status..."
               value={searchQuery}
-              onChange={e => handleSearchChange(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="queue-search-input"
             />
             {searchQuery && (
               <button
                 type="button"
-                className="queue-clear-search-btn"
+                className="queue-search-clear"
                 onClick={() => handleSearchChange("")}
-                title="Clear search"
+                title="Clear Search"
               >
                 ✕
               </button>
             )}
           </div>
-
-          <span className="queue-count-badge">
-            {filteredRequests.length} matching request{filteredRequests.length !== 1 ? "s" : ""}
-          </span>
+          <div className="queue-count-badge">
+            <strong>{filteredRequests.length}</strong>
+            <span>{filteredRequests.length === 1 ? " request" : " requests"}</span>
+            {searchQuery && requests.length !== filteredRequests.length && (
+              <span className="queue-count-total"> (out of {requests.length})</span>
+            )}
+          </div>
         </div>
 
+        {/* Filter Chips Bar */}
         <div className="queue-filter-chips-row">
-          <div className="queue-filter-label-group">
-            <FiFilter size={13} style={{ color: "#64748b" }} />
-            <span className="queue-filter-label">Filter by status:</span>
+          <div className="queue-filter-label">
+            <FiFilter size={13} /> Filter by status:
           </div>
-          <div className="queue-chip-row">
+          <div className="queue-chips-wrap">
             <button
               type="button"
-              className={`filter-chip${statusFilter === "" ? " active" : ""}`}
+              className={`filter-chip ${statusFilter === "" ? "active" : ""}`}
               onClick={() => handleStatusFilterChange("")}
             >
               All
             </button>
-            {statuses.map(s => (
-              <button
-                type="button"
-                key={s}
-                className={`filter-chip${statusFilter === s ? " active" : ""}`}
-                onClick={() => handleStatusFilterChange(s)}
-                style={statusFilter === s ? { background: sm(s).bg, color: sm(s).color, borderColor: sm(s).border } : {}}
-              >
-                {sm(s).label}
-              </button>
-            ))}
+            {statuses.map((s) => {
+              const count = requests.filter(r => r.status === s).length;
+              const meta = sm(s);
+              const isActive = statusFilter === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  className={`filter-chip ${isActive ? "active" : ""}`}
+                  onClick={() => handleStatusFilterChange(s)}
+                  style={
+                    isActive
+                      ? { background: meta.color, borderColor: meta.color, color: "#fff" }
+                      : undefined
+                  }
+                >
+                  {meta.label}
+                  {count > 0 && <span className="chip-count-pill">{count}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Table Card */}
+      {/* Main Table Card */}
       <div className="queue-table-card">
-        {loading ? (
+        {loading && requests.length === 0 ? (
           <div className="queue-loading">
             <div className="spinner-lg" />
-            <span>Loading requests...</span>
+            <p>Loading connection requests...</p>
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="queue-empty">
             <FiInbox size={48} className="queue-empty-icon" />
-            <h3>No matching requests found</h3>
+            <h3>No requests found</h3>
             <p>
               {searchQuery || statusFilter
                 ? "No connection requests match your active search or status filter. Try clearing the filters."
@@ -235,11 +394,18 @@ const AdminQueuePage: React.FC = () => {
                 const next    = r.allowedNextStatuses || [];
                 const itemKey = r.id || `queue-${index}`;
 
+                // Use detailed cache if loaded, else fallback to queue row item
+                const detailedReq = detailCache[r.id] || r;
+                const currentTab = activeDetailTabs[r.id] || "OVERVIEW";
+                const notesList: ConnectionAdminNote[] = detailedReq.adminNotes || [];
+                const historyList: ConnectionStatusHistory[] = detailedReq.history || [];
+                const isDetailLoading = loadingDetails[r.id] || false;
+
                 return (
                   <Fragment key={itemKey}>
                     <tr
                       className={`queue-row${isExp ? " queue-row-open" : ""}`}
-                      onClick={() => setExpanded(isExp ? null : r.id)}
+                      onClick={() => toggleExpand(r.id)}
                     >
                       <td>
                         <div className="queue-company-cell">
@@ -309,14 +475,16 @@ const AdminQueuePage: React.FC = () => {
                                 <button
                                   key={s}
                                   className="queue-action-btn"
-                                  onClick={() => transition(r.id, s)}
+                                  onClick={() => setTransitionTarget({ id: r.id, toStatus: s })}
                                   disabled={!!updating}
                                   style={{ color: btnMeta.color, background: btnMeta.bg, borderColor: btnMeta.border }}
                                   title={`Move to: ${btnMeta.label}`}
                                 >
-                                  {updating === r.id + s
-                                    ? <span className="spinner-sm" />
-                                    : btnMeta.label}
+                                  {updating === r.id + s ? (
+                                    <span className="spinner-sm" />
+                                  ) : (
+                                    btnMeta.label
+                                  )}
                                 </button>
                               );
                             })
@@ -324,40 +492,224 @@ const AdminQueuePage: React.FC = () => {
                         </div>
                       </td>
                     </tr>
+
+                    {/* Expanded Detail Panel with Tabs */}
                     {isExp && (
                       <tr key={`${itemKey}-detail`} className="queue-detail-row">
                         <td colSpan={6}>
                           <div className="queue-detail-panel">
-                            <div className="queue-detail-section">
-                              <span className="queue-detail-label">Opportunity Summary</span>
-                              <p className="queue-detail-text">{r.opportunitySummary || r.message || "-"}</p>
+                            {/* Detail Panel Sub-Nav Tabs */}
+                            <div className="detail-panel-tabs">
+                              <button
+                                type="button"
+                                className={`detail-tab-btn ${currentTab === "OVERVIEW" ? "active" : ""}`}
+                                onClick={() => setActiveDetailTabs(prev => ({ ...prev, [r.id]: "OVERVIEW" }))}
+                              >
+                                <FiBriefcase size={14} /> Opportunity Overview
+                              </button>
+                              <button
+                                type="button"
+                                className={`detail-tab-btn ${currentTab === "NOTES" ? "active" : ""}`}
+                                onClick={() => setActiveDetailTabs(prev => ({ ...prev, [r.id]: "NOTES" }))}
+                              >
+                                <FiFileText size={14} /> Internal Notes
+                                {notesList.length > 0 && <span className="tab-badge-count">{notesList.length}</span>}
+                              </button>
+                              <button
+                                type="button"
+                                className={`detail-tab-btn ${currentTab === "HISTORY" ? "active" : ""}`}
+                                onClick={() => setActiveDetailTabs(prev => ({ ...prev, [r.id]: "HISTORY" }))}
+                              >
+                                <FiClock size={14} /> Status History
+                                {historyList.length > 0 && <span className="tab-badge-count">{historyList.length}</span>}
+                              </button>
                             </div>
-                            <div className="queue-detail-grid">
-                              {(r.candidateLocation || r.location) && (
-                                <div className="queue-detail-item">
-                                  <span className="queue-detail-label">Location</span>
-                                  <span>{r.candidateLocation || r.location}</span>
+
+                            {/* TAB 1: OVERVIEW */}
+                            {currentTab === "OVERVIEW" && (
+                              <div className="tab-content-pane fade-in">
+                                <div className="queue-detail-section">
+                                  <span className="queue-detail-label">Opportunity Summary</span>
+                                  <p className="queue-detail-text">
+                                    {detailedReq.opportunitySummary || detailedReq.message || "No opportunity summary provided."}
+                                  </p>
                                 </div>
-                              )}
-                              {r.workType && (
-                                <div className="queue-detail-item">
-                                  <span className="queue-detail-label">Work Type</span>
-                                  <span>{r.workType}</span>
+                                <div className="queue-detail-grid">
+                                  <div className="queue-detail-item">
+                                    <span className="queue-detail-label"><FiBriefcase size={12} /> Company Details</span>
+                                    <span className="detail-item-val">
+                                      {detailedReq.companyDisplayName || detailedReq.companyName || "N/A"}
+                                      {detailedReq.companyIndustry && ` (${detailedReq.companyIndustry})`}
+                                    </span>
+                                  </div>
+                                  <div className="queue-detail-item">
+                                    <span className="queue-detail-label"><FiUser size={12} /> Candidate</span>
+                                    <span className="detail-item-val">
+                                      {detailedReq.candidateFullName || detailedReq.candidateName || "N/A"}
+                                      {detailedReq.candidateExperienceMonths !== undefined && (
+                                        ` • ${(detailedReq.candidateExperienceMonths / 12).toFixed(1)} yrs exp`
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="queue-detail-item">
+                                    <span className="queue-detail-label"><FiMapPin size={12} /> Location / Model</span>
+                                    <span className="detail-item-val">
+                                      {detailedReq.location || detailedReq.candidateLocation || "Flexible"} 
+                                      {detailedReq.workType && ` [${detailedReq.workType}]`}
+                                    </span>
+                                  </div>
+                                  <div className="queue-detail-item">
+                                    <span className="queue-detail-label"><FiCalendar size={12} /> Expected Start</span>
+                                    <span className="detail-item-val">{fmtDate(detailedReq.expectedStart)}</span>
+                                  </div>
+                                  {detailedReq.closedAt && (
+                                    <div className="queue-detail-item">
+                                      <span className="queue-detail-label">Closed Date</span>
+                                      <span className="detail-item-val">{fmtDate(detailedReq.closedAt)}</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              {r.expectedStart && (
-                                <div className="queue-detail-item">
-                                  <span className="queue-detail-label">Expected Start</span>
-                                  <span>{fmtDate(r.expectedStart)}</span>
+                              </div>
+                            )}
+
+                            {/* TAB 2: INTERNAL ADMIN NOTES (FR-ADM-04) */}
+                            {currentTab === "NOTES" && (
+                              <div className="tab-content-pane fade-in">
+                                {/* New Note Form */}
+                                <div className="admin-note-form-box">
+                                  <label className="admin-note-form-label">
+                                    <FiFileText size={13} /> Add New Operational Note
+                                  </label>
+                                  <div className="admin-note-input-row">
+                                    <textarea
+                                      rows={2}
+                                      placeholder="Type internal notes (e.g. Discussed with hiring manager, candidate availability verified, scheduled call)..."
+                                      value={newNoteTexts[r.id] || ""}
+                                      onChange={(e) => setNewNoteTexts(prev => ({ ...prev, [r.id]: e.target.value }))}
+                                      className="admin-note-textarea"
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn-add-admin-note"
+                                      onClick={() => handleAddNote(r.id)}
+                                      disabled={!(newNoteTexts[r.id] || "").trim() || submittingNote[r.id]}
+                                    >
+                                      {submittingNote[r.id] ? (
+                                        <span className="spinner-sm" />
+                                      ) : (
+                                        <>
+                                          <FiSend size={13} /> Save Note
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
                                 </div>
-                              )}
-                              {r.closedAt && (
-                                <div className="queue-detail-item">
-                                  <span className="queue-detail-label">Closed At</span>
-                                  <span>{fmtDate(r.closedAt)}</span>
+
+                                {/* Notes List */}
+                                {isDetailLoading ? (
+                                  <div className="notes-loading-state">
+                                    <span className="spinner-sm" /> Loading notes...
+                                  </div>
+                                ) : notesList.length === 0 ? (
+                                  <div className="empty-notes-box">
+                                    <FiFileText size={28} className="empty-notes-icon" />
+                                    <p>No internal notes recorded yet for this connection request.</p>
+                                    <span>Add an operational note above to maintain administrative traceability.</span>
+                                  </div>
+                                ) : (
+                                  <div className="admin-notes-list">
+                                    {notesList.map((note, nIdx) => (
+                                      <div key={note.id || `note-${nIdx}`} className="admin-note-card">
+                                        <div className="admin-note-header">
+                                          <span className="admin-note-author">
+                                            <FiUser size={12} /> {note.createdByEmail || "Admin Operator"}
+                                          </span>
+                                          <span className="admin-note-time">
+                                            <FiClock size={11} /> {fmtDateTime(note.createdAt)}
+                                          </span>
+                                        </div>
+                                        <p className="admin-note-body">{note.note}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* TAB 3: STATUS AUDIT HISTORY TIMELINE (FR-ADM-05) */}
+                            {currentTab === "HISTORY" && (
+                              <div className="tab-content-pane fade-in">
+                                <div className="history-timeline-header">
+                                  <span className="history-timeline-title">
+                                    <FiClock size={14} /> Immutable Status Transition Audit Trail
+                                  </span>
+                                  <span className="history-count-badge">
+                                    {historyList.length} status events recorded
+                                  </span>
                                 </div>
-                              )}
-                            </div>
+
+                                {isDetailLoading ? (
+                                  <div className="notes-loading-state">
+                                    <span className="spinner-sm" /> Loading status history...
+                                  </div>
+                                ) : historyList.length === 0 ? (
+                                  <div className="empty-notes-box">
+                                    <FiClock size={28} className="empty-notes-icon" />
+                                    <p>Initial status: <strong>{sm(r.status).label}</strong></p>
+                                    <span>No subsequent transitions recorded yet.</span>
+                                  </div>
+                                ) : (
+                                  <div className="status-timeline-container">
+                                    {historyList.map((hist, hIdx) => {
+                                      const fromMeta = hist.fromStatus ? sm(hist.fromStatus) : null;
+                                      const toMeta = sm(hist.toStatus);
+
+                                      return (
+                                        <div key={hist.id || `hist-${hIdx}`} className="timeline-event-item">
+                                          <div className="timeline-marker-dot" />
+                                          <div className="timeline-event-card">
+                                            <div className="timeline-event-header">
+                                              <div className="timeline-status-change-pills">
+                                                {fromMeta && (
+                                                  <>
+                                                    <span
+                                                      className="timeline-status-pill"
+                                                      style={{ color: fromMeta.color, background: fromMeta.bg, borderColor: fromMeta.border }}
+                                                    >
+                                                      {fromMeta.label}
+                                                    </span>
+                                                    <FiArrowRight size={13} className="timeline-arrow-icon" />
+                                                  </>
+                                                )}
+                                                <span
+                                                  className="timeline-status-pill highlight"
+                                                  style={{ color: toMeta.color, background: toMeta.bg, borderColor: toMeta.border }}
+                                                >
+                                                  {toMeta.label}
+                                                </span>
+                                              </div>
+                                              <span className="timeline-timestamp">
+                                                <FiClock size={11} /> {fmtDateTime(hist.changedAt)}
+                                              </span>
+                                            </div>
+
+                                            <div className="timeline-event-meta">
+                                              <span>Changed by: <strong>{hist.changedByEmail || "System"}</strong></span>
+                                            </div>
+
+                                            {hist.reason && (
+                                              <div className="timeline-reason-box">
+                                                <strong>Reason / Note:</strong> {hist.reason}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -369,6 +721,74 @@ const AdminQueuePage: React.FC = () => {
           </table>
         )}
       </div>
+
+      {/* Quick Status Transition Confirmation Dialog with Reason */}
+      {transitionTarget && (
+        <div className="queue-modal-overlay" onClick={() => setTransitionTarget(null)}>
+          <div className="queue-transition-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="transition-modal-header">
+              <h3>Confirm Status Transition</h3>
+              <button
+                type="button"
+                className="btn-close-modal"
+                onClick={() => setTransitionTarget(null)}
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <div className="transition-modal-body">
+              <p>
+                You are about to change the status of this request to:
+              </p>
+              <div className="transition-target-preview">
+                <span
+                  className="queue-status-badge"
+                  style={{
+                    color: sm(transitionTarget.toStatus).color,
+                    background: sm(transitionTarget.toStatus).bg,
+                    borderColor: sm(transitionTarget.toStatus).border,
+                    fontSize: "0.92rem",
+                    padding: "0.4rem 0.9rem",
+                  }}
+                >
+                  {sm(transitionTarget.toStatus).label}
+                </span>
+              </div>
+
+              <div className="form-group" style={{ marginTop: "1rem" }}>
+                <label style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-secondary, #475569)", display: "block", marginBottom: "0.35rem" }}>
+                  Operational Transition Reason (Optional):
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Candidate confirmed interview availability, client call completed..."
+                  value={transitionReason}
+                  onChange={(e) => setTransitionReason(e.target.value)}
+                  className="queue-modal-input"
+                />
+              </div>
+            </div>
+
+            <div className="transition-modal-footer">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setTransitionTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-modal-confirm"
+                onClick={() => executeTransition(transitionTarget.id, transitionTarget.toStatus, transitionReason)}
+              >
+                Confirm Status Change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

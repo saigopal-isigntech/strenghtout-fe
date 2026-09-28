@@ -4,13 +4,14 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import "./App.css";
 
+// Lazy-loaded pages for bundle splitting
 const LoginPage            = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage         = lazy(() => import("./pages/auth/RegisterPage"));
 const ForgotPasswordPage   = lazy(() => import("./pages/auth/ForgotPasswordPage"));
 const DashboardPage        = lazy(() => import("./pages/candidate/DashboardPage"));
 const CandidateProfilePage = lazy(() => import("./pages/candidate/CandidateProfilePage"));
+const CandidateOpportunitiesPage = lazy(() => import("./pages/candidate/CandidateOpportunitiesPage"));
 const NotificationsPage    = lazy(() => import("./pages/candidate/NotificationsPage"));
 const DiscoverPage         = lazy(() => import("./pages/company/DiscoverPage"));
 const AdminQueuePage       = lazy(() => import("./pages/admin/AdminQueuePage"));
@@ -40,6 +41,18 @@ const DashboardRouter: React.FC = () => {
   return <Navigate to="/candidate/dashboard" replace />;
 };
 
+// Intelligent requests router
+const RequestsRouter: React.FC = () => {
+  const { user, isAdmin } = useAuth();
+  if (isAdmin()) {
+    return <Navigate to="/admin/requests" replace />;
+  }
+  if (user?.role === "ROLE_COMPANY") {
+    return <Navigate to="/company/requests" replace />;
+  }
+  return <Navigate to="/candidate/opportunities" replace />;
+};
+
 // Intelligent profile router
 const ProfileRouter: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -61,7 +74,9 @@ const PersistentAppLayout: React.FC = () => {
     "/admin/users",
     "/admin/audit",
     "/company/dashboard",
-    "/candidate/dashboard"
+    "/candidate/dashboard",
+    "/candidate/opportunities",
+    "/candidate/requests"
   ];
   const showFooter = !noFooterPaths.some((p) => location.pathname === p || location.pathname.startsWith("/admin/"));
 
@@ -101,7 +116,7 @@ const App: React.FC = () => (
           <Route path="/profile" element={<ProtectedRoute><ProfileRouter /></ProtectedRoute>} />
           <Route path="/profile/edit" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><Navigate to="/candidate/profile/edit" replace /></ProtectedRoute>} />
           <Route path="/discover" element={<ProtectedRoute roles={["ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><Navigate to="/company/discover" replace /></ProtectedRoute>} />
-          <Route path="/my-requests" element={<ProtectedRoute roles={["ROLE_COMPANY"]}><Navigate to="/company/requests" replace /></ProtectedRoute>} />
+          <Route path="/my-requests" element={<ProtectedRoute><RequestsRouter /></ProtectedRoute>} />
 
           {/* ============================================================
               1. ADMIN MODULE ROUTES (/admin/*)
@@ -128,6 +143,8 @@ const App: React.FC = () => (
               ============================================================ */}
           <Route path="/candidate" element={<ProtectedRoute roles={["ROLE_CANDIDATE"]}><Navigate to="/candidate/dashboard" replace /></ProtectedRoute>} />
           <Route path="/candidate/dashboard" element={<ProtectedRoute roles={["ROLE_CANDIDATE"]}><DashboardPage /></ProtectedRoute>} />
+          <Route path="/candidate/opportunities" element={<ProtectedRoute roles={["ROLE_CANDIDATE"]}><CandidateOpportunitiesPage /></ProtectedRoute>} />
+          <Route path="/candidate/requests" element={<ProtectedRoute roles={["ROLE_CANDIDATE"]}><CandidateOpportunitiesPage /></ProtectedRoute>} />
           <Route path="/candidate/profile" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
           <Route path="/candidate/profile/edit" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage initialMode="edit" /></ProtectedRoute>} />
           <Route path="/candidates/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />

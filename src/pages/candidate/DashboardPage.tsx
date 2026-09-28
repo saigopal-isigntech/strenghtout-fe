@@ -64,6 +64,12 @@ const DashboardPage: React.FC = () => {
       link: "/candidate/profile",
     },
     {
+      icon: <FiSend size={24} />,
+      label: "My Opportunities",
+      desc: "Track company connection requests, interview progress, and hiring status",
+      link: "/candidate/opportunities",
+    },
+    {
       icon: <FiAward size={24} />,
       label: "My Key Strengths",
       desc: "Showcase your work, projects & verifiable technical achievements",

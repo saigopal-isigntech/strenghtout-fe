@@ -15,6 +15,8 @@ import {
   FiVideo,
   FiFileText,
   FiCheckCircle,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 import { validateRequired } from "../../utils/validators";
 import "./Discover.css";
@@ -30,8 +32,10 @@ const DiscoverPage: React.FC = () => {
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [selectedExpRange, setSelectedExpRange] = useState<string>("");
   const [selectedWorkType, setSelectedWorkType] = useState<string>("");
+  const PAGE_SIZE = 12;
   const [total, setTotal] = useState(0);
-  const [_page, setPage] = useState(0); void _page;
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(0);
 
   // Candidate Details Popup Modal state
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
@@ -66,7 +70,7 @@ const DiscoverPage: React.FC = () => {
   const search = useCallback(async (p = 0, searchTerms = query) => {
     setLoading(true);
     try {
-      const params: Record<string, any> = { page: p, size: 50 };
+      const params: Record<string, any> = { page: p, size: PAGE_SIZE };
       if (searchTerms.trim()) params.q = searchTerms.trim();
       if (selectedRoleId) params.roleIds = [selectedRoleId];
       if (selectedWorkType) params.workTypes = [selectedWorkType];
@@ -81,13 +85,18 @@ const DiscoverPage: React.FC = () => {
       }
 
       const res = await candidatesApi.search(params);
-      const list = res.data?.data?.content || [];
+      const pageData = res.data?.data;
+      const list = pageData?.content || [];
       setCandidates(list);
-      setTotal(res.data?.data?.totalElements || list.length || 0);
+      const totalElements = pageData?.totalElements ?? list.length ?? 0;
+      setTotal(totalElements);
+      const computedTotalPages = pageData?.totalPages != null ? pageData.totalPages : Math.ceil(totalElements / PAGE_SIZE);
+      setTotalPages(computedTotalPages);
       setPage(p);
     } catch {
       setCandidates([]);
       setTotal(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -184,6 +193,39 @@ const DiscoverPage: React.FC = () => {
   };
 
   const filteredCandidates = useMemo(() => candidates, [candidates]);
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 0 || newPage >= totalPages || newPage === page || loading) return;
+    search(newPage, query);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getPaginationItems = (current: number, totalP: number) => {
+    if (totalP <= 7) {
+      return Array.from({ length: totalP }, (_, i) => i);
+    }
+
+    const pages: (number | "dots")[] = [];
+
+    if (current <= 3) {
+      for (let i = 0; i < 5; i++) pages.push(i);
+      pages.push("dots");
+      pages.push(totalP - 1);
+    } else if (current >= totalP - 4) {
+      pages.push(0);
+      pages.push("dots");
+      for (let i = totalP - 5; i < totalP; i++) pages.push(i);
+    } else {
+      pages.push(0);
+      pages.push("dots");
+      pages.push(current - 1);
+      pages.push(current);
+      pages.push(current + 1);
+      pages.push("dots");
+      pages.push(totalP - 1);
+    }
+    return pages;
+  };
+
 
   return (
     <div className="discover-page">
@@ -260,12 +302,18 @@ const DiscoverPage: React.FC = () => {
       </div>
 
       <p className="result-count">
-        {total} registered candidate{total !== 1 ? "s" : ""} enrolled
+        {total > 0 ? (
+          <>
+            Showing <strong>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)}</strong> of <strong>{total}</strong> registered candidate{total !== 1 ? "s" : ""} enrolled
+          </>
+        ) : (
+          "0 registered candidates enrolled"
+        )}
       </p>
 
       <div className="candidate-grid">
         {loading
-          ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="candidate-card skeleton" />)
+          ? Array.from({ length: 12 }).map((_, i) => <div key={i} className="candidate-card skeleton" />)
           : filteredCandidates.length === 0 ? (
             <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", background: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
               <p style={{ color: "#64748b", fontSize: "1.05rem" }}>No candidates found matching your search.</p>
@@ -335,6 +383,66 @@ const DiscoverPage: React.FC = () => {
             })
           )}
       </div>
+
+      
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="discover-pagination" aria-label="Candidate Pagination">
+          <div className="pagination-info">
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total} candidates (Page {page + 1} of {totalPages})
+          </div>
+
+          <div className="pagination-controls">
+            <button
+              type="button"
+              className="pagination-nav-btn"
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 0 || loading}
+              aria-label="Previous page"
+            >
+              <FiChevronLeft size={16} />
+              <span>Previous</span>
+            </button>
+
+            <div className="pagination-pages">
+              {getPaginationItems(page, totalPages).map((item, idx) => {
+                if (item === "dots") {
+                  return (
+                    <span key={`dots-${idx}`} className="pagination-ellipsis">
+                      …
+                    </span>
+                  );
+                }
+                const pageNum = item as number;
+                const isActive = pageNum === page;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    className={`pagination-page-btn ${isActive ? "active" : ""}`}
+                    onClick={() => handlePageChange(pageNum)}
+                    disabled={loading}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {pageNum + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              className="pagination-nav-btn"
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page >= totalPages - 1 || loading}
+              aria-label="Next page"
+            >
+              <span>Next</span>
+              <FiChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Candidate Details Popup Modal */}
       {selectedCandidate && (

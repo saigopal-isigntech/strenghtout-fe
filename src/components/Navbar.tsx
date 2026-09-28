@@ -204,9 +204,12 @@ const Navbar: React.FC = () => {
     if (path.includes("discover")) {
       return location.pathname === "/company/discover" || location.pathname === "/discover";
     }
-    if (path.includes("requests")) {
+    if (path.includes("requests") || path.includes("opportunities")) {
       if (path.startsWith("/admin")) {
         return location.pathname === "/admin/requests";
+      }
+      if (path.startsWith("/candidate")) {
+        return location.pathname === "/candidate/opportunities" || location.pathname === "/candidate/requests";
       }
       return location.pathname === "/company/requests" || location.pathname === "/my-requests";
     }
@@ -256,6 +259,7 @@ const Navbar: React.FC = () => {
     return [
       { to: "/candidate/dashboard", label: "Home" },
       { to: "/candidate/profile", label: "Profile" },
+      { to: "/candidate/opportunities", label: "Opportunities" },
       { to: "/services", label: "Services" },
       { to: "/about", label: "About" },
     ];
