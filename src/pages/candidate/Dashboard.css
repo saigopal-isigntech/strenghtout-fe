@@ -1,6 +1,6 @@
 .dashboard-page {
   padding: 2.5rem 1.5rem;
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
 }
 
@@ -170,8 +170,14 @@
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
 }
 
 .dash-card {
@@ -342,4 +348,27 @@
   .dash-card-icon { font-size: 1.8rem; min-width: 2.8rem; height: 2.8rem; }
   .dash-card-content h3 { font-size: 1rem; }
   .dash-card-content p { font-size: 0.84rem; }
+}
+
+
+
+/* ============================================================
+   DESKTOP SCREEN REAL-ESTATE OPTIMIZATION (1440px Grid)
+   ============================================================ */
+@media (min-width: 1200px) {
+  .dashboard-page {
+    max-width: 1440px !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1.5rem !important;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
 }

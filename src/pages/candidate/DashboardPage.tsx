@@ -97,6 +97,12 @@ const DashboardPage: React.FC = () => {
       link: "/company/requests",
     },
     {
+      icon: <FiUser size={24} />,
+      label: "Company Profile",
+      desc: "Manage your company profile, branding, team details and settings",
+      link: "/company/profile",
+    },
+    {
       icon: <FiBell size={24} />,
       label: "Notifications",
       desc: "Status updates, candidate acceptances, and system alerts",

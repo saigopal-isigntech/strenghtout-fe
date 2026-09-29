@@ -1004,3 +1004,21 @@
     border-radius: 8px;
   }
 }
+
+
+
+/* ============================================================
+   MOBILE RESPONSIVE OVERRIDES - AUTHENTICATION
+   ============================================================ */
+@media (max-width: 768px) {
+  .auth-container, .auth-page {
+    padding: 1.5rem 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .auth-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1.5rem 1.15rem !important;
+  }
+}

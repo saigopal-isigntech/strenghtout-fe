@@ -553,7 +553,8 @@ const AdminUsersPage: React.FC = () => {
           ) : filteredUsers.length === 0 ? (
             <div className="empty-box">No users match the selected filters.</div>
           ) : (
-            <div className="users-table-card">
+            <>
+              <div className="users-table-card desktop-only">
               <table className="admin-users-table">
                 <thead>
                   <tr>
@@ -631,8 +632,80 @@ const AdminUsersPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
-              {renderPagination(userPage, userTotalPages, totalFilteredUsers, p => setUserPage(p))}
-            </div>
+              </div>
+
+              {/* Mobile Card List View for USERS */}
+              <div className="admin-users-mobile-cards mobile-only">
+                {paginatedUsers.map(u => {
+                  const isSuper = u.roles.includes("ROLE_SUPER_ADMIN");
+                  return (
+                    <div key={u.id} className="admin-user-card">
+                      <div className="admin-ucard-header">
+                        <div>
+                          <span
+                            className="admin-ucard-title user-email-clickable"
+                            onClick={() => handleInspectUser(u)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            {u.email}
+                          </span>
+                          {isSuper && <FiAward size={14} color="#f59e0b" style={{ marginLeft: "6px", verticalAlign: "middle" }} title="Super Admin" />}
+                        </div>
+                        <span className={`status-pill ${u.status.toLowerCase()}`}>
+                          {u.status === "ACTIVE" ? <FiCheckCircle size={12} /> : <FiAlertCircle size={12} />} {u.status}
+                        </span>
+                      </div>
+
+                      <div className="admin-ucard-body">
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Account Type:</span>
+                          <span className="type-badge">{u.accountType}</span>
+                        </div>
+
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Assigned Roles:</span>
+                          <div className="roles-list">
+                            {u.roles.map(r => (
+                              <span
+                                key={r}
+                                className={`role-tag ${r === "ROLE_SUPER_ADMIN" ? "super" : r === "ROLE_ADMIN" ? "admin" : ""}`}
+                              >
+                                {r.replace("ROLE_", "")}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Created:</span>
+                          <span className="admin-ucard-val">{new Date(u.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="admin-ucard-actions">
+                        <button
+                          type="button"
+                          className="btn-action view"
+                          onClick={() => handleInspectUser(u)}
+                        >
+                          View Profile
+                        </button>
+                        {!isSuper && (
+                          <button
+                            className={`btn-action ${u.status === "ACTIVE" ? "suspend" : "activate"}`}
+                            disabled={updatingId === u.id}
+                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(u); }}
+                          >
+                            {updatingId === u.id ? "..." : u.status === "ACTIVE" ? "Inactive" : "Activate"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+                {renderPagination(userPage, userTotalPages, totalFilteredUsers, p => setUserPage(p))}
+            </>
           )}
         </div>
       )}
@@ -679,7 +752,8 @@ const AdminUsersPage: React.FC = () => {
           ) : filteredCompanies.length === 0 ? (
             <div className="empty-box">No registered companies match your search.</div>
           ) : (
-            <div className="users-table-card">
+            <>
+              <div className="users-table-card desktop-only">
               <table className="admin-users-table">
                 <thead>
                   <tr>
@@ -735,8 +809,64 @@ const AdminUsersPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
-              {renderPagination(companyPage, companyTotalPages, totalFilteredCompanies, p => setCompanyPage(p))}
-            </div>
+              </div>
+
+              {/* Mobile Card List View for COMPANIES */}
+              <div className="admin-users-mobile-cards mobile-only">
+                {paginatedCompanies.map(c => (
+                  <div key={c.id} className="admin-user-card">
+                    <div className="admin-ucard-header">
+                      <div>
+                        <strong
+                          className="admin-ucard-title user-email-clickable"
+                          onClick={() => navigate('/companies/' + c.id)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {c.displayName || c.legalName}
+                        </strong>
+                        {c.legalName && c.legalName !== c.displayName && (
+                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{c.legalName}</div>
+                        )}
+                      </div>
+                      <span className={`status-pill ${(c.status || "ACTIVE").toLowerCase()}`}>
+                        <FiCheckCircle size={12} /> {c.status || "ACTIVE"}
+                      </span>
+                    </div>
+
+                    <div className="admin-ucard-body">
+                      <div className="admin-ucard-row">
+                        <span className="admin-ucard-label">Official Email:</span>
+                        <span className="admin-ucard-val">{c.email || "N/A"}</span>
+                      </div>
+
+                      <div className="admin-ucard-row">
+                        <span className="admin-ucard-label">Industry & Size:</span>
+                        <span className="type-badge">{c.industry || "General"}</span>
+                        <span className="admin-ucard-val">({c.companySize || "11-50"})</span>
+                      </div>
+
+                      <div className="admin-ucard-row">
+                        <span className="admin-ucard-label">Headquarters:</span>
+                        <span className="admin-ucard-val">
+                          <FiMapPin size={12} color="#70c144" /> {c.city ? `${c.city}, ${c.country || ""}` : "Not set"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="admin-ucard-actions">
+                      <button
+                        type="button"
+                        className="btn-action view"
+                        onClick={() => navigate('/companies/' + c.id)}
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+                {renderPagination(companyPage, companyTotalPages, totalFilteredCompanies, p => setCompanyPage(p))}
+            </>
           )}
         </div>
       )}
@@ -783,7 +913,8 @@ const AdminUsersPage: React.FC = () => {
           ) : filteredCandidates.length === 0 ? (
             <div className="empty-box">No registered candidates match your search.</div>
           ) : (
-            <div className="users-table-card">
+            <>
+              <div className="users-table-card desktop-only">
               <table className="admin-users-table">
                 <thead>
                   <tr>
@@ -850,8 +981,81 @@ const AdminUsersPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
-              {renderPagination(candidatePage, candidateTotalPages, totalFilteredCandidates, p => setCandidatePage(p))}
-            </div>
+              </div>
+
+              {/* Mobile Card List View for CANDIDATES */}
+              <div className="admin-users-mobile-cards mobile-only">
+                {paginatedCandidates.map(cand => {
+                  const candidateSkills = extractSkills(cand);
+                  return (
+                    <div key={cand.id} className="admin-user-card">
+                      <div className="admin-ucard-header">
+                        <div>
+                          <strong
+                            className="admin-ucard-title user-email-clickable"
+                            onClick={() => handleInspectCandidate(cand)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            {cand.fullName}
+                          </strong>
+                          {cand.phone && (
+                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{cand.phone}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="admin-ucard-body">
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Email:</span>
+                          <span className="admin-ucard-val">{cand.email || "N/A"}</span>
+                        </div>
+
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Headline:</span>
+                          <span className="admin-ucard-val">{cand.headline || "Candidate Profile"}</span>
+                        </div>
+
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Location & Exp:</span>
+                          <span className="admin-ucard-val">
+                            <FiMapPin size={12} color="#70c144" /> {cand.currentLocation || cand.location || "Not specified"}
+                          </span>
+                          <span className="admin-ucard-val" style={{ marginLeft: "6px" }}>
+                            <FiCalendar size={12} color="#70c144" /> {Math.round((cand.totalExperienceMonths || 36) / 12)} Yrs
+                          </span>
+                        </div>
+
+                        <div className="admin-ucard-row">
+                          <span className="admin-ucard-label">Skills:</span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                            {candidateSkills.slice(0, 3).map(s => (
+                              <span key={s} className="skill-pill">
+                                {s}
+                              </span>
+                            ))}
+                            {candidateSkills.length > 3 && (
+                              <span className="skill-pill extra">+{candidateSkills.length - 3}</span>
+                            )}
+                            {candidateSkills.length === 0 && <span style={{ color: "#94a3b8", fontSize: "0.78rem" }}>None listed</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="admin-ucard-actions">
+                        <button
+                          type="button"
+                          className="btn-action view"
+                          onClick={() => handleInspectCandidate(cand)}
+                        >
+                          View Profile
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+                {renderPagination(candidatePage, candidateTotalPages, totalFilteredCandidates, p => setCandidatePage(p))}
+            </>
           )}
         </div>
       )}

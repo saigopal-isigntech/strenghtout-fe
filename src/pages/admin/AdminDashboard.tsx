@@ -259,7 +259,9 @@ const AdminDashboard: React.FC = () => {
             <p>No connection requests currently require pending review.</p>
           </div>
         ) : (
-          <div className="requests-table-container">
+          <>
+          {/* Desktop Table View */}
+          <div className="requests-table-container desktop-only">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -332,7 +334,64 @@ const AdminDashboard: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Mobile Card List View */}
+          <div className="urgent-mobile-cards">
+            {pendingRequests.map(req => {
+              const compName = req.companyDisplayName || req.companyName || (req as any).company?.displayName || (req as any).company?.legalName || "Registered Employer";
+              const candName = req.candidateFullName || req.candidateName || (req as any).candidate?.fullName || "Registered Candidate";
+              const roleText = req.roleTitle ? `${req.roleTitle}` : "";
+              const summaryText = req.opportunitySummary || req.message || "General introduction & connection request";
+              const displaySnippet = roleText ? `${roleText} — ${summaryText}` : summaryText;
+              const submittedDate = req.submittedAt ? new Date(req.submittedAt).toLocaleDateString() : "Recent";
+
+              return (
+                <div key={req.id} className="urgent-card">
+                  <div className="urgent-card-header">
+                    <div className="urgent-card-company">
+                      <span className="urgent-comp-name">{compName}</span>
+                      {req.companyCity && <span className="urgent-comp-city">{req.companyCity}</span>}
+                    </div>
+                    <span className="urgent-card-date">{submittedDate}</span>
+                  </div>
+
+                  <div className="urgent-card-candidate">
+                    <span className="urgent-cand-label">Candidate:</span>
+                    <span className="urgent-cand-name">{candName}</span>
+                    {req.candidateHeadline && (
+                      <span className="urgent-cand-headline">{req.candidateHeadline}</span>
+                    )}
+                  </div>
+
+                  <div className="urgent-card-snippet">
+                    <span className="urgent-snippet-label">Opportunity / Snippet:</span>
+                    <p className="urgent-snippet-text">{displaySnippet}</p>
+                  </div>
+
+                  <div className="urgent-card-actions">
+                    <button
+                      className="btn-quick-approve"
+                      disabled={actionLoading === req.id}
+                      onClick={() => handleQuickStatus(req.id, "UNDER_REVIEW")}
+                      title="Set status to Under Review"
+                    >
+                      Under Review
+                    </button>
+                    <button
+                      className="btn-quick-reject"
+                      disabled={actionLoading === req.id}
+                      onClick={() => handleQuickStatus(req.id, "CLOSED")}
+                      title="Reject / Close request"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          </>)
+        }
       </div>
     </div>
   );

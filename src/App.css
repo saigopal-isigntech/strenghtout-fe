@@ -265,3 +265,83 @@ img, svg, video, canvas {
     padding: 1rem 0.75rem !important;
   }
 }
+
+
+
+/* ============================================================
+   GLOBAL MOBILE RESPONSIVE SAFETY OVERRIDES
+   ============================================================ */
+html, body, #root, .app-shell, .app-main {
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .modal-box, .aq-modal-box, .edit-profile-modal-box {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 1.25rem 1rem !important;
+  }
+}
+
+
+
+/* ============================================================
+   CANVAS BOUNDS & NO-HORIZONTAL-STRIP OVERRIDES
+   ============================================================ */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#root, .app-shell, .app-main {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  html, body, #root, .app-shell, .app-main {
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .admin-dashboard,
+  .admin-queue-page,
+  .admin-users-page,
+  .admin-audit-page,
+  .discover-page,
+  .dashboard-page,
+  .profile-container,
+  .profile-page,
+  .my-requests-page,
+  .candidate-opportunities-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+}

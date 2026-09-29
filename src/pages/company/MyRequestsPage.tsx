@@ -131,15 +131,16 @@ const MyRequestsPage: React.FC = () => {
           </p>
         </div>
       ) : (
+        <>
         <div className="mr-table-card">
           <table className="mr-table">
             <thead>
               <tr>
-                <th>Candidate</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th style={{ width: "36px" }}></th>
+                <th style={{ width: "36%" }}>Candidate</th>
+                <th style={{ width: "25%" }}>Role</th>
+                <th style={{ width: "18%" }}>Status</th>
+                <th style={{ width: "16%" }}>Submitted</th>
+                <th style={{ width: "5%", textAlign: "center" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -253,6 +254,67 @@ const MyRequestsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Responsive Mobile Cards */}
+        <div className="mr-mobile-cards">
+          {filtered.map((r, index) => {
+            const meta  = sm(r.status);
+            const isExp = expanded === r.id;
+            const itemKey = r.id || `req-${index}`;
+            return (
+              <div key={itemKey} className="mr-mobile-card">
+                <div className="mr-mc-header">
+                  <div className="mr-mc-cand">
+                    <div className="mr-mc-avatar">
+                      {(r.candidateFullName || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="mr-mc-cand-info">
+                      <div className="mr-mc-cand-name">{r.candidateFullName}</div>
+                      {r.candidateHeadline && (
+                        <div className="mr-mc-cand-headline">{r.candidateHeadline}</div>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className="mr-status-badge"
+                    style={{ color: meta.color, background: meta.bg, borderColor: meta.border }}
+                  >
+                    {meta.label}
+                  </span>
+                </div>
+
+                <div className="mr-mc-body">
+                  <div className="mr-mc-row">
+                    <span className="mr-mc-label">Role:</span>
+                    <span className="mr-mc-val">{r.roleTitle} ({r.workType})</span>
+                  </div>
+                  <div className="mr-mc-row">
+                    <span className="mr-mc-label">Submitted:</span>
+                    <span className="mr-mc-val">{fmtDate(r.submittedAt)}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="mr-mc-expand-btn"
+                  onClick={() => setExpanded(isExp ? null : r.id)}
+                >
+                  {isExp ? "Hide Details" : "View Details"} {isExp ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                </button>
+
+                {isExp && (
+                  <div className="mr-detail-panel" style={{ borderRadius: "8px", marginTop: "0.25rem" }}>
+                    <div className="mr-detail-section">
+                      <span className="mr-detail-label">Opportunity Summary</span>
+                      <p className="mr-detail-text">{r.opportunitySummary || "—"}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </>
       )}
 
       {/* ── Pagination ── */}
