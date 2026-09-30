@@ -1,3 +1,4 @@
+import CommandPalette from "./components/CommandPalette";
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -89,6 +90,7 @@ const PersistentAppLayout: React.FC = () => {
         </Suspense>
       </main>
       {showFooter && <Footer />}
+      <CommandPalette />
     </div>
   );
 };

@@ -9,14 +9,13 @@ import { isValidUserAvatar } from "../utils/validators";
 
 /* react-icons */
 import {
+  FiSearch,
   FiEdit3,
   FiBell,
   FiChevronDown,
   FiLogOut,
   FiMenu,
   FiX,
-  FiSun,
-  FiMoon,
 } from "react-icons/fi";
 import { HiOutlineUser, HiOutlineUsers, HiOutlineClipboardList } from "react-icons/hi";
 
@@ -106,27 +105,7 @@ const Navbar: React.FC = () => {
     }
   }, [isAuthenticated, user?.userId, user?.role, updateUserAvatar]);
 
-  /* Theme state: default is 'light' */
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    return (localStorage.getItem("strengthout_theme") as "light" | "dark") || "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.body.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.body.classList.remove("dark");
-    }
-    localStorage.setItem("strengthout_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
+  
   /* fetch unread count with strict deduplication guard */
   const fetchUnread = useCallback(async () => {
     if (!isAuthenticated || isFetchingUnreadRef.current) return;
@@ -385,44 +364,7 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Theme Toggle */}
-          <div
-            className="mobile-theme-row"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0.6rem 0.5rem",
-              borderTop: "1px solid var(--border-subtle, #f1f5f9)",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                color: "var(--text-secondary, #4b5563)",
-              }}
-            >
-              {theme === "dark" ? "Dark Theme" : "Light Theme"}
-            </span>
-            <button
-              type="button"
-              className="nav-icon-btn"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
-              }
-              title={
-                theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
-              }
-            >
-              {theme === "dark" ? (
-                <FiSun size={18} color="#f59e0b" />
-              ) : (
-                <FiMoon size={18} />
-              )}
-            </button>
-          </div>
+          
 
           {isAuthenticated ? (
             <button
@@ -457,24 +399,21 @@ const Navbar: React.FC = () => {
 
         {/* Right cluster */}
         <div className="nav-right">
-          {/* Theme of icon / Theme Mode Switcher */}
+          {/* Global Command Palette Trigger (Ctrl + K) */}
           <button
             type="button"
-            className="nav-icon-btn theme-toggle-btn"
-            onClick={toggleTheme}
-            aria-label={
-              theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
-            }
-            title={
-              theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"
-            }
+            className="nav-cmd-palette-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent("openCommandPalette"))}
+            title="Open Command Palette (Ctrl + K / Cmd + K)"
+            aria-label="Open Command Palette"
           >
-            {theme === "dark" ? (
-              <FiSun size={18} color="#f59e0b" />
-            ) : (
-              <FiMoon size={18} />
-            )}
+            <FiSearch size={14} className="nav-cmd-search-icon" />
+            <span className="nav-cmd-text">Search / Cmds</span>
+            <span className="nav-cmd-badge">
+              <kbd>Ctrl</kbd><kbd>K</kbd>
+            </span>
           </button>
+          
 
           {/* Bell with unread badge */}
           {isAuthenticated && (
