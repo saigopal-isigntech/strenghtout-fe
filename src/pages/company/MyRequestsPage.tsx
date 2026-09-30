@@ -3,7 +3,7 @@ import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
 import {
   FiBriefcase, FiMapPin, FiCalendar, FiClock,
-  FiChevronDown, FiChevronUp, FiRefreshCw, FiInbox,
+  FiChevronDown, FiChevronUp, FiRefreshCw, FiInbox, FiCheckCircle,
 } from "react-icons/fi";
 import "./MyRequests.css";
 
@@ -36,6 +36,69 @@ const expLabel = (months?: number) => {
   const y = Math.floor(months / 12);
   const m = months % 12;
   return y > 0 ? (m > 0 ? `${y}y ${m}m` : `${y} yr`) : `${m} mo`;
+};
+
+
+const STAGES = [
+  { key: "SUBMITTED",            label: "Submitted" },
+  { key: "UNDER_REVIEW",         label: "Under Review" },
+  { key: "COMPANY_CONTACTED",    label: "Company Contacted" },
+  { key: "CANDIDATE_DISCUSSION", label: "Candidate Discussion" },
+  { key: "SELECTED",             label: "Selected" },
+];
+
+const getStageIndex = (status: string) => {
+  const map: Record<string, number> = {
+    SUBMITTED: 0,
+    UNDER_REVIEW: 1,
+    COMPANY_CONTACTED: 2,
+    CANDIDATE_DISCUSSION: 3,
+    SELECTED: 4,
+  };
+  return map[status] ?? (status === "NOT_PROCEEDING" || status === "RETURNED" || status === "CLOSED" ? 5 : 0);
+};
+
+const RequestLifecycleStepper: React.FC<{ status: string }> = ({ status }) => {
+  const currentIndex = getStageIndex(status);
+  const isTerminalOther = status === "NOT_PROCEEDING" || status === "RETURNED" || status === "CLOSED";
+
+  return (
+    <div className="mr-stepper-wrap">
+      <div className="mr-stepper-header">
+        <span className="mr-stepper-title">Request Progress Lifecycle</span>
+        {isTerminalOther && (
+          <span className={`mr-terminal-badge mr-terminal-${status.toLowerCase()}`}>
+            {sm(status).label}
+          </span>
+        )}
+      </div>
+
+      <div className="mr-stepper">
+        {STAGES.map((st, idx) => {
+          const isCompleted = idx < currentIndex || status === "SELECTED";
+          const isCurrent = idx === currentIndex && !isTerminalOther && status !== "SELECTED";
+
+          return (
+            <div
+              key={st.key}
+              className={`mr-step-node ${isCompleted ? "completed" : isCurrent ? "current" : "upcoming"}`}
+            >
+              <div className="mr-step-icon">
+                {isCompleted ? (
+                  <FiCheckCircle size={16} />
+                ) : isCurrent ? (
+                  <span className="mr-step-pulse" />
+                ) : (
+                  <span>{idx + 1}</span>
+                )}
+              </div>
+              <span className="mr-step-label">{st.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 const MyRequestsPage: React.FC = () => {
@@ -221,6 +284,7 @@ const MyRequestsPage: React.FC = () => {
                       <tr key={`${itemKey}-detail`} className="mr-detail-row">
                         <td colSpan={5}>
                           <div className="mr-detail-panel">
+                            <RequestLifecycleStepper status={r.status} />
                             <div className="mr-detail-section">
                               <span className="mr-detail-label">Opportunity Summary</span>
                               <p className="mr-detail-text">{r.opportunitySummary || "—"}</p>
@@ -304,6 +368,7 @@ const MyRequestsPage: React.FC = () => {
 
                 {isExp && (
                   <div className="mr-detail-panel" style={{ borderRadius: "8px", marginTop: "0.25rem" }}>
+                    <RequestLifecycleStepper status={r.status} />
                     <div className="mr-detail-section">
                       <span className="mr-detail-label">Opportunity Summary</span>
                       <p className="mr-detail-text">{r.opportunitySummary || "—"}</p>

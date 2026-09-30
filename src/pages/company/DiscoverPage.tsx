@@ -17,11 +17,142 @@ import {
   FiCheckCircle,
   FiChevronLeft,
   FiChevronRight,
+  FiStar,
+  FiBookmark,
+  FiSave,
 } from "react-icons/fi";
 import { validateRequired } from "../../utils/validators";
 import "./Discover.css";
 
 const DiscoverPage: React.FC = () => {
+  // Shortlisting & Saved Searches state
+  const [discoverTab, setDiscoverTab] = useState<"ALL" | "SHORTLISTED">("ALL");
+  const [shortlist, setShortlist] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("strengthout_shortlist") || "[]"); } catch { return []; }
+  });
+  const [savedSearches, setSavedSearches] = useState<Array<{ id: string; label: string; query: string; roleId: string; expRange: string; workType: string }>>(() => {
+    try { return JSON.parse(localStorage.getItem("strengthout_saved_searches") || "[]"); } catch { return []; }
+  });
+
+  const toggleShortlist = (e: React.MouseEvent, candidateId: string) => {
+    e.stopPropagation();
+    setShortlist(prev => {
+      const isStarred = prev.includes(candidateId);
+      const next = isStarred ? prev.filter(id => id !== candidateId) : [...prev, candidateId];
+      localStorage.setItem("strengthout_shortlist", JSON.stringify(next));
+      setToastMsg(isStarred ? "Removed candidate from your shortlist" : "⭐ Added candidate to your shortlist!");
+      setTimeout(() => setToastMsg(""), 3000);
+      return next;
+    });
+  };
+
+  const handleSaveCurrentFilter = () => {
+    const roleName = rolesCatalog.find(r => r.id === selectedRoleId)?.roleName;
+    const expLabel = selectedExpRange === "entry" ? "Entry Level" : selectedExpRange === "mid" ? "Mid Level" : selectedExpRange === "senior" ? "Senior Level" : "";
+    const parts = [query.trim(), roleName, expLabel, selectedWorkType].filter(Boolean);
+    const label = parts.length > 0 ? parts.join(" • ") : "All Candidates Filter";
+
+    const newItem = {
+      id: "sf_" + Date.now(),
+      label,
+      query: query.trim(),
+      roleId: selectedRoleId,
+      expRange: selectedExpRange,
+      workType: selectedWorkType,
+    };
+
+    const next = [newItem, ...savedSearches.filter(s => s.label !== label)];
+    setSavedSearches(next);
+    localStorage.setItem("strengthout_saved_searches", JSON.stringify(next));
+    setToastMsg(`Saved filter set "${label}"!`);
+    setTimeout(() => setToastMsg(""), 3500);
+  };
+
+  const handleApplySavedFilter = (sf: { query: string; roleId: string; expRange: string; workType: string; label: string }) => {
+    setQuery(sf.query);
+    setSelectedRoleId(sf.roleId);
+    setSelectedExpRange(sf.expRange);
+    setSelectedWorkType(sf.workType);
+    setToastMsg(`Applied filter "${sf.label}"!`);
+    setTimeout(() => setToastMsg(""), 3000);
+  };
+
+  const handleDeleteSavedFilter = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const next = savedSearches.filter(s => s.id !== id);
+    setSavedSearches(next);
+    localStorage.setItem("strengthout_saved_searches", JSON.stringify(next));
+  };
+  // Batch Connect for Shortlisted Candidates
+  const [selectedShortlistIds, setSelectedShortlistIds] = useState<string[]>([]);
+  const [batchConnectModalOpen, setBatchConnectModalOpen] = useState(false);
+
+  const toggleSelectCandidate = (e: React.ChangeEvent<HTMLInputElement> | React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setSelectedShortlistIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllShortlist = (shortlistCandidates: CandidateProfile[]) => {
+    const validIds = shortlistCandidates.map(c => c.id!).filter(Boolean);
+    if (selectedShortlistIds.length === validIds.length) {
+      setSelectedShortlistIds([]);
+    } else {
+      setSelectedShortlistIds(validIds);
+    }
+  };
+
+  const submitBatchRequests = async () => {
+    if (selectedShortlistIds.length === 0) return;
+    setConnectTouched(true);
+
+    const errors: Record<string, string> = {};
+    const rErr = validateRequired(roleTitle, "Role title", 3);
+    if (rErr) errors.roleTitle = rErr;
+
+    const oErr = validateRequired(opportunitySummary, "Opportunity summary", 10);
+    if (oErr) errors.opportunitySummary = oErr;
+
+    if (Object.keys(errors).length > 0) {
+      setConnectErrors(errors);
+      return;
+    }
+
+    setSending(true);
+    let successCount = 0;
+
+    for (const candidateId of selectedShortlistIds) {
+      try {
+        await connectionsApi.submit({
+          candidateId,
+          roleTitle: roleTitle.trim(),
+          opportunitySummary: opportunitySummary.trim(),
+          workType,
+        });
+        successCount++;
+      } catch {
+        // continue batch sending
+      }
+    }
+
+    setSending(false);
+    setBatchConnectModalOpen(false);
+    setRoleTitle("");
+    setOpportunitySummary("");
+    setWorkType("REMOTE");
+    setConnectErrors({});
+    setConnectTouched(false);
+    setSelectedShortlistIds([]);
+
+    if (successCount > 0) {
+      setToastMsg(`✓ Connection requests sent to ${successCount} shortlisted candidate${successCount !== 1 ? "s" : ""}!`);
+      setTimeout(() => setToastMsg(""), 4500);
+    } else {
+      setConnectErrors({ roleTitle: "Failed to submit batch connection requests." });
+    }
+  };
+
   const [searchParams, setSearchParams] = useSearchParams();
   const qParam = searchParams.get("q") || "";
 
@@ -192,7 +323,12 @@ const DiscoverPage: React.FC = () => {
     return [];
   };
 
-  const filteredCandidates = useMemo(() => candidates, [candidates]);
+  const filteredCandidates = useMemo(() => {
+    if (discoverTab === "SHORTLISTED") {
+      return candidates.filter(c => c.id && shortlist.includes(c.id));
+    }
+    return candidates;
+  }, [candidates, discoverTab, shortlist]);
   const handlePageChange = (newPage: number) => {
     if (newPage < 0 || newPage >= totalPages || newPage === page || loading) return;
     search(newPage, query);
@@ -249,6 +385,58 @@ const DiscoverPage: React.FC = () => {
       <div className="discover-header">
         <h1>Discover Candidates</h1>
         <p>Explore pre-screened talent, verified skills, and background assessments</p>
+      </div>
+
+      {/* Discover Mode Tabs */}
+      <div className="discover-tabs-bar">
+        <button
+          type="button"
+          className={`discover-tab-btn ${discoverTab === "ALL" ? "active" : ""}`}
+          onClick={() => setDiscoverTab("ALL")}
+        >
+          All Candidates
+        </button>
+        <button
+          type="button"
+          className={`discover-tab-btn ${discoverTab === "SHORTLISTED" ? "active" : ""}`}
+          onClick={() => setDiscoverTab("SHORTLISTED")}
+        >
+          <FiStar size={15} className="tab-star-icon" /> Shortlisted Candidates
+          {shortlist.length > 0 && <span className="tab-badge">{shortlist.length}</span>}
+        </button>
+      </div>
+
+      {/* Saved Search Filter Set Toolbar */}
+      <div className="saved-searches-row">
+        <div className="saved-searches-chips">
+          <span className="saved-label"><FiBookmark size={13} /> Saved Searches:</span>
+          {savedSearches.length === 0 ? (
+            <span className="no-saved-txt">No saved filter sets yet. Click "Save Current Filter" to save search criteria.</span>
+          ) : (
+            savedSearches.map(sf => (
+              <span key={sf.id} className="saved-chip" onClick={() => handleApplySavedFilter(sf)}>
+                <span className="saved-chip-label">{sf.label}</span>
+                <button
+                  type="button"
+                  className="btn-del-saved"
+                  onClick={(e) => handleDeleteSavedFilter(e, sf.id)}
+                  title="Remove saved search"
+                >
+                  <FiX size={12} />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="btn-save-current-filter"
+          onClick={handleSaveCurrentFilter}
+          title="Save active search filters for 1-click execution"
+        >
+          <FiSave size={14} /> Save Current Filter
+        </button>
       </div>
 
       <div className="discover-filters">
@@ -311,6 +499,36 @@ const DiscoverPage: React.FC = () => {
         )}
       </p>
 
+      {discoverTab === "SHORTLISTED" && filteredCandidates.length > 0 && (
+        <div className="batch-shortlist-action-bar">
+          <div className="batch-action-left">
+            <label className="batch-select-all-label">
+              <input
+                type="checkbox"
+                checked={selectedShortlistIds.length > 0 && selectedShortlistIds.length === filteredCandidates.map(c => c.id).filter(Boolean).length}
+                onChange={() => handleSelectAllShortlist(filteredCandidates)}
+              />
+              <span>Select All Shortlisted ({filteredCandidates.length})</span>
+            </label>
+            {selectedShortlistIds.length > 0 && (
+              <span className="batch-selected-count-chip">
+                {selectedShortlistIds.length} candidate{selectedShortlistIds.length !== 1 ? "s" : ""} selected
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="btn-batch-connect"
+            disabled={selectedShortlistIds.length === 0}
+            onClick={() => setBatchConnectModalOpen(true)}
+            title="Send batch connection request to all selected shortlisted candidates"
+          >
+            <FiUserPlus size={16} /> Connect with Selected Candidates ({selectedShortlistIds.length})
+          </button>
+        </div>
+      )}
+
       <div className="candidate-grid">
         {loading
           ? Array.from({ length: 12 }).map((_, i) => <div key={i} className="candidate-card skeleton" />)
@@ -327,11 +545,38 @@ const DiscoverPage: React.FC = () => {
               return (
                 <div
                   key={c.id}
-                  className="candidate-card"
+                  className={`candidate-card ${c.id && selectedShortlistIds.includes(c.id) ? "selected-batch" : ""}`}
                   onClick={() => handleOpenProfile(c)}
                   style={{ cursor: "pointer" }}
                   title="Click to view candidate details"
                 >
+                  {/* Clean Header Bar: Checkbox & Star Button */}
+                  <div className="card-header-bar">
+                    {discoverTab === "SHORTLISTED" && c.id ? (
+                      <label className="card-select-label" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="card-checkbox"
+                          checked={selectedShortlistIds.includes(c.id)}
+                          onChange={(e) => toggleSelectCandidate(e, c.id!)}
+                        />
+                        <span className="card-select-text">Select</span>
+                      </label>
+                    ) : (
+                      <div />
+                    )}
+
+                    <button
+                      type="button"
+                      className={`card-star-btn ${c.id && shortlist.includes(c.id) ? "starred" : ""}`}
+                      onClick={(e) => c.id && toggleShortlist(e, c.id)}
+                      title={c.id && shortlist.includes(c.id) ? "Remove from Shortlist" : "Add to Shortlist"}
+                    >
+                      <FiStar size={16} fill={c.id && shortlist.includes(c.id) ? "#f59e0b" : "none"} color={c.id && shortlist.includes(c.id) ? "#f59e0b" : "#94a3b8"} />
+                    </button>
+                  </div>
+
+                  {/* Candidate Avatar & Meta Info */}
                   <div className="card-top">
                     {c.avatarUrl ? (
                       <img src={c.avatarUrl} alt={c.fullName} className="card-avatar" />
@@ -631,6 +876,14 @@ const DiscoverPage: React.FC = () => {
             <div className="cd-modal-footer">
               <button
                 type="button"
+                className={`btn-modal-shortlist ${selectedCandidate?.id && shortlist.includes(selectedCandidate.id) ? "active" : ""}`}
+                onClick={(e) => selectedCandidate?.id && toggleShortlist(e, selectedCandidate.id)}
+              >
+                <FiStar size={16} fill={selectedCandidate?.id && shortlist.includes(selectedCandidate.id) ? "#f59e0b" : "none"} color={selectedCandidate?.id && shortlist.includes(selectedCandidate.id) ? "#f59e0b" : "inherit"} />
+                {selectedCandidate?.id && shortlist.includes(selectedCandidate.id) ? "Shortlisted" : "Shortlist Candidate"}
+              </button>
+              <button
+                type="button"
                 className="btn-modal-cancel"
                 onClick={() => setSelectedCandidate(null)}
               >
@@ -649,6 +902,90 @@ const DiscoverPage: React.FC = () => {
                 }}
               >
                 <FiUserPlus size={16} /> Connect with Candidate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* Batch Connect Modal for Shortlisted Candidates */}
+      {batchConnectModalOpen && (
+        <div className="modal-overlay" onClick={() => setBatchConnectModalOpen(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h2>Connect with {selectedShortlistIds.length} Shortlisted Candidates</h2>
+            <p className="modal-sub">
+              Send a single-click connection request to evaluate all {selectedShortlistIds.length} selected candidate{selectedShortlistIds.length !== 1 ? "s" : ""} for this opportunity.
+            </p>
+            
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                Role Title <span style={{ color: "red" }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={roleTitle}
+                onChange={e => {
+                  setRoleTitle(e.target.value);
+                  if (connectErrors.roleTitle) setConnectErrors(prev => ({ ...prev, roleTitle: "" }));
+                }}
+                placeholder="e.g. Senior Java Developer"
+                style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+              />
+              {connectTouched && connectErrors.roleTitle && (
+                <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: "0.25rem 0 0" }}>{connectErrors.roleTitle}</p>
+              )}
+            </div>
+
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                Opportunity Summary <span style={{ color: "red" }}>*</span>
+              </label>
+              <textarea
+                value={opportunitySummary}
+                onChange={e => {
+                  setOpportunitySummary(e.target.value);
+                  if (connectErrors.opportunitySummary) setConnectErrors(prev => ({ ...prev, opportunitySummary: "" }));
+                }}
+                rows={4}
+                placeholder="Describe role responsibilities, team context, and key requirements..."
+                style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1", resize: "vertical" }}
+              />
+              {connectTouched && connectErrors.opportunitySummary && (
+                <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: "0.25rem 0 0" }}>{connectErrors.opportunitySummary}</p>
+              )}
+            </div>
+
+            <div style={{ marginBottom: "1.25rem" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: "#334155", marginBottom: "0.35rem" }}>
+                Work Model
+              </label>
+              <select
+                value={workType}
+                onChange={e => setWorkType(e.target.value)}
+                style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+              >
+                <option value="REMOTE">Remote</option>
+                <option value="HYBRID">Hybrid</option>
+                <option value="ONSITE">On-Site</option>
+              </select>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setBatchConnectModalOpen(false)}
+                disabled={sending}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-modal-submit"
+                onClick={submitBatchRequests}
+                disabled={sending}
+              >
+                {sending ? "Sending Batch Requests..." : `Send Request to ${selectedShortlistIds.length} Candidates`}
               </button>
             </div>
           </div>
