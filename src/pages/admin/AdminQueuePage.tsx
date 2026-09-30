@@ -403,12 +403,10 @@ const AdminQueuePage: React.FC = () => {
       {/* Header */}
       <div className="aq-header">
         <div className="aq-header-title-wrap">
-          <div className="aq-badge-title">
-            <FiShield size={14} /> Admin Mediation & Candidate Distribution Hub
-          </div>
-          <h1>Connection Requests & Multi-Application Tracker</h1>
+          
+          <h1>Connection Requests Tracker</h1>
           <p className="aq-subtitle">
-            Orchestrate candidate-to-company connection lifecycles, resolve multi-request competition, record private notes, and track application flows.
+            Review, approve, and track connection requests between companies and candidates.
           </p>
         </div>
 

@@ -21,54 +21,134 @@
   gap: 1.5rem;
 }
 
-/* Alert Banner Notifications */
+
+/* Alert Banner Notifications - Professional 3s Toast Popup */
 .profile-alert {
-  padding: 0.85rem 1.25rem;
-  border-radius: 10px;
-  font-size: 0.92rem;
-  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.93rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  animation: fadeIn 0.2s ease-in-out;
+  gap: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  animation: toastSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.profile-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.profile-alert-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.profile-alert-icon.success {
+  color: #059669;
+}
+
+.profile-alert-icon.error {
+  color: #dc2626;
+}
+
+.profile-alert-icon.info {
+  color: #2563eb;
+}
+
+.profile-alert-text {
+  line-height: 1.45;
+  color: #1e293b;
+  font-weight: 500;
 }
 
 .profile-alert.success {
-  background-color: #dcfce7;
-  color: #15803d;
+  background: #f0fdf4;
+  color: #166534;
   border: 1px solid #bbf7d0;
 }
 
 .profile-alert.error {
-  background-color: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .profile-alert.info {
-  background-color: #eff6ff;
-  color: #1d4ed8;
+  background: #eff6ff;
+  color: #1e40af;
   border: 1px solid #bfdbfe;
 }
 
 .btn-alert-close {
   background: transparent;
   border: none;
-  color: inherit;
+  color: #64748b;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  border-radius: 4px;
-  opacity: 0.8;
-  transition: opacity 0.15s;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .btn-alert-close:hover {
-  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+  color: #0f172a;
 }
+
+/* 3-Second Animated Progress Bar */
+.profile-alert-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  animation: toastProgress 3s linear forwards;
+}
+
+.profile-alert.success .profile-alert-progress {
+  background: #10b981;
+}
+
+.profile-alert.error .profile-alert-progress {
+  background: #ef4444;
+}
+
+.profile-alert.info .profile-alert-progress {
+  background: #3b82f6;
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
 
 /* Action Bar & Buttons */
 .profile-action-bar,

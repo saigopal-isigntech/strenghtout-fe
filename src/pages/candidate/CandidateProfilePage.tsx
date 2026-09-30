@@ -20,6 +20,8 @@ import {
   FiPhone,
   FiMail,
   FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
   FiDownload,
   FiEye,
   FiTrash2,
@@ -87,6 +89,16 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
   const [loading, setLoading] = useState(true);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  // Auto-dismiss notification popup after 3 seconds (3000ms)
+  useEffect(() => {
+    if (alertMsg) {
+      const timer = setTimeout(() => {
+        setAlertMsg(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [alertMsg]);
+
 
   // View is derived from URL route (/profile vs /profile/edit)
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
@@ -1227,11 +1239,17 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         )}
 
         {alertMsg && (
-          <div className={`profile-alert ${alertMsg.type}`}>
-            <span>{alertMsg.text}</span>
-            <button onClick={() => setAlertMsg(null)} className="btn-alert-close">
+          <div className={`profile-alert ${alertMsg.type} profile-toast-professional`}>
+            <div className="profile-alert-content">
+              {alertMsg.type === 'success' && <FiCheckCircle className="profile-alert-icon success" />}
+              {alertMsg.type === 'error' && <FiAlertCircle className="profile-alert-icon error" />}
+              {alertMsg.type === 'info' && <FiInfo className="profile-alert-icon info" />}
+              <span className="profile-alert-text">{alertMsg.text}</span>
+            </div>
+            <button onClick={() => setAlertMsg(null)} className="btn-alert-close" title="Dismiss">
               <FiX size={16} />
             </button>
+            <div className="profile-alert-progress" />
           </div>
         )}
 
@@ -1801,11 +1819,17 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         </div>
 
         {alertMsg && (
-          <div className={`profile-alert ${alertMsg.type}`}>
-            <span>{alertMsg.text}</span>
-            <button onClick={() => setAlertMsg(null)} className="btn-alert-close">
+          <div className={`profile-alert ${alertMsg.type} profile-toast-professional`}>
+            <div className="profile-alert-content">
+              {alertMsg.type === 'success' && <FiCheckCircle className="profile-alert-icon success" />}
+              {alertMsg.type === 'error' && <FiAlertCircle className="profile-alert-icon error" />}
+              {alertMsg.type === 'info' && <FiInfo className="profile-alert-icon info" />}
+              <span className="profile-alert-text">{alertMsg.text}</span>
+            </div>
+            <button onClick={() => setAlertMsg(null)} className="btn-alert-close" title="Dismiss">
               <FiX size={16} />
             </button>
+            <div className="profile-alert-progress" />
           </div>
         )}
 

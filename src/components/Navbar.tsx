@@ -408,9 +408,9 @@ const Navbar: React.FC = () => {
             aria-label="Open Command Palette"
           >
             <FiSearch size={14} className="nav-cmd-search-icon" />
-            <span className="nav-cmd-text">Search / Cmds</span>
-            <span className="nav-cmd-badge">
-              <kbd>Ctrl</kbd><kbd>K</kbd>
+            <span className="nav-cmd-placeholder">Search...</span>
+            <span className="nav-cmd-kbd-badge">
+              <kbd>Ctrl K</kbd>
             </span>
           </button>
           
