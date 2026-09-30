@@ -18,6 +18,8 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiStar,
+  FiShare2,
+  FiPrinter,
   FiRotateCcw, FiFilter, FiSearch,
 } from "react-icons/fi";
 import { validateRequired } from "../../utils/validators";
@@ -172,6 +174,18 @@ const DiscoverPage: React.FC = () => {
     setSearchParams({}, { replace: true });
     setToastMsg("Reset all search filters!");
     setTimeout(() => setToastMsg(""), 2500);
+  };
+
+
+  const handleCopyShareLink = (cId: string) => {
+    const shareUrl = `${window.location.origin}/candidate/${cId}`;
+    navigator.clipboard.writeText(shareUrl);
+    setToastMsg("✓ Candidate profile link copied to clipboard!");
+    setTimeout(() => setToastMsg(""), 3500);
+  };
+
+  const handleExportPDF = () => {
+    window.print();
   };
 
 const search = useCallback(async (p = 0, searchTerms = query) => {
@@ -862,6 +876,22 @@ const search = useCallback(async (p = 0, searchTerms = query) => {
 
             {/* Modal Footer */}
             <div className="cd-modal-footer">
+              <button
+                type="button"
+                className="btn-modal-action-secondary"
+                onClick={() => selectedCandidate?.id && handleCopyShareLink(selectedCandidate.id)}
+                title="Copy direct shareable candidate profile URL"
+              >
+                <FiShare2 size={15} /> Share Link
+              </button>
+              <button
+                type="button"
+                className="btn-modal-action-secondary"
+                onClick={handleExportPDF}
+                title="Export candidate profile as a formatted 1-page PDF"
+              >
+                <FiPrinter size={15} /> Export PDF
+              </button>
               <button
                 type="button"
                 className={`btn-modal-shortlist ${selectedCandidate?.id && shortlist.includes(selectedCandidate.id) ? "active" : ""}`}

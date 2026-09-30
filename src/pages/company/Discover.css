@@ -1690,3 +1690,67 @@
   border-color: #047857;
   color: #86efac;
 }
+
+
+/* ============================================================
+   SHARE LINK & PRINT PDF EXPORT STYLES
+   ============================================================ */
+.btn-modal-action-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-modal-action-secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .app-shell nav,
+  .app-shell header,
+  .app-shell footer,
+  .navbar,
+  .footer,
+  .discover-header,
+  .discover-tabs-bar,
+  .discover-filters-card,
+  .candidate-grid,
+  .discover-pagination,
+  .cd-modal-footer,
+  .btn-modal-cancel,
+  .btn-card-primary,
+  .btn-modal-shortlist,
+  .btn-modal-action-secondary {
+    display: none !important;
+  }
+  .modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .candidate-detail-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
