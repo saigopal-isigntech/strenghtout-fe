@@ -18,8 +18,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiStar,
-  FiBookmark,
-  FiSave,
+  FiRotateCcw, FiFilter, FiSearch,
 } from "react-icons/fi";
 import { validateRequired } from "../../utils/validators";
 import "./Discover.css";
@@ -30,10 +29,7 @@ const DiscoverPage: React.FC = () => {
   const [shortlist, setShortlist] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("strengthout_shortlist") || "[]"); } catch { return []; }
   });
-  const [savedSearches, setSavedSearches] = useState<Array<{ id: string; label: string; query: string; roleId: string; expRange: string; workType: string }>>(() => {
-    try { return JSON.parse(localStorage.getItem("strengthout_saved_searches") || "[]"); } catch { return []; }
-  });
-
+  
   const toggleShortlist = (e: React.MouseEvent, candidateId: string) => {
     e.stopPropagation();
     setShortlist(prev => {
@@ -46,44 +42,11 @@ const DiscoverPage: React.FC = () => {
     });
   };
 
-  const handleSaveCurrentFilter = () => {
-    const roleName = rolesCatalog.find(r => r.id === selectedRoleId)?.roleName;
-    const expLabel = selectedExpRange === "entry" ? "Entry Level" : selectedExpRange === "mid" ? "Mid Level" : selectedExpRange === "senior" ? "Senior Level" : "";
-    const parts = [query.trim(), roleName, expLabel, selectedWorkType].filter(Boolean);
-    const label = parts.length > 0 ? parts.join(" • ") : "All Candidates Filter";
+  
 
-    const newItem = {
-      id: "sf_" + Date.now(),
-      label,
-      query: query.trim(),
-      roleId: selectedRoleId,
-      expRange: selectedExpRange,
-      workType: selectedWorkType,
-    };
 
-    const next = [newItem, ...savedSearches.filter(s => s.label !== label)];
-    setSavedSearches(next);
-    localStorage.setItem("strengthout_saved_searches", JSON.stringify(next));
-    setToastMsg(`Saved filter set "${label}"!`);
-    setTimeout(() => setToastMsg(""), 3500);
-  };
-
-  const handleApplySavedFilter = (sf: { query: string; roleId: string; expRange: string; workType: string; label: string }) => {
-    setQuery(sf.query);
-    setSelectedRoleId(sf.roleId);
-    setSelectedExpRange(sf.expRange);
-    setSelectedWorkType(sf.workType);
-    setToastMsg(`Applied filter "${sf.label}"!`);
-    setTimeout(() => setToastMsg(""), 3000);
-  };
-
-  const handleDeleteSavedFilter = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    const next = savedSearches.filter(s => s.id !== id);
-    setSavedSearches(next);
-    localStorage.setItem("strengthout_saved_searches", JSON.stringify(next));
-  };
-  // Batch Connect for Shortlisted Candidates
+  
+    // Batch Connect for Shortlisted Candidates
   const [selectedShortlistIds, setSelectedShortlistIds] = useState<string[]>([]);
   const [batchConnectModalOpen, setBatchConnectModalOpen] = useState(false);
 
@@ -198,7 +161,20 @@ const DiscoverPage: React.FC = () => {
     setQuery(qParam);
   }, [qParam]);
 
-  const search = useCallback(async (p = 0, searchTerms = query) => {
+  
+  const hasActiveFilters = Boolean(query.trim() || selectedRoleId || selectedExpRange || selectedWorkType);
+
+  const handleResetFilters = () => {
+    setQuery("");
+    setSelectedRoleId("");
+    setSelectedExpRange("");
+    setSelectedWorkType("");
+    setSearchParams({}, { replace: true });
+    setToastMsg("Reset all search filters!");
+    setTimeout(() => setToastMsg(""), 2500);
+  };
+
+const search = useCallback(async (p = 0, searchTerms = query) => {
     setLoading(true);
     try {
       const params: Record<string, any> = { page: p, size: PAGE_SIZE };
@@ -406,87 +382,99 @@ const DiscoverPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Saved Search Filter Set Toolbar */}
-      <div className="saved-searches-row">
-        <div className="saved-searches-chips">
-          <span className="saved-label"><FiBookmark size={13} /> Saved Searches:</span>
-          {savedSearches.length === 0 ? (
-            <span className="no-saved-txt">No saved filter sets yet. Click "Save Current Filter" to save search criteria.</span>
-          ) : (
-            savedSearches.map(sf => (
-              <span key={sf.id} className="saved-chip" onClick={() => handleApplySavedFilter(sf)}>
-                <span className="saved-chip-label">{sf.label}</span>
-                <button
-                  type="button"
-                  className="btn-del-saved"
-                  onClick={(e) => handleDeleteSavedFilter(e, sf.id)}
-                  title="Remove saved search"
-                >
-                  <FiX size={12} />
-                </button>
-              </span>
-            ))
+      
+      <div className="discover-filters-card">
+        <div className="discover-filters-top">
+          <div className="filter-input-wrap">
+            <FiSearch size={16} className="search-icon" />
+            <input
+              type="search"
+              placeholder="Search by candidate name, headline, skills, or location..."
+              value={query}
+              onChange={e => handleInputChange(e.target.value)}
+              className="filter-input"
+            />
+          </div>
+
+          <select
+            value={selectedRoleId}
+            onChange={e => setSelectedRoleId(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">All Target Roles</option>
+            {rolesCatalog.map(r => (
+              <option key={r.id} value={r.id}>{r.roleName}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedExpRange}
+            onChange={e => setSelectedExpRange(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">All Experience Levels</option>
+            <option value="entry">Entry Level (0 - 2 yrs)</option>
+            <option value="mid">Mid Level (2 - 5 yrs)</option>
+            <option value="senior">Senior Level (5+ yrs)</option>
+          </select>
+
+          <select
+            value={selectedWorkType}
+            onChange={e => setSelectedWorkType(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">All Work Types</option>
+            <option value="REMOTE">Remote</option>
+            <option value="HYBRID">Hybrid</option>
+            <option value="ONSITE">On-Site</option>
+          </select>
+
+          <button className="btn-search" onClick={() => search(0, query)} disabled={loading}>
+            {loading ? <span className="spinner" /> : "Search"}
+          </button>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="btn-reset-filters"
+              onClick={handleResetFilters}
+              title="Reset all search filters"
+            >
+              <FiRotateCcw size={14} /> Clear Filters
+            </button>
           )}
         </div>
 
-        <button
-          type="button"
-          className="btn-save-current-filter"
-          onClick={handleSaveCurrentFilter}
-          title="Save active search filters for 1-click execution"
-        >
-          <FiSave size={14} /> Save Current Filter
-        </button>
-      </div>
-
-      <div className="discover-filters">
-        <input
-          type="search"
-          placeholder="Search by candidate name, headline, skills, or location..."
-          value={query}
-          onChange={e => handleInputChange(e.target.value)}
-          className="filter-input"
-        />
-
-        <select
-          value={selectedRoleId}
-          onChange={e => setSelectedRoleId(e.target.value)}
-          className="filter-select"
-          style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
-        >
-          <option value="">All Target Roles</option>
-          {rolesCatalog.map(r => (
-            <option key={r.id} value={r.id}>{r.roleName}</option>
-          ))}
-        </select>
-
-        <select
-          value={selectedExpRange}
-          onChange={e => setSelectedExpRange(e.target.value)}
-          className="filter-select"
-          style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
-        >
-          <option value="">All Experience Levels</option>
-          <option value="entry">Entry Level (0 - 2 yrs)</option>
-          <option value="mid">Mid Level (2 - 5 yrs)</option>
-          <option value="senior">Senior Level (5+ yrs)</option>
-        </select>
-
-        <select
-          value={selectedWorkType}
-          onChange={e => setSelectedWorkType(e.target.value)}
-          className="filter-select"
-          style={{ padding: "0.65rem 0.9rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#fff", color: "#334155", fontSize: "0.9rem" }}
-        >
-          <option value="">All Work Types</option>
-          <option value="REMOTE">Remote</option>
-          <option value="HYBRID">Hybrid</option>
-          <option value="ONSITE">On-Site</option>
-        </select>
-
-        <button className="btn-search" onClick={() => search(0, query)} disabled={loading}>
-          {loading ? <span className="spinner" /> : "Search"}
-        </button>
+        {/* Active Filter Chips Bar */}
+        {hasActiveFilters && (
+          <div className="active-filters-chips-bar">
+            <span className="active-filters-label"><FiFilter size={12} /> Active Filters:</span>
+            {query.trim() && (
+              <span className="active-filter-chip">
+                Keyword: "{query.trim()}"
+                <button type="button" onClick={() => handleInputChange("")}><FiX size={11} /></button>
+              </span>
+            )}
+            {selectedRoleId && (
+              <span className="active-filter-chip">
+                Role: {rolesCatalog.find(r => r.id === selectedRoleId)?.roleName || "Selected Role"}
+                <button type="button" onClick={() => setSelectedRoleId("")}><FiX size={11} /></button>
+              </span>
+            )}
+            {selectedExpRange && (
+              <span className="active-filter-chip">
+                Experience: {selectedExpRange === "entry" ? "Entry Level" : selectedExpRange === "mid" ? "Mid Level" : "Senior Level"}
+                <button type="button" onClick={() => setSelectedExpRange("")}><FiX size={11} /></button>
+              </span>
+            )}
+            {selectedWorkType && (
+              <span className="active-filter-chip">
+                Work Type: {selectedWorkType}
+                <button type="button" onClick={() => setSelectedWorkType("")}><FiX size={11} /></button>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <p className="result-count">
