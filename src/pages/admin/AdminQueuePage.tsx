@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, Fragment } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
+import { AdminHeroBanner } from "../../components/admin/AdminHeroBanner";
 import {
   FiRefreshCw,
   FiInbox,
@@ -22,19 +23,21 @@ import {
   FiAward,
   FiActivity,
   FiAlertCircle,
-  FiShield,
+  FiCalendar,
+  FiMoreVertical,
+  FiList,
 } from "react-icons/fi";
 import "./AdminQueue.css";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  SUBMITTED:            { label: "Submitted",            color: "#92400e", bg: "#fef3c7", border: "#fde68a" },
-  UNDER_REVIEW:         { label: "Under Review",         color: "#1e40af", bg: "#dbeafe", border: "#bfdbfe" },
-  COMPANY_CONTACTED:    { label: "Company Contacted",    color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
-  CANDIDATE_DISCUSSION: { label: "Candidate Discussion", color: "#6b21a8", bg: "#f3e8ff", border: "#d8b4fe" },
+  SUBMITTED:            { label: "Submitted",            color: "#b45309", bg: "#fef3c7", border: "#fde68a" },
+  UNDER_REVIEW:         { label: "Under Review",         color: "#1d4ed8", bg: "#dbeafe", border: "#bfdbfe" },
+  COMPANY_CONTACTED:    { label: "Company Contacted",    color: "#047857", bg: "#d1fae5", border: "#6ee7b7" },
+  CANDIDATE_DISCUSSION: { label: "Candidate Discussion", color: "#7e22ce", bg: "#f3e8ff", border: "#d8b4fe" },
   SELECTED:             { label: "Selected / Hired",     color: "#15803d", bg: "#dcfce7", border: "#86efac" },
-  RETURNED:             { label: "Returned to Candidate",color: "#b45309", bg: "#ffedd5", border: "#fed7aa" },
-  NOT_PROCEEDING:       { label: "Not Proceeding",       color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" },
-  CLOSED:               { label: "Closed",               color: "#374151", bg: "#f3f4f6", border: "#e5e7eb" },
+  RETURNED:             { label: "Returned to Candidate",color: "#c2410c", bg: "#ffedd5", border: "#fed7aa" },
+  NOT_PROCEEDING:       { label: "Not Proceeding",       color: "#be123c", bg: "#ffe4e6", border: "#fecdd3" },
+  CLOSED:               { label: "Closed",               color: "#475569", bg: "#f1f5f9", border: "#e2e8f0" },
 };
 
 const NEXT_TRANSITIONS: Record<string, { status: string; label: string; cls: string; needsReason?: boolean }[]> = {
@@ -73,29 +76,50 @@ const NEXT_TRANSITIONS: Record<string, { status: string; label: string; cls: str
 };
 
 const sm = (status: string) =>
-  STATUS_META[status] || { label: status, color: "#374151", bg: "#f3f4f6", border: "#e5e7eb" };
+  STATUS_META[status] || { label: status, color: "#475569", bg: "#f1f5f9", border: "#e2e8f0" };
 
-const fmtDate = (iso?: string | null) => {
+const fmtDateOnly = (iso?: string | null) => {
   if (!iso) return "N/A";
   try {
-    return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   } catch {
     return "N/A";
   }
 };
 
-const fmtDateTime = (iso?: string | null) => {
-  if (!iso) return "N/A";
+const fmtTimeOnly = (iso?: string | null) => {
+  if (!iso) return "";
   try {
-    const d = new Date(iso);
-    return (
-      d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) +
-      " • " +
-      d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
-    );
+    return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase();
   } catch {
-    return "N/A";
+    return "";
   }
+};
+
+const getInitials = (name?: string) => {
+  if (!name) return "CD";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+};
+
+const AVATAR_BG_COLORS = [
+  { bg: "#dcfce7", text: "#166534" },
+  { bg: "#fce7f3", text: "#9d174d" },
+  { bg: "#dbeafe", text: "#1e40af" },
+  { bg: "#fef3c7", text: "#92400e" },
+  { bg: "#f3e8ff", text: "#6b21a8" },
+  { bg: "#ccfbf1", text: "#115e59" },
+];
+
+const getAvatarStyle = (name?: string) => {
+  if (!name) return AVATAR_BG_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const idx = Math.abs(hash) % AVATAR_BG_COLORS.length;
+  return AVATAR_BG_COLORS[idx];
 };
 
 type ViewMode = "TABLE" | "BY_CANDIDATE" | "BY_COMPANY";
@@ -121,7 +145,7 @@ const AdminQueuePage: React.FC = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [activeDetailTabs, setActiveDetailTabs] = useState<Record<string, DetailTab>>({});
   
-  // Live cache of request details (with notes and history)
+  // Live cache of request details
   const [detailCache, setDetailCache] = useState<Record<string, ConnectionRequest>>({});
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
 
@@ -172,7 +196,7 @@ const AdminQueuePage: React.FC = () => {
     }
   }, [searchParams]);
 
-  // Fetch full details (notes and history) when a request row is expanded
+  // Fetch full details
   const fetchRequestDetail = async (id: string) => {
     setLoadingDetails(prev => ({ ...prev, [id]: true }));
     try {
@@ -214,7 +238,6 @@ const AdminQueuePage: React.FC = () => {
     updateUrl(statusFilter, searchQuery, v);
   };
 
-  // Perform status transition
   const executeTransition = async (id: string, toStatus: string, reason?: string) => {
     setUpdating(id + toStatus);
     setTransitionTarget(null);
@@ -300,17 +323,6 @@ const AdminQueuePage: React.FC = () => {
     return map;
   }, [requests]);
 
-  const companyRequestCounts = useMemo(() => {
-    const map: Record<string, number> = {};
-    requests.forEach(r => {
-      const key = r.companyId || r.companyDisplayName || r.companyName;
-      if (key) {
-        map[key] = (map[key] || 0) + 1;
-      }
-    });
-    return map;
-  }, [requests]);
-
   // Grouped by Candidate data
   const groupedByCandidate = useMemo(() => {
     const groups: Record<string, {
@@ -373,10 +385,9 @@ const AdminQueuePage: React.FC = () => {
     const discussion = requests.filter(r => r.status === "CANDIDATE_DISCUSSION").length;
     const selected = requests.filter(r => r.status === "SELECTED").length;
     const multiCandidateCount = Object.values(candidateRequestCounts).filter(c => c > 1).length;
-    const multiCompanyCount = Object.values(companyRequestCounts).filter(c => c > 1).length;
 
-    return { total, submitted, underReview, discussion, selected, multiCandidateCount, multiCompanyCount };
-  }, [requests, candidateRequestCounts, companyRequestCounts]);
+    return { total, submitted, underReview, discussion, selected, multiCandidateCount };
+  }, [requests, candidateRequestCounts]);
 
   const STATUS_TABS = [
     { key: "",                     label: "All Active & Closed", count: requests.length },
@@ -400,71 +411,89 @@ const AdminQueuePage: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="aq-header">
-        <div className="aq-header-title-wrap">
-          
-          <h1>Connection Requests Tracker</h1>
-          <p className="aq-subtitle">
-            Review, approve, and track connection requests between companies and candidates.
-          </p>
-        </div>
-
-        <div className="aq-header-actions">
+      {/* Mint Hero Banner with Detailed Organic Waves & Graphic */}
+      <AdminHeroBanner
+          illustrationType="requests"
+        badgeText="CONNECTION REQUESTS TRACKER"
+        badgeIcon={<FiActivity size={14} />}
+        title="Connection Requests Tracker"
+        highlightText="Connection Requests"
+        subtitle="Review, approve, and track connection requests between companies and candidates."
+        actionButton={
           <button className="aq-refresh-btn" onClick={load} disabled={loading} title="Reload Queue">
-            <FiRefreshCw className={loading ? "spin" : ""} size={16} />
+            <FiRefreshCw className={loading ? "spin" : ""} size={15} />
             <span>{loading ? "Refreshing..." : "Refresh Queue"}</span>
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Multi-Request Intelligence & Summary KPIs */}
+      {/* 5 KPI Metric Cards Row */}
       <div className="aq-metrics-grid">
         <div className="aq-metric-card" onClick={() => handleStatusFilterChange("")}>
-          <div className="aq-metric-icon bg-blue"><FiInbox size={20} /></div>
-          <div className="aq-metric-info">
+          <div className="aq-metric-top">
+            <div className="aq-metric-icon bg-blue"><FiInbox size={18} /></div>
+            <span className="aq-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="aq-metric-body">
             <span className="aq-metric-num">{stats.total}</span>
             <span className="aq-metric-label">Total Applications</span>
+            <span className="aq-metric-sub">All connection requests</span>
           </div>
         </div>
 
         <div className="aq-metric-card" onClick={() => handleStatusFilterChange("SUBMITTED")}>
-          <div className="aq-metric-icon bg-amber"><FiClock size={20} /></div>
-          <div className="aq-metric-info">
+          <div className="aq-metric-top">
+            <div className="aq-metric-icon bg-amber"><FiClock size={18} /></div>
+            <span className="aq-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="aq-metric-body">
             <span className="aq-metric-num">{stats.submitted}</span>
             <span className="aq-metric-label">Pending Triage</span>
+            <span className="aq-metric-sub">Needs initial review</span>
           </div>
         </div>
 
         <div className="aq-metric-card" onClick={() => handleStatusFilterChange("CANDIDATE_DISCUSSION")}>
-          <div className="aq-metric-icon bg-purple"><FiActivity size={20} /></div>
-          <div className="aq-metric-info">
+          <div className="aq-metric-top">
+            <div className="aq-metric-icon bg-purple"><FiActivity size={18} /></div>
+            <span className="aq-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="aq-metric-body">
             <span className="aq-metric-num">{stats.discussion}</span>
             <span className="aq-metric-label">In Active Discussion</span>
+            <span className="aq-metric-sub">Under communication</span>
           </div>
         </div>
 
         <div className="aq-metric-card" onClick={() => handleStatusFilterChange("SELECTED")}>
-          <div className="aq-metric-icon bg-green"><FiAward size={20} /></div>
-          <div className="aq-metric-info">
+          <div className="aq-metric-top">
+            <div className="aq-metric-icon bg-green"><FiAward size={18} /></div>
+            <span className="aq-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="aq-metric-body">
             <span className="aq-metric-num">{stats.selected}</span>
             <span className="aq-metric-label">Selected / Placed</span>
+            <span className="aq-metric-sub">Successfully hired</span>
           </div>
         </div>
 
-        <div className="aq-metric-card highlight-card" onClick={() => handleViewChange("BY_CANDIDATE")}>
-          <div className="aq-metric-icon bg-fire"><FiTrendingUp size={20} /></div>
-          <div className="aq-metric-info">
+        <div className="aq-metric-card" onClick={() => handleViewChange("BY_CANDIDATE")}>
+          <div className="aq-metric-top">
+            <div className="aq-metric-icon bg-orange"><FiTrendingUp size={18} /></div>
+            <span className="aq-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="aq-metric-body">
             <span className="aq-metric-num">{stats.multiCandidateCount}</span>
-            <span className="aq-metric-label">Multi-Requested Candidates</span>
+            <span className="aq-metric-label">Multi-Requested</span>
+            <span className="aq-metric-sub">Applied to multiple companies</span>
           </div>
         </div>
       </div>
 
-      {/* Control Bar: Filter Tabs, Search, and Multi-View Switcher */}
+      {/* Control Card Box: Search, Layout Switcher & Status Filter Chips */}
       <div className="aq-controls-card">
-        <div className="aq-top-controls">
-          {/* Search bar */}
+        <div className="aq-top-controls-row">
+          {/* Search Bar */}
           <div className="aq-search-bar">
             <FiSearch size={16} className="aq-search-icon" />
             <input
@@ -480,60 +509,67 @@ const AdminQueuePage: React.FC = () => {
             )}
           </div>
 
-          {/* View Mode Switcher */}
-          <div className="aq-view-switcher">
-            <span className="aq-view-label"><FiLayers size={14} /> View Layout:</span>
-            <button
-              className={`aq-view-btn ${viewMode === "TABLE" ? "active" : ""}`}
-              onClick={() => handleViewChange("TABLE")}
-            >
-              <FiInbox size={14} /> All Requests
-            </button>
-            <button
-              className={`aq-view-btn ${viewMode === "BY_CANDIDATE" ? "active" : ""}`}
-              onClick={() => handleViewChange("BY_CANDIDATE")}
-            >
-              <FiUser size={14} /> Group by Candidate ({groupedByCandidate.length})
-            </button>
-            <button
-              className={`aq-view-btn ${viewMode === "BY_COMPANY" ? "active" : ""}`}
-              onClick={() => handleViewChange("BY_COMPANY")}
-            >
-              <FiBriefcase size={14} /> Group by Company ({groupedByCompany.length})
-            </button>
+          {/* View Mode Switcher Pills */}
+          <div className="aq-layout-switcher">
+            <span className="aq-layout-label"><FiLayers size={14} /> View Layout:</span>
+            <div className="aq-layout-pills">
+              <button
+                className={`aq-layout-btn ${viewMode === "TABLE" ? "active" : ""}`}
+                onClick={() => handleViewChange("TABLE")}
+              >
+                <FiList size={14} /> All Requests
+              </button>
+              <button
+                className={`aq-layout-btn ${viewMode === "BY_CANDIDATE" ? "active" : ""}`}
+                onClick={() => handleViewChange("BY_CANDIDATE")}
+              >
+                <FiUser size={14} /> Group by Candidate ({groupedByCandidate.length})
+              </button>
+              <button
+                className={`aq-layout-btn ${viewMode === "BY_COMPANY" ? "active" : ""}`}
+                onClick={() => handleViewChange("BY_COMPANY")}
+              >
+                <FiBriefcase size={14} /> Group by Company ({groupedByCompany.length})
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Status Filter Chips */}
-        <div className="aq-status-chips">
-          <div className="aq-filter-lead"><FiFilter size={13} /> Filter Status:</div>
-          {STATUS_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              className={`aq-status-chip ${statusFilter === tab.key ? "active" : ""}`}
-              onClick={() => handleStatusFilterChange(tab.key)}
-            >
-              <span>{tab.label}</span>
-              <span className="aq-chip-count">{tab.count}</span>
-            </button>
-          ))}
+        {/* Filter Status Chips */}
+        <div className="aq-filter-chips-row">
+          <span className="aq-filter-label"><FiFilter size={14} /> Filter Status:</span>
+          <div className="aq-filter-chips">
+            {STATUS_TABS.map((tab) => {
+              const isActive = statusFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  className={`aq-filter-chip ${isActive ? "active" : ""}`}
+                  onClick={() => handleStatusFilterChange(tab.key)}
+                >
+                  <span>{tab.label}</span>
+                  <span className="aq-chip-count">{tab.count}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Main Content Area */}
       {loading ? (
         <div className="aq-loading-state">
-          <FiRefreshCw className="spin" size={32} />
-          <p>Loading mediation queue and multi-request analytics...</p>
+          <FiRefreshCw className="spin" size={28} />
+          <p>Loading connection requests...</p>
         </div>
       ) : filteredRequests.length === 0 ? (
         <div className="aq-empty-state">
-          <FiInbox size={48} />
-          <h3>No connection requests match the criteria</h3>
-          <p>Try clearing filters or search queries to see other candidate applications.</p>
+          <FiInbox size={42} />
+          <h3>No connection requests found</h3>
+          <p>Try adjusting your search query or status filter chips.</p>
           {(statusFilter || searchQuery) && (
-            <button className="aq-clear-btn" onClick={() => { setStatusFilter(""); setSearchQuery(""); updateUrl("", "", viewMode); }}>
-              Reset All Filters
+            <button className="aq-btn-outline" onClick={() => { handleStatusFilterChange(""); handleSearchChange(""); }}>
+              Reset Filters
             </button>
           )}
         </div>
@@ -541,79 +577,87 @@ const AdminQueuePage: React.FC = () => {
         <>
           {/* 1. TABLE VIEW */}
           {viewMode === "TABLE" && (
-            <>
-            <div className="aq-table-wrap desktop-only">
+            <div className="aq-table-card">
               <table className="aq-table">
                 <thead>
                   <tr>
-                    <th>Candidate</th>
-                    <th>Requested By (Company)</th>
-                    <th>Role & Opportunity</th>
-                    <th>Status & Triage</th>
-                    <th>Requested On</th>
-                    <th>Actions</th>
+                    <th>CANDIDATE</th>
+                    <th>REQUESTED BY (COMPANY)</th>
+                    <th>ROLE & OPPORTUNITY</th>
+                    <th>STATUS & TRIAGE</th>
+                    <th>REQUESTED ON</th>
+                    <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRequests.map((req) => {
-                    const statusConfig = sm(req.status);
-                    const isExpanded = expanded === req.id;
-                    const transitions = NEXT_TRANSITIONS[req.status] || [];
-                    const candKey = req.candidateId || req.candidateFullName || req.candidateName;
-                    const compKey = req.companyId || req.companyDisplayName || req.companyName;
-                    const candidateReqCount = candidateRequestCounts[candKey || ""] || 1;
-                    const compReqCount = companyRequestCounts[compKey || ""] || 1;
-                                        const cachedDetail = detailCache[req.id];
-                    const activeTab = activeDetailTabs[req.id] || "OVERVIEW";
-                    const isRowUpdating = updating?.startsWith(req.id);
-
-                    // Other requests for this candidate
-                    const otherCandidateReqs = requests.filter(
-                      r => (r.candidateId || r.candidateFullName || r.candidateName) === candKey && r.id !== req.id
-                    );
+                  {filteredRequests.map((r) => {
+                    const smObj = sm(r.status);
+                    const transitions = NEXT_TRANSITIONS[r.status] || [];
+                    const candKey = r.candidateId || r.candidateFullName || r.candidateName;
+                    const candCount = candidateRequestCounts[candKey || ""] || 1;
+                    const isExp = expanded === r.id;
+                    const activeTab = activeDetailTabs[r.id] || "OVERVIEW";
+                    const detailedReq = (detailCache[r.id] || r) as any;
+                    const candName = r.candidateFullName || r.candidateName || "Candidate";
+                    const avatarStyle = getAvatarStyle(candName);
+                    const initials = getInitials(candName);
 
                     return (
-                      <Fragment key={req.id}>
-                        <tr className={`aq-row ${isExpanded ? "expanded" : ""} ${isRowUpdating ? "row-updating" : ""}`}>
+                      <Fragment key={r.id}>
+                        <tr className={`aq-row ${isExp ? "expanded-row" : ""}`}>
                           {/* Candidate Column */}
-                          <td className="aq-cell-candidate">
-                            <div className="aq-name-lockup">
-                              <span className="aq-cand-name">{req.candidateFullName || req.candidateName || "Candidate"}</span>
-                              {req.candidateHeadline && (
-                                <span className="aq-cand-email">{req.candidateHeadline}</span>
-                              )}
-                              {candidateReqCount > 1 && (
-                                <span className="aq-badge-multi-hot" title={`This candidate has ${candidateReqCount} active requests across different companies`}>
-                                  🔥 {candidateReqCount} Company Requests
-                                </span>
-                              )}
-                              {req.candidateId && (
-                                <button
-                                  className="aq-link-btn"
-                                  onClick={() => navigate(`/candidates/${req.candidateId}`)}
+                          <td>
+                            <div className="aq-candidate-cell">
+                              <div
+                                className="aq-avatar-circle"
+                                style={{ background: avatarStyle.bg, color: avatarStyle.text }}
+                              >
+                                {initials}
+                              </div>
+                              <div className="aq-candidate-info">
+                                <strong
+                                  className="aq-candidate-name"
+                                  onClick={() => r.candidateId && navigate(`/candidates/${r.candidateId}`)}
                                 >
-                                  <FiExternalLink size={12} /> View Candidate
-                                </button>
-                              )}
+                                  {candName}
+                                </strong>
+                                <div className="aq-candidate-headline">
+                                  {r.candidateHeadline || "Candidate Profile"}
+                                </div>
+                                {candCount > 1 && (
+                                  <span className="aq-flame-badge">
+                                    🔥 {candCount} Company Requests
+                                  </span>
+                                )}
+                                {r.candidateId && (
+                                  <button
+                                    className="aq-link-btn"
+                                    onClick={() => navigate(`/candidates/${r.candidateId}`)}
+                                  >
+                                    <FiExternalLink size={12} /> View Candidate
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </td>
 
                           {/* Company Column */}
-                          <td className="aq-cell-company">
-                            <div className="aq-company-lockup">
-                              <span className="aq-comp-name">{req.companyDisplayName || req.companyName || "Company"}</span>
-                              {req.companyCity && (
-                                <span className="aq-comp-sub"><FiMapPin size={11} /> {req.companyCity}</span>
-                              )}
-                              {compReqCount > 1 && (
-                                <span className="aq-badge-comp-count">
-                                  🏢 {compReqCount} Total Inbound Requests
-                                </span>
-                              )}
-                              {req.companyId && (
+                          <td>
+                            <div className="aq-company-cell">
+                              <strong
+                                className="aq-company-name"
+                                onClick={() => r.companyId && navigate(`/companies/${r.companyId}`)}
+                              >
+                                {r.companyDisplayName || r.companyName || "Company"}
+                              </strong>
+                              <div className="aq-company-location">
+                                <FiMapPin size={12} />
+                                <span>{r.candidateLocation || r.location || "Unspecified"}</span>
+                              </div>
+                              {r.companyId && (
                                 <button
                                   className="aq-link-btn"
-                                  onClick={() => navigate(`/companies/${req.companyId}`)}
+                                  onClick={() => navigate(`/companies/${r.companyId}`)}
                                 >
                                   <FiExternalLink size={12} /> Company Details
                                 </button>
@@ -622,292 +666,214 @@ const AdminQueuePage: React.FC = () => {
                           </td>
 
                           {/* Role Column */}
-                          <td className="aq-cell-role">
-                            <div className="aq-role-lockup">
-                              <span className="aq-role-title">{req.roleTitle || "Opportunity"}</span>
-                              <span className="aq-role-meta">
-                                {req.location && <span><FiMapPin size={11} /> {req.location}</span>}
-                                {req.workType && <span className="aq-pill-workmodel">{req.workType}</span>}
+                          <td>
+                            <div className="aq-role-cell">
+                              <strong className="aq-role-title">{r.roleTitle || "Opportunity"}</strong>
+                              <span className="aq-workplace-tag">
+                                {(r.workType || "HYBRID").toUpperCase()}
                               </span>
                             </div>
                           </td>
 
                           {/* Status Column */}
-                          <td className="aq-cell-status">
+                          <td>
                             <span
                               className="aq-status-pill"
-                              style={{
-                                color: statusConfig.color,
-                                background: statusConfig.bg,
-                                borderColor: statusConfig.border,
-                              }}
+                              style={{ color: smObj.color, background: smObj.bg, borderColor: smObj.border }}
                             >
-                              <span className="aq-status-dot" style={{ background: statusConfig.color }} />
-                              {statusConfig.label}
+                              <span className="aq-status-dot" style={{ background: smObj.color }} />
+                              {smObj.label}
                             </span>
                           </td>
 
-                          {/* Date Column */}
-                          <td className="aq-cell-date">
-                            <span className="aq-date-primary">{fmtDate(req.submittedAt)}</span>
-                            <span className="aq-date-sub">{fmtDateTime(req.submittedAt)}</span>
+                          {/* Requested On Column */}
+                          <td>
+                            <div className="aq-date-cell">
+                              <div className="aq-date-main">
+                                <FiCalendar size={13} />
+                                <span>{fmtDateOnly(r.submittedAt)}</span>
+                              </div>
+                              <div className="aq-time-sub">{fmtTimeOnly(r.submittedAt)}</div>
+                            </div>
                           </td>
 
-                          {/* Quick Transitions & Details Toggle */}
-                          <td className="aq-cell-actions">
-                            <div className="aq-action-bar">
-                              {transitions.map((t) => (
+                          {/* Actions Column */}
+                          <td>
+                            <div className="aq-actions-cell">
+                              {transitions.length > 0 && (
                                 <button
-                                  key={t.status}
-                                  className={`aq-btn-quick ${t.cls}`}
-                                  disabled={updating === req.id + t.status}
-                                  onClick={() => handleTransitionClick(req.id, t.status, t.needsReason)}
-                                  title={t.label}
+                                  className={`aq-btn-action ${transitions[0].cls}`}
+                                  disabled={updating === r.id + transitions[0].status}
+                                  onClick={() => handleTransitionClick(r.id, transitions[0].status, transitions[0].needsReason)}
                                 >
-                                  {updating === req.id + t.status ? (
-                                    <FiRefreshCw className="spin" size={12} />
-                                  ) : (
-                                    <>
-                                      <span>{t.label}</span>
-                                      <FiArrowRight size={12} />
-                                    </>
-                                  )}
+                                  <span>{transitions[0].label}</span>
+                                  <FiArrowRight size={13} />
                                 </button>
-                              ))}
+                              )}
+
+                              {transitions.length > 1 && (
+                                <button
+                                  className={`aq-btn-action ${transitions[1].cls}`}
+                                  disabled={updating === r.id + transitions[1].status}
+                                  onClick={() => handleTransitionClick(r.id, transitions[1].status, transitions[1].needsReason)}
+                                >
+                                  <span>{transitions[1].label}</span>
+                                  <FiArrowRight size={13} />
+                                </button>
+                              )}
+
                               <button
-                                className={`aq-btn-inspect ${isExpanded ? "active" : ""}`}
-                                onClick={() => toggleExpand(req.id)}
+                                className="aq-btn-inspect"
+                                onClick={() => toggleExpand(r.id)}
                               >
-                                <FiFileText size={14} />
-                                <span>{isExpanded ? "Close Panel" : "Inspect & Notes"}</span>
+                                <FiFileText size={13} />
+                                <span>{isExp ? "Close Detail" : "Inspect & Notes"}</span>
+                              </button>
+                              
+                              <button className="aq-btn-more-dots" title="More Options" onClick={() => toggleExpand(r.id)}>
+                                <FiMoreVertical size={16} />
                               </button>
                             </div>
                           </td>
                         </tr>
 
-                        {/* Expanded Drawer / Detail Accordion */}
-                        {isExpanded && (
-                          <tr className="aq-drawer-row">
-                            <td colSpan={6} className="aq-drawer-cell">
-                              <div className="aq-drawer-inner">
-                                {/* Drawer Navigation Tabs */}
-                                <div className="aq-drawer-nav">
+                        {/* Expanded Drawer Details */}
+                        {isExp && (
+                          <tr className="aq-expanded-row">
+                            <td colSpan={6}>
+                              <div className="aq-detail-drawer">
+                                {/* Drawer Header Tabs */}
+                                <div className="aq-drawer-tabs">
                                   <button
-                                    className={`aq-drawer-tab ${activeTab === "OVERVIEW" ? "active" : ""}`}
-                                    onClick={() => setActiveDetailTabs(prev => ({ ...prev, [req.id]: "OVERVIEW" }))}
+                                    className={`aq-tab-btn ${activeTab === "OVERVIEW" ? "active" : ""}`}
+                                    onClick={() => setActiveDetailTabs(prev => ({ ...prev, [r.id]: "OVERVIEW" }))}
                                   >
-                                    <FiInbox size={14} /> Application Overview & Multi-Match
+                                    Opportunity Overview
                                   </button>
                                   <button
-                                    className={`aq-drawer-tab ${activeTab === "NOTES" ? "active" : ""}`}
-                                    onClick={() => setActiveDetailTabs(prev => ({ ...prev, [req.id]: "NOTES" }))}
+                                    className={`aq-tab-btn ${activeTab === "NOTES" ? "active" : ""}`}
+                                    onClick={() => setActiveDetailTabs(prev => ({ ...prev, [r.id]: "NOTES" }))}
                                   >
-                                    <FiFileText size={14} /> Confidential Admin Notes ({cachedDetail?.adminNotes?.length || 0})
+                                    Internal Audit Notes ({detailedReq.adminNotes?.length || 0})
                                   </button>
                                   <button
-                                    className={`aq-drawer-tab ${activeTab === "HISTORY" ? "active" : ""}`}
-                                    onClick={() => setActiveDetailTabs(prev => ({ ...prev, [req.id]: "HISTORY" }))}
+                                    className={`aq-tab-btn ${activeTab === "HISTORY" ? "active" : ""}`}
+                                    onClick={() => setActiveDetailTabs(prev => ({ ...prev, [r.id]: "HISTORY" }))}
                                   >
-                                    <FiClock size={14} /> State Audit Trail ({cachedDetail?.history?.length || 0})
+                                    Status Audit Log ({detailedReq.statusHistory?.length || 0})
                                   </button>
                                 </div>
 
-                                <div className="aq-drawer-body">
-                                  {/* TAB 1: OVERVIEW & MULTI-REQUEST INTELLIGENCE */}
-                                  {activeTab === "OVERVIEW" && (
-                                    <div className="aq-overview-tab">
-                                      {/* Cross-Request Demand Intelligence Alert */}
-                                      {otherCandidateReqs.length > 0 && (
-                                        <div className="aq-conflict-alert">
-                                          <div className="aq-alert-head">
-                                            <FiAlertCircle size={18} />
-                                            <strong>Candidate Multi-Application Intelligence:</strong>
-                                            <span>
-                                              {req.candidateFullName || req.candidateName} has {otherCandidateReqs.length} other concurrent connection request(s).
-                                            </span>
+                                {loadingDetails[r.id] ? (
+                                  <div className="aq-drawer-loading">
+                                    <FiRefreshCw className="spin" size={20} />
+                                    <span>Fetching audit records...</span>
+                                  </div>
+                                ) : (
+                                  <div className="aq-drawer-content">
+                                    {/* TAB 1: OVERVIEW */}
+                                    {activeTab === "OVERVIEW" && (
+                                      <div className="aq-overview-tab">
+                                        <div className="aq-overview-grid">
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Connection ID</span>
+                                            <span className="aq-meta-val code">{r.id}</span>
                                           </div>
-                                          <div className="aq-conflict-list">
-                                            {otherCandidateReqs.map(other => {
-                                              const oSm = sm(other.status);
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Work Model</span>
+                                            <span className="aq-meta-val">{r.workType || "Onsite / Hybrid"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Company Contact</span>
+                                            <span className="aq-meta-val">{r.companyDisplayName || r.companyName || "N/A"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Candidate Name</span>
+                                            <span className="aq-meta-val">{candName}</span>
+                                          </div>
+                                        </div>
+
+                                        {(r.message || r.opportunitySummary) && (
+                                          <div className="aq-message-box">
+                                            <span className="aq-meta-label">Covering Message / Request Note:</span>
+                                            <p>{r.message || r.opportunitySummary}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* TAB 2: INTERNAL NOTES */}
+                                    {activeTab === "NOTES" && (
+                                      <div className="aq-notes-tab">
+                                        <div className="aq-note-input-row">
+                                          <textarea
+                                            rows={2}
+                                            placeholder="Add an internal operational note or call outcome for admins..."
+                                            value={newNoteTexts[r.id] || ""}
+                                            onChange={(e) => setNewNoteTexts({ ...newNoteTexts, [r.id]: e.target.value })}
+                                          />
+                                          <button
+                                            className="aq-btn-add-note"
+                                            disabled={!newNoteTexts[r.id]?.trim() || submittingNote[r.id]}
+                                            onClick={() => handleAddNote(r.id)}
+                                          >
+                                            <FiSend size={13} />
+                                            <span>{submittingNote[r.id] ? "Saving..." : "Save Note"}</span>
+                                          </button>
+                                        </div>
+
+                                        <div className="aq-notes-list">
+                                          {(!detailedReq.adminNotes || detailedReq.adminNotes.length === 0) ? (
+                                            <p className="aq-no-data">No internal notes recorded yet.</p>
+                                          ) : (
+                                            detailedReq.adminNotes.map((n: any, i: number) => (
+                                              <div key={i} className="aq-note-item">
+                                                <div className="aq-note-header">
+                                                  <strong>{n.adminEmail || "Admin User"}</strong>
+                                                  <span>{fmtDateOnly(n.createdAt)}</span>
+                                                </div>
+                                                <p className="aq-note-text">{n.note}</p>
+                                              </div>
+                                            ))
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* TAB 3: STATUS HISTORY */}
+                                    {activeTab === "HISTORY" && (
+                                      <div className="aq-history-tab">
+                                        {(!detailedReq.statusHistory || detailedReq.statusHistory.length === 0) ? (
+                                          <p className="aq-no-data">No audit logs recorded for this request.</p>
+                                        ) : (
+                                          <div className="aq-history-timeline">
+                                            {detailedReq.statusHistory.map((item: any, i: number) => {
+                                              const hSm = sm(item.toStatus);
                                               return (
-                                                <div key={other.id} className="aq-conflict-item">
-                                                  <span className="aq-conflict-comp">
-                                                    🏢 <strong>{other.companyDisplayName || other.companyName}</strong>
-                                                  </span>
-                                                  <span className="aq-conflict-role">({other.roleTitle || "Role"})</span>
-                                                  <span
-                                                    className="aq-status-badge-small"
-                                                    style={{ color: oSm.color, background: oSm.bg, borderColor: oSm.border }}
-                                                  >
-                                                    {oSm.label}
-                                                  </span>
-                                                  <button
-                                                    className="aq-btn-mini-switch"
-                                                    onClick={() => {
-                                                      setExpanded(other.id);
-                                                      fetchRequestDetail(other.id);
-                                                    }}
-                                                  >
-                                                    Switch to Request →
-                                                  </button>
+                                                <div key={i} className="aq-timeline-item">
+                                                  <div className="aq-timeline-badge" style={{ background: hSm.bg, color: hSm.color }}>
+                                                    {hSm.label}
+                                                  </div>
+                                                  <div className="aq-timeline-content">
+                                                    <div className="aq-timeline-meta">
+                                                      <span>Updated by: {item.changedBy || "System"}</span>
+                                                      <span>• {fmtDateOnly(item.timestamp)}</span>
+                                                    </div>
+                                                    {item.reason && (
+                                                      <div className="aq-timeline-reason">
+                                                        Reason: <em>{item.reason}</em>
+                                                      </div>
+                                                    )}
+                                                  </div>
                                                 </div>
                                               );
                                             })}
                                           </div>
-                                        </div>
-                                      )}
-
-                                      <div className="aq-overview-grid">
-                                        <div className="aq-overview-card">
-                                          <h4>Opportunity Details</h4>
-                                          <div className="aq-kv-list">
-                                            <div className="aq-kv-item">
-                                              <span className="aq-kv-k">Role Title:</span>
-                                              <span className="aq-kv-v">{req.roleTitle || "Not specified"}</span>
-                                            </div>
-                                            <div className="aq-kv-item">
-                                              <span className="aq-kv-k">Job Location:</span>
-                                              <span className="aq-kv-v">{req.location || "Remote / Undefined"}</span>
-                                            </div>
-                                            <div className="aq-kv-item">
-                                              <span className="aq-kv-k">Work Model:</span>
-                                              <span className="aq-kv-v">{req.workType || "Full-time"}</span>
-                                            </div>
-                                            <div className="aq-kv-item">
-                                              <span className="aq-kv-k">Expected Start:</span>
-                                              <span className="aq-kv-v">{req.expectedStart || "Immediate"}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        <div className="aq-overview-card">
-                                          <h4>Pitch & Opportunity Summary</h4>
-                                          <div className="aq-message-box">
-                                            {req.message || req.opportunitySummary ? (
-                                              <p>{req.message || req.opportunitySummary}</p>
-                                            ) : (
-                                              <span className="text-muted">No initial pitch message attached by requesting company.</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Transition Control Section inside Drawer */}
-                                      <div className="aq-drawer-actions-panel">
-                                        <span className="aq-panel-title">Execute Step Lifecycle Progression:</span>
-                                        <div className="aq-panel-buttons">
-                                          {transitions.map((t) => (
-                                            <button
-                                              key={t.status}
-                                              className={`aq-btn-quick ${t.cls}`}
-                                              disabled={updating === req.id + t.status}
-                                              onClick={() => handleTransitionClick(req.id, t.status, t.needsReason)}
-                                            >
-                                              {updating === req.id + t.status ? (
-                                                <FiRefreshCw className="spin" size={12} />
-                                              ) : (
-                                                <>
-                                                  <span>{t.label}</span>
-                                                  <FiArrowRight size={13} />
-                                                </>
-                                              )}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* TAB 2: CONFIDENTIAL ADMIN NOTES */}
-                                  {activeTab === "NOTES" && (
-                                    <div className="aq-notes-tab">
-                                      <div className="aq-notes-notice">
-                                        <FiShield size={14} />
-                                        <span>Internal Admin Notes are strictly confidential and never visible to candidates or companies.</span>
-                                      </div>
-
-                                      {/* New Note Form */}
-                                      <div className="aq-new-note-form">
-                                        <textarea
-                                          rows={3}
-                                          placeholder="Record interview notes, compensation discussions, client feedback, or mediation logs..."
-                                          value={newNoteTexts[req.id] || ""}
-                                          onChange={(e) => setNewNoteTexts(prev => ({ ...prev, [req.id]: e.target.value }))}
-                                        />
-                                        <button
-                                          className="aq-btn-submit-note"
-                                          disabled={submittingNote[req.id] || !newNoteTexts[req.id]?.trim()}
-                                          onClick={() => handleAddNote(req.id)}
-                                        >
-                                          <FiSend size={13} />
-                                          <span>{submittingNote[req.id] ? "Saving..." : "Record Note"}</span>
-                                        </button>
-                                      </div>
-
-                                      {/* Existing Notes Feed */}
-                                      <div className="aq-notes-feed">
-                                        {loadingDetails[req.id] ? (
-                                          <div className="aq-mini-loader"><FiRefreshCw className="spin" size={16} /> Fetching notes...</div>
-                                        ) : cachedDetail?.adminNotes && cachedDetail.adminNotes.length > 0 ? (
-                                          cachedDetail.adminNotes.map((note: any) => (
-                                            <div key={note.id || note.createdAt} className="aq-note-card">
-                                              <div className="aq-note-header">
-                                                <span className="aq-note-author"><FiUser size={12} /> {note.createdByEmail || note.authorName || "Admin"}</span>
-                                                <span className="aq-note-time">{fmtDateTime(note.createdAt)}</span>
-                                              </div>
-                                              <div className="aq-note-content">{note.note}</div>
-                                            </div>
-                                          ))
-                                        ) : (
-                                          <div className="aq-empty-notes">No internal notes recorded yet for this connection.</div>
                                         )}
                                       </div>
-                                    </div>
-                                  )}
-
-                                  {/* TAB 3: AUDIT HISTORY */}
-                                  {activeTab === "HISTORY" && (
-                                    <div className="aq-history-tab">
-                                      {loadingDetails[req.id] ? (
-                                        <div className="aq-mini-loader"><FiRefreshCw className="spin" size={16} /> Fetching audit trail...</div>
-                                      ) : cachedDetail?.history && cachedDetail.history.length > 0 ? (
-                                        <div className="aq-timeline">
-                                          {cachedDetail.history.map((hist: any, idx: number) => {
-                                            const fromSm = hist.fromStatus ? sm(hist.fromStatus) : null;
-                                            const toSm = sm(hist.toStatus);
-                                            return (
-                                              <div key={hist.id || idx} className="aq-timeline-item">
-                                                <div className="aq-timeline-dot" style={{ background: toSm.color }} />
-                                                <div className="aq-timeline-body">
-                                                  <div className="aq-timeline-header">
-                                                    <span className="aq-timeline-change">
-                                                      {fromSm ? (
-                                                        <>
-                                                          <span className="aq-badge-mini" style={{ color: fromSm.color, background: fromSm.bg }}>{fromSm.label}</span>
-                                                          <FiArrowRight size={12} />
-                                                        </>
-                                                      ) : (
-                                                        <span className="text-muted">Initiated as </span>
-                                                      )}
-                                                      <span className="aq-badge-mini" style={{ color: toSm.color, background: toSm.bg }}>{toSm.label}</span>
-                                                    </span>
-                                                    <span className="aq-timeline-time">{fmtDateTime(hist.changedAt || hist.createdAt)}</span>
-                                                  </div>
-                                                  <div className="aq-timeline-meta">
-                                                    <span>By: <strong>{hist.changedByEmail || hist.changedByName || "System"}</strong></span>
-                                                    {hist.reason && <p className="aq-timeline-reason">"{hist.reason}"</p>}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      ) : (
-                                        <div className="aq-empty-notes">No audit log records available.</div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -918,227 +884,37 @@ const AdminQueuePage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <div className="aq-mobile-cards mobile-only">
-              {filteredRequests.map((req) => {
-                const statusConfig = sm(req.status);
-                const isExpanded = expanded === req.id;
-                const transitions = NEXT_TRANSITIONS[req.status] || [];
-                const candKey = req.candidateId || req.candidateFullName || req.candidateName;
-                const compKey = req.companyId || req.companyDisplayName || req.companyName;
-                const candidateReqCount = candidateRequestCounts[candKey || ""] || 1;
-                    const compReqCount = companyRequestCounts[compKey || ""] || 1;
-                const cachedDetail = detailCache[req.id];
-                const activeTab = activeDetailTabs[req.id] || "OVERVIEW";
-                const compName = req.companyDisplayName || req.companyName || "Company";
-                const candName = req.candidateFullName || req.candidateName || "Candidate";
-
-                return (
-                  <div key={req.id} className={`aq-mobile-card ${isExpanded ? "expanded" : ""}`}>
-                    <div className="aq-mcard-header">
-                      <div className="aq-mcard-cand-info">
-                        <span className="aq-mcard-cand-name">{candName}</span>
-                        {req.candidateHeadline && (
-                          <span className="aq-mcard-cand-head">{req.candidateHeadline}</span>
-                        )}
-                      </div>
-                      <span
-                        className="aq-status-pill"
-                        style={{
-                          color: statusConfig.color,
-                          background: statusConfig.bg,
-                          borderColor: statusConfig.border,
-                        }}
-                      >
-                        <span className="aq-status-dot" style={{ background: statusConfig.color }} />
-                        {statusConfig.label}
-                      </span>
-                    </div>
-
-                    <div className="aq-mcard-badges">
-                      {candidateReqCount > 1 && (
-                        <span className="aq-badge-multi-hot">
-                          🔥 {candidateReqCount} Company Requests
-                        </span>
-                      )}
-                      {compReqCount > 1 && (
-                        <span className="aq-badge-comp-count">
-                          🏢 {compReqCount} Total Inbound Requests
-                        </span>
-                      )}
-                      {req.candidateId && (
-                        <button
-                          className="aq-link-btn"
-                          onClick={() => navigate(`/candidates/${req.candidateId}`)}
-                        >
-                          <FiExternalLink size={12} /> View Candidate
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="aq-mcard-body">
-                      <div className="aq-mcard-row">
-                        <span className="aq-mcard-label">Company:</span>
-                        <span className="aq-mcard-val-bold">{compName}</span>
-                        {req.companyCity && <span className="aq-mcard-sub">({req.companyCity})</span>}
-                        {req.companyId && (
-                          <button
-                            className="aq-link-btn"
-                            style={{ marginLeft: "4px" }}
-                            onClick={() => navigate(`/companies/${req.companyId}`)}
-                          >
-                            <FiExternalLink size={11} /> Details
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="aq-mcard-row">
-                        <span className="aq-mcard-label">Role:</span>
-                        <span className="aq-mcard-val-blue">{req.roleTitle || "Opportunity"}</span>
-                        {req.workType && <span className="aq-pill-workmodel">{req.workType}</span>}
-                      </div>
-
-                      <div className="aq-mcard-row">
-                        <span className="aq-mcard-label">Submitted:</span>
-                        <span className="aq-mcard-val">{fmtDate(req.submittedAt)}</span>
-                      </div>
-                    </div>
-
-                    <div className="aq-mcard-actions">
-                      {transitions.map((t) => (
-                        <button
-                          key={t.status}
-                          className={`aq-btn-quick ${t.cls}`}
-                          disabled={updating === req.id + t.status}
-                          onClick={() => handleTransitionClick(req.id, t.status, t.needsReason)}
-                          title={t.label}
-                        >
-                          {updating === req.id + t.status ? (
-                            <FiRefreshCw className="spin" size={12} />
-                          ) : (
-                            <>
-                              <span>{t.label}</span>
-                              <FiArrowRight size={12} />
-                            </>
-                          )}
-                        </button>
-                      ))}
-                      <button
-                        className={`aq-btn-inspect ${isExpanded ? "active" : ""}`}
-                        onClick={() => toggleExpand(req.id)}
-                      >
-                        <FiFileText size={14} />
-                        <span>{isExpanded ? "Close Panel" : "Inspect & Notes"}</span>
-                      </button>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="aq-mcard-drawer">
-                        <div className="aq-drawer-nav">
-                          <button
-                            className={`aq-drawer-tab ${activeTab === "OVERVIEW" ? "active" : ""}`}
-                            onClick={() => setActiveDetailTabs(prev => ({ ...prev, [req.id]: "OVERVIEW" }))}
-                          >
-                            <FiInbox size={14} /> Overview
-                          </button>
-                          <button
-                            className={`aq-drawer-tab ${activeTab === "NOTES" ? "active" : ""}`}
-                            onClick={() => setActiveDetailTabs(prev => ({ ...prev, [req.id]: "NOTES" }))}
-                          >
-                            <FiFileText size={14} /> Notes ({cachedDetail?.adminNotes?.length || 0})
-                          </button>
-                          <button
-                            className={`aq-drawer-tab ${activeTab === "HISTORY" ? "active" : ""}`}
-                            onClick={() => setActiveDetailTabs(prev => ({ ...prev, [req.id]: "HISTORY" }))}
-                          >
-                            <FiClock size={14} /> History ({cachedDetail?.history?.length || 0})
-                          </button>
-                        </div>
-
-                        <div className="aq-drawer-body">
-                          {activeTab === "OVERVIEW" && (
-                            <div className="aq-overview-tab">
-                              <div className="aq-overview-grid">
-                                <div className="aq-overview-card">
-                                  <h4>Opportunity Details</h4>
-                                  <div className="aq-kv-list">
-                                    <div className="aq-kv-item">
-                                      <span className="aq-kv-k">Role Title:</span>
-                                      <span className="aq-kv-v">{req.roleTitle || "Not specified"}</span>
-                                    </div>
-                                    <div className="aq-kv-item">
-                                      <span className="aq-kv-k">Job Location:</span>
-                                      <span className="aq-kv-v">{req.location || "Remote / Undefined"}</span>
-                                    </div>
-                                    <div className="aq-kv-item">
-                                      <span className="aq-kv-k">Work Model:</span>
-                                      <span className="aq-kv-v">{req.workType || "Full-time"}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="aq-overview-card">
-                                  <h4>Pitch & Opportunity Summary</h4>
-                                  <div className="aq-message-box">
-                                    <p>{req.message || req.opportunitySummary || "No pitch message."}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {activeTab === "NOTES" && (
-                            <div className="aq-notes-tab">
-                              <div className="aq-new-note-form">
-                                <textarea
-                                  placeholder="Add timestamped internal admin note..."
-                                  rows={2}
-                                  value={newNoteTexts[req.id] || ""}
-                                  onChange={(e) => setNewNoteTexts(prev => ({ ...prev, [req.id]: e.target.value }))}
-                                />
-                                <button
-                                  className="aq-btn-submit-note"
-                                  disabled={submittingNote[req.id] || !(newNoteTexts[req.id] || "").trim()}
-                                  onClick={() => handleAddNote(req.id)}
-                                >
-                                  {submittingNote[req.id] ? "Saving..." : "Record Internal Note"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
           )}
 
           {/* 2. GROUP BY CANDIDATE VIEW */}
           {viewMode === "BY_CANDIDATE" && (
             <div className="aq-grouped-cards-container">
               {groupedByCandidate.map((group) => {
-                const totalCompReqs = group.requests.length;
-                const isMulti = totalCompReqs > 1;
+                const totalReqs = group.requests.length;
+                const initials = getInitials(group.candidateName);
+                const avatarStyle = getAvatarStyle(group.candidateName);
 
                 return (
-                  <div key={group.candidateId || group.candidateName} className={`aq-group-card ${isMulti ? "hot-candidate" : ""}`}>
+                  <div key={group.candidateId || group.candidateName} className="aq-group-card">
                     <div className="aq-group-header">
                       <div className="aq-group-header-left">
-                        <div className="aq-cand-avatar">
-                          <FiUser size={20} />
+                        <div
+                          className="aq-avatar-circle large"
+                          style={{ background: avatarStyle.bg, color: avatarStyle.text }}
+                        >
+                          {initials}
                         </div>
                         <div>
                           <div className="aq-cand-title-row">
-                            <h3>{group.candidateName || "Candidate"}</h3>
-                            {isMulti && (
-                              <span className="aq-badge-hot">
-                                🔥 {totalCompReqs} Simultaneous Company Requests
-                              </span>
+                            <h3>{group.candidateName}</h3>
+                            {totalReqs > 1 ? (
+                              <span className="aq-flame-badge">🔥 {totalReqs} Company Requests</span>
+                            ) : (
+                              <span className="aq-badge-single">1 Company Request</span>
                             )}
                           </div>
                           {group.candidateHeadline && (
-                            <span className="aq-cand-email">{group.candidateHeadline}</span>
+                            <div className="aq-cand-headline">{group.candidateHeadline}</div>
                           )}
                         </div>
                       </div>
@@ -1148,22 +924,20 @@ const AdminQueuePage: React.FC = () => {
                           className="aq-btn-outline-sm"
                           onClick={() => navigate(`/candidates/${group.candidateId}`)}
                         >
-                          <FiExternalLink size={13} /> Full Candidate Dossier
+                          <FiExternalLink size={13} /> View Full Profile
                         </button>
                       )}
                     </div>
 
-                    {/* Sub-table of all company requests for this candidate */}
                     <div className="aq-subtable-wrap">
                       <table className="aq-subtable">
                         <thead>
                           <tr>
-                            <th>Requesting Company</th>
-                            <th>Target Role</th>
-                            <th>Location</th>
+                            <th>Company Name</th>
+                            <th>Role Position</th>
                             <th>Status</th>
-                            <th>Received On</th>
-                            <th>Triage Action</th>
+                            <th>Requested On</th>
+                            <th>Action</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1174,24 +948,21 @@ const AdminQueuePage: React.FC = () => {
                             return (
                               <tr key={r.id}>
                                 <td>
-                                  <div className="aq-company-lockup">
+                                  <div className="aq-name-lockup">
                                     <strong>{r.companyDisplayName || r.companyName}</strong>
                                     {r.companyId && (
                                       <button
                                         className="aq-link-btn"
                                         onClick={() => navigate(`/companies/${r.companyId}`)}
                                       >
-                                        <FiExternalLink size={11} /> View Company
+                                        <FiExternalLink size={11} /> Details
                                       </button>
                                     )}
                                   </div>
                                 </td>
                                 <td>
                                   <strong>{r.roleTitle || "Opportunity"}</strong>
-                                  <div className="aq-role-meta">{r.workType || "Full-time"}</div>
-                                </td>
-                                <td>
-                                  <span>{r.location || "Remote / Unspecified"}</span>
+                                  <div className="aq-role-meta">{r.workType || "HYBRID"}</div>
                                 </td>
                                 <td>
                                   <span
@@ -1202,7 +973,7 @@ const AdminQueuePage: React.FC = () => {
                                     {rSm.label}
                                   </span>
                                 </td>
-                                <td>{fmtDate(r.submittedAt)}</td>
+                                <td>{fmtDateOnly(r.submittedAt)}</td>
                                 <td>
                                   <div className="aq-action-bar">
                                     {transitions.slice(0, 2).map((t) => (
@@ -1257,7 +1028,7 @@ const AdminQueuePage: React.FC = () => {
                           <div className="aq-cand-title-row">
                             <h3>{group.companyDisplayName || group.companyName || "Company"}</h3>
                             <span className="aq-badge-comp-count">
-                              🏢 {totalCandReqs} Total Candidate Request(s)
+                              🏢 {totalCandReqs} Candidate Request(s)
                             </span>
                           </div>
                           {group.companyIndustry && (
@@ -1276,14 +1047,12 @@ const AdminQueuePage: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Sub-table of all candidate requests made by this company */}
                     <div className="aq-subtable-wrap">
                       <table className="aq-subtable">
                         <thead>
                           <tr>
                             <th>Target Candidate</th>
                             <th>Role Position</th>
-                            <th>Location</th>
                             <th>Status</th>
                             <th>Requested On</th>
                             <th>Action</th>
@@ -1302,7 +1071,7 @@ const AdminQueuePage: React.FC = () => {
                                   <div className="aq-name-lockup">
                                     <strong>{r.candidateFullName || r.candidateName}</strong>
                                     {candCount > 1 && (
-                                      <span className="aq-badge-multi-hot">🔥 {candCount} Active Requests</span>
+                                      <span className="aq-flame-badge">🔥 {candCount} Active Requests</span>
                                     )}
                                     {r.candidateId && (
                                       <button
@@ -1316,10 +1085,7 @@ const AdminQueuePage: React.FC = () => {
                                 </td>
                                 <td>
                                   <strong>{r.roleTitle || "Opportunity"}</strong>
-                                  <div className="aq-role-meta">{r.workType || "Full-time"}</div>
-                                </td>
-                                <td>
-                                  <span>{r.location || "Remote / Unspecified"}</span>
+                                  <div className="aq-role-meta">{r.workType || "HYBRID"}</div>
                                 </td>
                                 <td>
                                   <span
@@ -1330,7 +1096,7 @@ const AdminQueuePage: React.FC = () => {
                                     {rSm.label}
                                   </span>
                                 </td>
-                                <td>{fmtDate(r.submittedAt)}</td>
+                                <td>{fmtDateOnly(r.submittedAt)}</td>
                                 <td>
                                   <div className="aq-action-bar">
                                     {transitions.slice(0, 2).map((t) => (

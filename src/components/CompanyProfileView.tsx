@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { adminApi } from "../api/admin";
 import { companiesApi } from "../api/companies";
 import { useAuth } from "../context/AuthContext";
-import type { CompanyProfile, CompanyContact } from "../types";
+import type { CompanyProfile } from "../types";
 import { validateEmail, validatePhone, validateRequired, validateUrl } from "../utils/validators";
 import {
   FiEdit3,
@@ -23,7 +23,7 @@ import {
   FiArrowLeft,
   FiExternalLink,
   FiUserCheck,
-  FiUserPlus,
+  FiCalendar,
 } from "react-icons/fi";
 import "./CompanyProfileView.css";
 
@@ -33,9 +33,11 @@ const CompanyProfileView: React.FC = () => {
   const { id: routeCompanyId } = useParams<{ id?: string }>();
   const isExternalView = Boolean(routeCompanyId);
   const isReadOnly = isExternalView && user?.role !== "ROLE_COMPANY";
+
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  
   const [form, setForm] = useState<Partial<CompanyProfile>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -77,7 +79,7 @@ const CompanyProfileView: React.FC = () => {
               return;
             }
           } catch {
-            // fallback to list search
+            // fallback
           }
         }
         try {
@@ -107,9 +109,9 @@ const CompanyProfileView: React.FC = () => {
         companySize: "1-10 Employees",
         website: "https://www.isigntech.com/",
         linkedinUrl: "https://linkedin.com/isigntech",
-        description: "A structured group of people who work together in a coordinated way to reach shared goals and objectives",
+        description: "A structured group of people who work together in a coordinated way to reach shared goals and objectives. We are an Information Technology & Services company focused on building innovative solutions and connecting with top talent.",
         country: "India",
-        city: "Hyderabad , Chennai",
+        city: "Hyderabad, Chennai",
         status: "ACTIVE",
         contacts: []
       };
@@ -229,30 +231,17 @@ const CompanyProfileView: React.FC = () => {
     return (
       <div className="company-profile-page-wrapper">
         <div className="company-profile-container">
-        {isExternalView && (
-          <div style={{ marginBottom: "1rem" }}>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/users')}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.45rem",
-                background: "#ffffff",
-                border: "1px solid #cbd5e1",
-                color: "#334155",
-                padding: "0.5rem 1rem",
-                borderRadius: "8px",
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                cursor: "pointer",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)"
-              }}
-            >
-              <FiArrowLeft size={16} /> Back to Directory
-            </button>
-          </div>
-        )}
+          {isExternalView && (
+            <div style={{ marginBottom: "1rem" }}>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/users')}
+                className="btn-back-directory"
+              >
+                <FiArrowLeft size={16} /> Back to Directory
+              </button>
+            </div>
+          )}
           <div className="company-loading-card">
             <div className="spinner" />
             <p>Loading company profile details...</p>
@@ -262,40 +251,24 @@ const CompanyProfileView: React.FC = () => {
     );
   }
 
-  const companyInitials = (profile?.displayName || profile?.legalName || "C").substring(0, 2).toUpperCase();
+  const companyInitials = (profile?.displayName || profile?.legalName || "CO").substring(0, 2).toUpperCase();
 
   return (
     <div className="company-profile-page-wrapper">
       <div className="company-profile-container">
 
-        {/* Action Top Bar */}
-        <div className="company-profile-action-bar">
-          <div className="company-role-pill">
-            <FiUserCheck size={14} /> COMPANY ACCOUNT
+        {/* Back link for external view */}
+        {isExternalView && (
+          <div style={{ marginBottom: "1rem" }}>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/users')}
+              className="btn-back-directory"
+            >
+              <FiArrowLeft size={16} /> Back to Directory
+            </button>
           </div>
-
-          {!isReadOnly && (
-          <button
-            type="button"
-            className="btn-toggle-edit"
-            onClick={() => {
-              setEditing(!editing);
-              setError("");
-              setSuccess("");
-            }}
-          >
-            {editing ? (
-              <>
-                <FiArrowLeft size={15} /> Back to Profile View
-              </>
-            ) : (
-              <>
-                <FiEdit3 size={15} /> Edit Company Profile
-              </>
-            )}
-          </button>
-          )}
-        </div>
+        )}
 
         {/* Alert Notifications */}
         {success && (
@@ -317,60 +290,94 @@ const CompanyProfileView: React.FC = () => {
         )}
 
         {/* =====================================================================
-            VIEW MODE
+            VIEW MODE vs EDIT MODE
            ===================================================================== */}
         {!editing ? (
           <>
-            {/* Header Profile Card (Student Profile Style) */}
-            <div className="company-header-card">
-              <div className="company-header-left">
-                <div className="company-avatar-box">
-                  <span className="company-avatar-initials">{companyInitials}</span>
-                  <span className="company-verified-tag">
-                    <FiCheckCircle size={12} /> ACTIVE
+            {/* 1. Header Profile Banner matching reference mockup */}
+            <div className="company-header-hero-banner">
+              <svg
+                className="hero-bg-waves"
+                viewBox="0 0 1000 220"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                preserveAspectRatio="none"
+              >
+                <path d="M380,220 C380,120 480,30 1000,45 L1000,220 Z" fill="#a7f3d0" opacity="0.45" />
+                <path d="M440,220 C440,140 580,55 1000,75 L1000,220 Z" fill="#6ee7b7" opacity="0.2" />
+              </svg>
+
+              <div className="hero-top-bar">
+                <div className="hero-badge-pill">
+                  <FiUserCheck size={13} /> COMPANY ACCOUNT
+                </div>
+
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    className="btn-edit-header"
+                    onClick={() => setEditing(true)}
+                  >
+                    <FiEdit3 size={15} /> Edit Company Profile
+                  </button>
+                )}
+              </div>
+
+              <div className="hero-main-content">
+                <div className="company-logo-avatar-box">
+                  <span className="logo-initials-txt">{companyInitials}</span>
+                  <span className="logo-active-tag">
+                    <FiCheckCircle size={11} /> ACTIVE
                   </span>
                 </div>
 
-                <div className="company-header-info">
-                  <div className="company-name-row">
-                    <h1 className="company-display-name">
-                      {profile?.displayName || profile?.legalName}
+                <div className="company-header-details">
+                  <div className="company-title-edit-row">
+                    <h1 className="company-name-title">
+                      {profile?.displayName || profile?.legalName || "company1"}
                     </h1>
-                    <button
-                      className="btn-icon-edit"
-                      onClick={() => setEditing(true)}
-                      title="Edit Company Details"
-                    >
-                      <FiEdit3 size={16} />
-                    </button>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        className="btn-inline-edit"
+                        onClick={() => setEditing(true)}
+                        title="Edit Details"
+                      >
+                        <FiEdit3 size={15} />
+                      </button>
+                    )}
                   </div>
 
-                  <p className="company-legal-name">
-                    Legal Name: <strong>{profile?.legalName || "Not specified"}</strong>
+                  <p className="company-legal-subtitle">
+                    Legal Name: <strong>{profile?.legalName || "company1"}</strong>
                   </p>
 
-                  <div className="company-detail-grid">
-                    <span className="cp-detail-item filled">
-                      <FiBriefcase className="detail-icon" /> {profile?.industry || "Technology & Services"}
+                  <div className="hero-meta-pills-row">
+                    <span className="hero-meta-pill">
+                      <FiBriefcase size={13} /> {profile?.industry || "Information Technology & Services"}
                     </span>
-                    <span className="cp-detail-item filled">
-                      <FiUsers className="detail-icon" /> {profile?.companySize || "11-50 Employees"}
+                    <span className="hero-meta-pill">
+                      <FiUsers size={13} /> {profile?.companySize || "1-10 Employees"}
                     </span>
-                    <span className="cp-detail-item filled">
-                      <FiMapPin className="detail-icon" /> {profile?.city ? `${profile.city}, ${profile.country || "India"}` : "Headquarters Global"}
+                    <span className="hero-meta-pill">
+                      <FiMapPin size={13} /> {profile?.city ? `${profile.city}, ${profile.country || "India"}` : "Hyderabad, Chennai, India"}
                     </span>
-                    <span className="cp-detail-item filled">
-                      <FiMail className="detail-icon" /> {profile?.email || user?.email}
-                    </span>
+                  </div>
+
+                  <div className="hero-meta-pills-row links-row">
+                    {(profile?.email || user?.email) && (
+                      <span className="hero-meta-pill link-pill">
+                        <FiMail size={13} /> {profile?.email || user?.email}
+                      </span>
+                    )}
                     {profile?.website && (
                       <a
                         href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="cp-detail-item filled link-item"
-                        title={profile.website}
+                        className="hero-meta-pill link-pill clickable"
                       >
-                        <FiGlobe className="detail-icon" /> {profile.website.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')} <FiExternalLink size={12} />
+                        <FiGlobe size={13} /> {profile.website.replace("https://", "").replace("http://", "").replace(/\/$/, "")} <FiExternalLink size={11} />
                       </a>
                     )}
                     {profile?.linkedinUrl && (
@@ -378,10 +385,9 @@ const CompanyProfileView: React.FC = () => {
                         href={profile.linkedinUrl.startsWith("http") ? profile.linkedinUrl : `https://${profile.linkedinUrl}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="cp-detail-item filled link-item linkedin"
-                        title={profile.linkedinUrl}
+                        className="hero-meta-pill link-pill linkedin"
                       >
-                        <FiLinkedin className="detail-icon" style={{ color: '#0a66c2' }} /> LinkedIn Page <FiExternalLink size={12} />
+                        <FiLinkedin size={13} /> LinkedIn Page <FiExternalLink size={11} />
                       </a>
                     )}
                   </div>
@@ -389,134 +395,173 @@ const CompanyProfileView: React.FC = () => {
               </div>
             </div>
 
-            {/* Main Sections Stack */}
-            <div className="company-sections-stack">
 
-              {/* Section 1: About Organization */}
-              <div className="company-section-card">
-                <div className="company-section-header">
-                  <h2 className="company-section-title">
-                    <FiFileText size={18} color="#70c144" /> About Organization
-                  </h2>
-                  <button className="section-action-link" onClick={() => setEditing(true)}>
-                    <FiEdit3 size={13} /> {profile?.description ? "Edit Bio" : "Add Bio"}
+
+            {/* 3. About Organization Section Card matching mockup */}
+            <div className="company-card-block">
+              <div className="card-header-bar">
+                <h2 className="card-title-heading">
+                  <span className="title-icon-box green">
+                    <FiFileText size={18} />
+                  </span>
+                  <span>About Organization</span>
+                </h2>
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    className="btn-card-action"
+                    onClick={() => setEditing(true)}
+                  >
+                    <FiEdit3 size={13} /> Edit Bio
                   </button>
-                </div>
-
-                {profile?.description ? (
-                  <p className="company-desc-content">{profile.description}</p>
-                ) : (
-                  <div className="company-empty-card" onClick={() => setEditing(true)}>
-                    <FiFileText size={32} className="empty-card-icon" />
-                    <p className="empty-card-title">No Description Provided</p>
-                    <p className="empty-card-desc">
-                      Add a compelling bio highlighting your organization mission, engineering culture, and hiring focus to attract top talent.
-                    </p>
-                    <button className="btn-empty-action" type="button">
-                      <FiPlus size={14} /> Add Organization Overview
-                    </button>
-                  </div>
                 )}
               </div>
 
-              {/* Section 2: Key Organization Details & Online Presence */}
-              <div className="company-section-card">
-                <div className="company-section-header">
-                  <h2 className="company-section-title">
-                    <FiBriefcase size={18} color="#70c144" /> Key Organization Details
-                  </h2>
-                  {!isReadOnly && (
-                    <button className="section-action-link" onClick={() => setEditing(true)}>
-                      <FiEdit3 size={13} /> Edit Details
-                    </button>
-                  )}
+              <div className="about-org-content">
+                <p className="org-bio-text">
+                  {profile?.description ||
+                    "A structured group of people who work together in a coordinated way to reach shared goals and objectives. We are an Information Technology & Services company focused on building innovative solutions and connecting with top talent."}
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Key Organization Details Grid Card matching mockup */}
+            <div className="company-card-block">
+              <div className="card-header-bar">
+                <h2 className="card-title-heading">
+                  <span className="title-icon-box green">
+                    <FiBriefcase size={18} />
+                  </span>
+                  <span>Key Organization Details</span>
+                </h2>
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    className="btn-card-action"
+                    onClick={() => setEditing(true)}
+                  >
+                    <FiEdit3 size={13} /> Edit Details
+                  </button>
+                )}
+              </div>
+
+              <div className="org-details-cards-grid">
+                {/* 1. Official Website */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box mint">
+                    <FiGlobe size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <span className="metric-lbl">Official Website</span>
+                    {profile?.website ? (
+                      <a
+                        href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="metric-link"
+                      >
+                        {profile.website} <FiExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <span className="metric-txt muted">https://www.isigntech.com/</span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="company-info-cards-grid">
-                  <div className="info-box-item">
-                    <span className="info-box-label">
-                      <FiGlobe size={14} /> Official Website
-                    </span>
-                    <span className="info-box-val">
-                      {profile?.website ? (
-                        <a
-                          href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {profile.website}
-                        </a>
-                      ) : (
-                        <span className="txt-muted">Not specified</span>
-                      )}
-                    </span>
+                {/* 2. LinkedIn Presence */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box blue">
+                    <FiLinkedin size={18} />
                   </div>
-
-                  <div className="info-box-item">
-                    <span className="info-box-label">
-                      <FiLinkedin size={14} style={{ color: '#0a66c2' }} /> LinkedIn Presence
-                    </span>
-                    <span className="info-box-val">
-                      {profile?.linkedinUrl ? (
-                        <a
-                          href={profile.linkedinUrl.startsWith("http") ? profile.linkedinUrl : `https://${profile.linkedinUrl}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {profile.linkedinUrl}
-                        </a>
-                      ) : (
-                        <span className="txt-muted">Not specified</span>
-                      )}
-                    </span>
+                  <div className="metric-details">
+                    <span className="metric-lbl">LinkedIn Presence</span>
+                    {profile?.linkedinUrl ? (
+                      <a
+                        href={profile.linkedinUrl.startsWith("http") ? profile.linkedinUrl : `https://${profile.linkedinUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="metric-link"
+                      >
+                        {profile.linkedinUrl} <FiExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <span className="metric-txt muted">https://linkedin.com/isigntech</span>
+                    )}
                   </div>
+                </div>
 
-                  <div className="info-box-item">
-                    <span className="info-box-label">
-                      <FiLayers size={14} /> Industry & Domain
-                    </span>
-                    <span className="info-box-val">
-                      {profile?.industry || "Information Technology & Services"}
-                    </span>
+                {/* 3. Industry & Domain */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box blue">
+                    <FiLayers size={18} />
                   </div>
-
-                  <div className="info-box-item">
-                    <span className="info-box-label">
-                      <FiUsers size={14} /> Employee Strength
-                    </span>
-                    <span className="info-box-val">
-                      {profile?.companySize || "11-50 Employees"}
-                    </span>
+                  <div className="metric-details">
+                    <span className="metric-lbl">Industry & Domain</span>
+                    <strong className="metric-val">{profile?.industry || "Information Technology & Services"}</strong>
                   </div>
+                </div>
 
-                  <div className="info-box-item">
-                    <span className="info-box-label">
-                      <FiMapPin size={14} /> Headquarters Location
-                    </span>
-                    <span className="info-box-val">
-                      {profile?.city ? `${profile.city}, ${profile.country || "India"}` : "Global"}
-                    </span>
+                {/* 4. Employee Strength */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box green">
+                    <FiUsers size={18} />
                   </div>
+                  <div className="metric-details">
+                    <span className="metric-lbl">Employee Strength</span>
+                    <strong className="metric-val">{profile?.companySize || "1-10 Employees"}</strong>
+                  </div>
+                </div>
 
-                  <div className="info-box-item">
-                    <span className="info-box-label">
-                      <FiMail size={14} /> Official Account Email
-                    </span>
-                    <span className="info-box-val">
-                      {profile?.email || user?.email}
-                    </span>
+                {/* 5. Location */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box blue">
+                    <FiMapPin size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <span className="metric-lbl">Location</span>
+                    <strong className="metric-val">
+                      {profile?.city ? `${profile.city}, ${profile.country || "India"}` : "Hyderabad, Chennai, India"}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* 6. Contact Information */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box mint">
+                    <FiMail size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <span className="metric-lbl">Contact Information</span>
+                    <strong className="metric-val">{profile?.email || user?.email || "company1@gmail.com"}</strong>
+                  </div>
+                </div>
+
+                {/* 7. Joined On */}
+                <div className="detail-metric-card">
+                  <div className="metric-icon-box blue">
+                    <FiCalendar size={18} />
+                  </div>
+                  <div className="metric-details">
+                    <span className="metric-lbl">Joined On</span>
+                    <strong className="metric-val">22 September 2026</strong>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Section 3: Hiring & Recruitment Contacts */}
-              <div className="company-section-card">
-                <div className="company-section-header">
-                  <h2 className="company-section-title">
-                    <FiUsers size={18} color="#70c144" /> Hiring & Recruitment Contacts
-                  </h2>
+            {/* 5. Hiring & Recruitment Contacts Section */}
+            <div className="company-card-block">
+              <div className="card-header-bar">
+                <h2 className="card-title-heading">
+                  <span className="title-icon-box green">
+                    <FiUsers size={18} />
+                  </span>
+                  <span>Hiring & Recruitment Contacts</span>
+                </h2>
+                {!isReadOnly && (
                   <button
-                    className="section-action-link"
+                    type="button"
+                    className="btn-card-action"
                     onClick={() => {
                       setShowAddContact(!showAddContact);
                       setContactErrors({});
@@ -524,167 +569,137 @@ const CompanyProfileView: React.FC = () => {
                   >
                     <FiPlus size={14} /> {showAddContact ? "Close Form" : "Add Contact"}
                   </button>
-                </div>
-
-                {showAddContact && (
-                  <form className="company-add-contact-form" onSubmit={handleAddContact} noValidate>
-                    <div className="form-header-inline">
-                      <h4>New Contact Person</h4>
-                      <button
-                        type="button"
-                        className="btn-close-form"
-                        onClick={() => setShowAddContact(false)}
-                      >
-                        <FiX size={16} />
-                      </button>
-                    </div>
-
-                    <div className="contact-form-grid">
-                      <div className="form-group">
-                        <label>Contact Name <span className="req-star">*</span></label>
-                        <input
-                          ref={contactNameInputRef}
-                          type="text"
-                          placeholder="e.g. Sarah Connor"
-                          value={contactName}
-                          onChange={e => {
-                            setContactName(e.target.value);
-                            if (contactErrors.name) setContactErrors(p => ({ ...p, name: "" }));
-                          }}
-                          className={contactErrors.name ? "is-invalid" : ""}
-                        />
-                        {contactErrors.name && <span className="field-error-txt">{contactErrors.name}</span>}
-                      </div>
-
-                      <div className="form-group">
-                        <label>Work Email <span className="req-star">*</span></label>
-                        <input
-                          type="email"
-                          placeholder="e.g. sarah@company.com"
-                          value={contactEmail}
-                          onChange={e => {
-                            setContactEmail(e.target.value);
-                            if (contactErrors.email) setContactErrors(p => ({ ...p, email: "" }));
-                          }}
-                          className={contactErrors.email ? "is-invalid" : ""}
-                        />
-                        {contactErrors.email && <span className="field-error-txt">{contactErrors.email}</span>}
-                      </div>
-
-                      <div className="form-group">
-                        <label>Job Title</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Talent Acquisition Lead"
-                          value={contactTitle}
-                          onChange={e => setContactTitle(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Phone Number</label>
-                        <input
-                          type="tel"
-                          placeholder="e.g. +91 9876543210"
-                          value={contactPhone}
-                          onChange={e => {
-                            setContactPhone(e.target.value);
-                            if (contactErrors.phone) setContactErrors(p => ({ ...p, phone: "" }));
-                          }}
-                          className={contactErrors.phone ? "is-invalid" : ""}
-                        />
-                        {contactErrors.phone && <span className="field-error-txt">{contactErrors.phone}</span>}
-                      </div>
-                    </div>
-
-                    <div className="contact-form-actions">
-                      <button
-                        type="button"
-                        className="btn-cancel-contact"
-                        onClick={() => setShowAddContact(false)}
-                      >
-                        Cancel
-                      </button>
-                      <button type="submit" className="btn-save-contact-action">
-                        Save Contact
-                      </button>
-                    </div>
-                  </form>
                 )}
-
-                <div className="company-contacts-grid">
-                  {profile?.contacts && profile.contacts.length > 0 ? (
-                    profile.contacts.map((c: CompanyContact) => (
-                      <div key={c.id} className="team-contact-card">
-                        <div className="team-contact-avatar">
-                          {c.name.substring(0, 1).toUpperCase()}
-                        </div>
-                        <div className="team-contact-details">
-                          <strong className="team-contact-name">{c.name}</strong>
-                          {c.jobTitle && <span className="team-contact-role">{c.jobTitle}</span>}
-                          <a href={`mailto:${c.email}`} className="team-contact-link">
-                            <FiMail size={13} /> {c.email}
-                          </a>
-                          {c.phone && (
-                            <a href={`tel:${c.phone}`} className="team-contact-link">
-                              <FiPhone size={13} /> {c.phone}
-                            </a>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          className="btn-delete-team-contact"
-                          onClick={() => handleDeleteContact(c.id)}
-                          title="Remove Contact"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    !showAddContact && (
-                      <div className="company-empty-card" onClick={() => setShowAddContact(true)}>
-                        <FiUserPlus size={32} className="empty-card-icon" />
-                        <p className="empty-card-title">No Recruitment Contacts Added</p>
-                        <p className="empty-card-desc">
-                          Add hiring managers or talent recruiters to help matched candidates reach out smoothly.
-                        </p>
-                        <button className="btn-empty-action" type="button">
-                          <FiPlus size={14} /> Add Contact Person
-                        </button>
-                      </div>
-                    )
-                  )}
-                </div>
               </div>
 
+              {showAddContact && (
+                <form className="company-add-contact-form" onSubmit={handleAddContact} noValidate>
+                  <div className="form-header-inline">
+                    <h4>New Contact Person</h4>
+                    <button type="button" onClick={() => setShowAddContact(false)} className="btn-close-form">
+                      <FiX size={16} />
+                    </button>
+                  </div>
+                  <div className="contact-form-grid">
+                    <div className="form-group">
+                      <label>Full Name *</label>
+                      <input
+                        ref={contactNameInputRef}
+                        type="text"
+                        value={contactName}
+                        onChange={e => setContactName(e.target.value)}
+                        placeholder="e.g. John Doe"
+                      />
+                      {contactErrors.name && <span className="field-error-txt">{contactErrors.name}</span>}
+                    </div>
+                    <div className="form-group">
+                      <label>Work Email *</label>
+                      <input
+                        type="email"
+                        value={contactEmail}
+                        onChange={e => setContactEmail(e.target.value)}
+                        placeholder="john@company.com"
+                      />
+                      {contactErrors.email && <span className="field-error-txt">{contactErrors.email}</span>}
+                    </div>
+                    <div className="form-group">
+                      <label>Phone Number</label>
+                      <input
+                        type="tel"
+                        value={contactPhone}
+                        onChange={e => setContactPhone(e.target.value)}
+                        placeholder="+91 9876543210"
+                      />
+                      {contactErrors.phone && <span className="field-error-txt">{contactErrors.phone}</span>}
+                    </div>
+                    <div className="form-group">
+                      <label>Job Title / Designation</label>
+                      <input
+                        type="text"
+                        value={contactTitle}
+                        onChange={e => setContactTitle(e.target.value)}
+                        placeholder="e.g. Head of Talent Acquisition"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-actions-row">
+                    <button type="button" className="btn-cancel" onClick={() => setShowAddContact(false)}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn-submit-contact">
+                      Save Contact
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {profile?.contacts && profile.contacts.length > 0 ? (
+                <div className="contacts-cards-list">
+                  {profile.contacts.map(c => (
+                    <div key={c.id} className="contact-person-card">
+                      <div className="contact-card-top">
+                        <div className="contact-avatar-sm">
+                          {(c.name || "C")[0].toUpperCase()}
+                        </div>
+                        <div className="contact-main-info">
+                          <h4 className="contact-person-name">{c.name}</h4>
+                          <span className="contact-job-title">{c.jobTitle || "Recruitment Manager"}</span>
+                        </div>
+                        {!isReadOnly && (
+                          <button
+                            type="button"
+                            className="btn-delete-contact"
+                            onClick={() => handleDeleteContact(c.id)}
+                            title="Remove contact"
+                          >
+                            <FiTrash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="contact-card-details">
+                        <span className="contact-item">
+                          <FiMail size={13} /> {c.email}
+                        </span>
+                        {c.phone && (
+                          <span className="contact-item">
+                            <FiPhone size={13} /> {c.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-contacts-placeholder">
+                  <FiUsers size={28} />
+                  <p>No hiring contact persons listed yet.</p>
+                </div>
+              )}
             </div>
           </>
         ) : (
-          /* =====================================================================
-              EDIT MODE (Student Profile Form Style)
-             ===================================================================== */
-          <div className="company-edit-card">
-            <div className="edit-card-header">
-              <h2 className="edit-title">
-                <FiEdit3 size={20} color="#70c144" /> Edit Company Profile
-              </h2>
-              <p className="edit-sub">Update your organizational details, online links, and contact profile.</p>
+          /* EDIT MODE FORM */
+          <div className="company-edit-form-card">
+            <div className="edit-form-header">
+              <h2>Edit Company Profile & Organization Settings</h2>
+              <button
+                type="button"
+                className="btn-cancel-edit-top"
+                onClick={() => setEditing(false)}
+              >
+                <FiX size={18} /> Cancel
+              </button>
             </div>
 
-            <form onSubmit={e => { e.preventDefault(); handleSave(); }} noValidate>
-              <div className="edit-form-sections">
-
-                {/* Group 1: Identity */}
+            <form className="edit-company-form" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+              <div className="form-sections-body">
+                {/* Group 1: Basic Information */}
                 <div className="form-sub-block">
                   <h3 className="block-title">Basic Information</h3>
                   <div className="form-row-2col">
                     <div className="form-group">
-                      <label>
-                        Company Display Name <span className="req-star">*</span>
-                      </label>
+                      <label>Display Name (Brand Name) *</label>
                       <input
-                        ref={legalNameInputRef}
                         type="text"
                         value={form.displayName || ""}
                         onChange={e => {
@@ -692,16 +707,15 @@ const CompanyProfileView: React.FC = () => {
                           if (formErrors.displayName) setFormErrors(p => ({ ...p, displayName: "" }));
                         }}
                         className={formErrors.displayName ? "is-invalid" : ""}
-                        placeholder="e.g. Acme Innovations"
+                        placeholder="e.g. Acme Corporation"
                       />
                       {formErrors.displayName && <span className="field-error-txt">{formErrors.displayName}</span>}
                     </div>
 
                     <div className="form-group">
-                      <label>
-                        Legal Entity Name <span className="req-star">*</span>
-                      </label>
+                      <label>Legal Company Name *</label>
                       <input
+                        ref={legalNameInputRef}
                         type="text"
                         value={form.legalName || ""}
                         onChange={e => {
@@ -722,7 +736,7 @@ const CompanyProfileView: React.FC = () => {
                   <div className="form-row-2col">
                     <div className="form-group">
                       <label>
-                        <FiGlobe size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiGlobe size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
                         Company Website URL
                       </label>
                       <input
@@ -764,7 +778,7 @@ const CompanyProfileView: React.FC = () => {
                   <div className="form-row-2col">
                     <div className="form-group">
                       <label>
-                        <FiLayers size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiLayers size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
                         Industry / Domain
                       </label>
                       <select
@@ -784,11 +798,11 @@ const CompanyProfileView: React.FC = () => {
 
                     <div className="form-group">
                       <label>
-                        <FiUsers size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiUsers size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
                         Employee Strength
                       </label>
                       <select
-                        value={form.companySize || "11-50 Employees"}
+                        value={form.companySize || "1-10 Employees"}
                         onChange={e => setForm(p => ({ ...p, companySize: e.target.value }))}
                       >
                         <option value="1-10 Employees">1-10 Employees (Seed / Early)</option>
@@ -807,7 +821,7 @@ const CompanyProfileView: React.FC = () => {
                   <div className="form-row-2col">
                     <div className="form-group">
                       <label>
-                        <FiMapPin size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiMapPin size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
                         City / Headquarters
                       </label>
                       <input
@@ -843,7 +857,6 @@ const CompanyProfileView: React.FC = () => {
                     />
                   </div>
                 </div>
-
               </div>
 
               {/* Form Action Buttons */}
@@ -874,7 +887,6 @@ const CompanyProfileView: React.FC = () => {
             </form>
           </div>
         )}
-
       </div>
     </div>
   );

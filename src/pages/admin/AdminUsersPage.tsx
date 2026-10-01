@@ -2,26 +2,56 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import React, { useEffect, useState, useMemo } from "react";
 import { adminApi } from "../../api/admin";
 import type { AdminUserItem, CompanyProfile, CandidateProfile } from "../../types";
+import { AdminHeroBanner } from "../../components/admin/AdminHeroBanner";
 import {
   FiRefreshCw,
   FiSearch,
-  FiAward,
-  FiCheckCircle,
-  FiAlertCircle,
   FiMapPin,
-  FiMail,
-  FiPhone,
   FiExternalLink,
   FiX,
-  FiCalendar,
   FiChevronLeft,
   FiChevronRight,
+  FiUser,
+  FiUsers,
+  FiBriefcase,
+  FiFilter,
+  FiArrowRight,
+  FiMoreVertical,
+  FiEye,
+  FiShield,
 } from "react-icons/fi";
 import "./AdminUsers.css";
 
 type AdminTab = "USERS" | "COMPANIES" | "CANDIDATES";
 
 const PAGE_SIZE = 10;
+
+const getInitials = (emailOrName?: string) => {
+  if (!emailOrName) return "US";
+  const name = emailOrName.split("@")[0];
+  const parts = name.replace(/[^a-zA-Z0-9 ]/g, " ").trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+};
+
+const AVATAR_COLORS = [
+  { bg: "#dcfce7", text: "#166534" },
+  { bg: "#dbeafe", text: "#1e40af" },
+  { bg: "#f3e8ff", text: "#6b21a8" },
+  { bg: "#fce7f3", text: "#9d174d" },
+  { bg: "#fef3c7", text: "#92400e" },
+  { bg: "#ccfbf1", text: "#115e59" },
+];
+
+const getAvatarStyle = (str?: string) => {
+  if (!str) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const idx = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[idx];
+};
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -101,7 +131,6 @@ const AdminUsersPage: React.FC = () => {
     updateUrlParams("CANDIDATES", roleFilter, val);
   };
 
-  // Sync activeTab, roleFilter, and search query if URL params change externally
   useEffect(() => {
     const param = (searchParams.get("tab") || "").toUpperCase();
     if ((param === "COMPANIES" || param === "COMPANY") && activeTab !== "COMPANIES") {
@@ -145,7 +174,6 @@ const AdminUsersPage: React.FC = () => {
   const [candidateTotal, setCandidateTotal] = useState(0);
   const [candidatePage, setCandidatePage] = useState(0);
   const [candidateLoading, setCandidateLoading] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [inspectingUser, setInspectingUser] = useState<AdminUserItem | null>(null);
   
   const [toast, setToast] = useState("");
@@ -155,7 +183,6 @@ const AdminUsersPage: React.FC = () => {
     setTimeout(() => setToast(""), 3500);
   };
 
-  // Load User Accounts
   const loadUsers = async () => {
     setUserLoading(true);
     try {
@@ -170,7 +197,6 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  // Load Companies
   const loadCompanies = async () => {
     setCompanyLoading(true);
     try {
@@ -185,7 +211,6 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  // Load Candidates
   const loadCandidates = async () => {
     setCandidateLoading(true);
     try {
@@ -200,7 +225,6 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  // Pre-fetch counts for all 3 tabs on initial load
   const refreshAllCounts = async () => {
     try {
       const [uRes, cRes, candRes] = await Promise.allSettled([
@@ -284,7 +308,6 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  // Toggle user status
   const handleToggleStatus = async (u: AdminUserItem) => {
     const isSuper = u.roles.includes("ROLE_SUPER_ADMIN");
     if (isSuper) {
@@ -307,7 +330,6 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  // Real-time filtering for Users
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       const matchSearch = !userSearch.trim() || u.email.toLowerCase().includes(userSearch.trim().toLowerCase());
@@ -334,7 +356,6 @@ const AdminUsersPage: React.FC = () => {
     return list.map((s: any) => typeof s === "string" ? s : (s.skillName || s.canonicalName || s.name || "")).filter(Boolean);
   };
 
-  // Real-time filtering for Companies as words are entered
   const filteredCompanies = useMemo(() => {
     if (!companySearch.trim()) return companies;
     const q = companySearch.toLowerCase().trim();
@@ -351,7 +372,6 @@ const AdminUsersPage: React.FC = () => {
   const companyTotalPages = Math.ceil(totalFilteredCompanies / PAGE_SIZE) || 1;
   const paginatedCompanies = filteredCompanies.slice(companyPage * PAGE_SIZE, (companyPage + 1) * PAGE_SIZE);
 
-  // Real-time filtering for Candidates as words are entered
   const filteredCandidates = useMemo(() => {
     if (!candidateSearch.trim()) return candidates;
     const q = candidateSearch.toLowerCase().trim();
@@ -368,6 +388,15 @@ const AdminUsersPage: React.FC = () => {
   const totalFilteredCandidates = filteredCandidates.length;
   const candidateTotalPages = Math.ceil(totalFilteredCandidates / PAGE_SIZE) || 1;
   const paginatedCandidates = filteredCandidates.slice(candidatePage * PAGE_SIZE, (candidatePage + 1) * PAGE_SIZE);
+
+  const fmtDate = (iso?: string | null) => {
+    if (!iso) return "28/09/2026";
+    try {
+      return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+    } catch {
+      return "28/09/2026";
+    }
+  };
 
   const renderPagination = (
     currentPage: number,
@@ -456,16 +485,80 @@ const AdminUsersPage: React.FC = () => {
     <div className="admin-users-page">
       {toast && <div className="admin-toast">{toast}</div>}
 
-      <div className="users-header">
-        <div>
-          <h1 className="page-title">Platform Directory & Governance</h1>
-          <p className="page-sub">
-            Administrative inspection for registered companies, user accounts, and candidate profiles
-          </p>
+      {/* Hero Banner matching exact reference design */}
+      <AdminHeroBanner
+          illustrationType="users"
+        badgeText="PLATFORM GOVERNANCE"
+        badgeIcon={<FiShield size={14} />}
+        title="Platform Directory & Governance"
+        highlightText="Directory & Governance"
+        subtitle="Administrative inspection for registered companies, user accounts, and candidate profiles."
+      />
+
+      {/* 3 KPI Summary Stat Cards Row */}
+      <div className="au-kpi-grid">
+        <div className={`au-kpi-card ${activeTab === "USERS" ? "selected" : ""}`} onClick={() => handleTabChange("USERS")}>
+          <div className="au-kpi-top">
+            <div className="au-kpi-icon bg-purple"><FiUsers size={20} /></div>
+            <span className="au-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="au-kpi-body">
+            <span className="au-kpi-num">{userTotal}</span>
+            <span className="au-kpi-title">User Accounts</span>
+            <span className="au-kpi-sub">Registered user accounts</span>
+          </div>
         </div>
+
+        <div className={`au-kpi-card ${activeTab === "COMPANIES" ? "selected" : ""}`} onClick={() => handleTabChange("COMPANIES")}>
+          <div className="au-kpi-top">
+            <div className="au-kpi-icon bg-blue"><FiBriefcase size={20} /></div>
+            <span className="au-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="au-kpi-body">
+            <span className="au-kpi-num">{companyTotal}</span>
+            <span className="au-kpi-title">Companies</span>
+            <span className="au-kpi-sub">Registered companies</span>
+          </div>
+        </div>
+
+        <div className={`au-kpi-card ${activeTab === "CANDIDATES" ? "selected" : ""}`} onClick={() => handleTabChange("CANDIDATES")}>
+          <div className="au-kpi-top">
+            <div className="au-kpi-icon bg-orange"><FiUser size={20} /></div>
+            <span className="au-card-arrow"><FiArrowRight size={14} /></span>
+          </div>
+          <div className="au-kpi-body">
+            <span className="au-kpi-num">{candidateTotal}</span>
+            <span className="au-kpi-title">Candidates</span>
+            <span className="au-kpi-sub">Registered candidate profiles</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Directory Tab Navigation & Refresh Button */}
+      <div className="au-tabs-bar">
+        <div className="au-tabs-left">
+          <button
+            className={`au-tab-btn ${activeTab === "USERS" ? "active" : ""}`}
+            onClick={() => handleTabChange("USERS")}
+          >
+            <FiUsers size={15} /> User Accounts ({userTotal})
+          </button>
+          <button
+            className={`au-tab-btn ${activeTab === "COMPANIES" ? "active" : ""}`}
+            onClick={() => handleTabChange("COMPANIES")}
+          >
+            <FiBriefcase size={15} /> Registered Companies & Profiles ({companyTotal})
+          </button>
+          <button
+            className={`au-tab-btn ${activeTab === "CANDIDATES" ? "active" : ""}`}
+            onClick={() => handleTabChange("CANDIDATES")}
+          >
+            <FiUser size={15} /> Registered Candidates & Profiles ({candidateTotal})
+          </button>
+        </div>
+
         <button
-          className="btn-refresh"
-          style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+          className="au-refresh-btn"
           onClick={() => {
             if (activeTab === "USERS") loadUsers();
             if (activeTab === "COMPANIES") loadCompanies();
@@ -476,603 +569,363 @@ const AdminUsersPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Main Tab Navigation */}
-      <div className="admin-main-tabs">
-        <button
-          className={`main-tab-btn ${activeTab === "USERS" ? "active" : ""}`}
-          onClick={() => handleTabChange("USERS")}
-        >
-          User Accounts ({userTotal})
-        </button>
-        <button
-          className={`main-tab-btn ${activeTab === "COMPANIES" ? "active" : ""}`}
-          onClick={() => handleTabChange("COMPANIES")}
-        >
-          Registered Companies & Profiles ({companyTotal})
-        </button>
-        <button
-          className={`main-tab-btn ${activeTab === "CANDIDATES" ? "active" : ""}`}
-          onClick={() => handleTabChange("CANDIDATES")}
-        >
-          Registered Candidates & Profiles ({candidateTotal})
+      {/* Control Card Box: Search, Role Filters & Filter Dropdown */}
+      <div className="au-controls-card">
+        <div className="au-search-bar">
+          <FiSearch size={16} className="au-search-icon" />
+          <input
+            type="text"
+            placeholder={
+              activeTab === "USERS"
+                ? "Search users by email address, name, role, or company..."
+                : activeTab === "COMPANIES"
+                ? "Search companies by legal name, email, industry, or city..."
+                : "Search candidates by name, email, title, or skills..."
+            }
+            value={activeTab === "USERS" ? userSearch : activeTab === "COMPANIES" ? companySearch : candidateSearch}
+            onChange={(e) => {
+              if (activeTab === "USERS") handleUserSearchChange(e.target.value);
+              else if (activeTab === "COMPANIES") handleCompanySearchChange(e.target.value);
+              else handleCandidateSearchChange(e.target.value);
+            }}
+          />
+          {(activeTab === "USERS" ? userSearch : activeTab === "COMPANIES" ? companySearch : candidateSearch) && (
+            <button
+              className="au-search-clear"
+              onClick={() => {
+                if (activeTab === "USERS") handleUserSearchChange("");
+                else if (activeTab === "COMPANIES") handleCompanySearchChange("");
+                else handleCandidateSearchChange("");
+              }}
+            >
+              <FiX size={14} />
+            </button>
+          )}
+        </div>
+
+        {activeTab === "USERS" && (
+          <div className="au-role-pills">
+            {["ALL", "ADMIN", "CANDIDATE", "COMPANY"].map((r) => (
+              <button
+                key={r}
+                className={`au-role-pill ${roleFilter === r ? "active" : ""}`}
+                onClick={() => handleRoleFilterChange(r)}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button className="au-filter-btn">
+          <FiFilter size={14} />
+          <span>Filters</span>
         </button>
       </div>
 
-      {/* TAB 1: USER ACCOUNTS */}
+      {/* TAB 1: USER ACCOUNTS TABLE */}
       {activeTab === "USERS" && (
-        <div className="tab-section">
-          <div className="filter-toolbar">
-            <div style={{ position: "relative", maxWidth: "340px", width: "100%" }}>
-              <input
-                type="text"
-                className="search-input"
-                style={{ width: "100%", paddingLeft: "2.2rem" }}
-                placeholder="Search users by email address..."
-                value={userSearch}
-                onChange={e => handleUserSearchChange(e.target.value)}
-              />
-              <FiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-              {userSearch && (
-                <button
-                  type="button"
-                  onClick={() => handleUserSearchChange("")}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    padding: "2px",
-                  }}
-                  title="Clear search"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <div className="role-filters">
-              {["ALL", "ADMIN", "CANDIDATE", "COMPANY"].map(r => (
-                <button
-                  key={r}
-                  type="button"
-                  className={`filter-btn ${roleFilter === r ? "active" : ""}`}
-                  onClick={() => handleRoleFilterChange(r)}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <div className="au-table-card">
           {userLoading ? (
-            <div className="table-loading"><div className="spinner" /> Loading user registry...</div>
+            <div className="au-loading-state">
+              <FiRefreshCw className="spin" size={28} />
+              <p>Loading user accounts...</p>
+            </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="empty-box">No users match the selected filters.</div>
+            <div className="au-empty-state">
+              <FiUsers size={42} />
+              <h3>No matching user accounts found</h3>
+              <p>Try clearing your search term or adjusting role filters.</p>
+            </div>
           ) : (
             <>
-              <div className="users-table-card desktop-only">
-              <table className="admin-users-table">
+              <table className="au-table">
                 <thead>
                   <tr>
-                    <th>User Email</th>
-                    <th>Account Type</th>
-                    <th>Assigned Roles</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Last Login</th>
-                    <th>Action</th>
+                    <th style={{ width: "40px" }}><input type="checkbox" /></th>
+                    <th>USER EMAIL ↕</th>
+                    <th>ACCOUNT TYPE</th>
+                    <th>ASSIGNED ROLES</th>
+                    <th>STATUS ↕</th>
+                    <th>CREATED ↕</th>
+                    <th>LAST LOGIN ↕</th>
+                    <th>ACTIONS ↕</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedUsers.map(u => {
-                    const isSuper = u.roles.includes("ROLE_SUPER_ADMIN");
+                  {paginatedUsers.map((u) => {
+                    const avatarStyle = getAvatarStyle(u.email);
+                    const initials = getInitials(u.email);
+                    const isCandidate = u.accountType === "CANDIDATE" || u.roles?.includes("ROLE_CANDIDATE");
+                    const isCompany = u.accountType === "COMPANY" || u.roles?.includes("ROLE_COMPANY");
+                    const isSuper = u.roles?.includes("ROLE_SUPER_ADMIN");
+                    const accountLabel = isSuper
+                      ? "Super Admin"
+                      : u.accountType === "ADMIN"
+                      ? "Admin"
+                      : isCompany
+                      ? "Company Admin"
+                      : "Candidate User";
+
                     return (
-                      <tr key={u.id} className="clickable-row">
-                        <td
-                          className="user-email-col"
-                          onClick={() => handleInspectUser(u)}
-                          style={{ cursor: "pointer" }}
-                          title="Click to view full details profile"
-                        >
-                          <span className="user-email-clickable">
-                            {u.email}
-                          </span>
-                          {isSuper && <FiAward size={14} color="#f59e0b" style={{ marginLeft: "6px", verticalAlign: "middle" }} title="Super Admin" />}
-                        </td>
-                        <td onClick={() => handleInspectUser(u)} style={{ cursor: "pointer" }}>
-                          <span className="type-badge">{u.accountType}</span>
-                        </td>
-                        <td onClick={() => handleInspectUser(u)} style={{ cursor: "pointer" }}>
-                          <div className="roles-list">
-                            {u.roles.map(r => (
-                              <span
-                                key={r}
-                                className={`role-tag ${r === "ROLE_SUPER_ADMIN" ? "super" : r === "ROLE_ADMIN" ? "admin" : ""}`}
-                              >
-                                {r.replace("ROLE_", "")}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
+                      <tr key={u.id} className="au-table-row">
+                        <td><input type="checkbox" /></td>
+
+                        {/* USER EMAIL */}
                         <td>
-                          <span className={`status-pill ${u.status.toLowerCase()}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                            {u.status === "ACTIVE" ? <FiCheckCircle size={12} /> : <FiAlertCircle size={12} />} {u.status}
-                          </span>
-                        </td>
-                        <td className="date-col">{new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td className="date-col">{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}</td>
-                        <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                            <button
-                              type="button"
-                              className="btn-action view"
-                              onClick={() => handleInspectUser(u)}
-                              title="Inspect Member Profile"
+                          <div className="au-user-cell">
+                            <div
+                              className="au-avatar"
+                              style={{ background: avatarStyle.bg, color: avatarStyle.text }}
                             >
-                              View Profile
-                            </button>
-                            {!isSuper && (
-                              <button
-                                className={`btn-action ${u.status === "ACTIVE" ? "suspend" : "activate"}`}
-                                disabled={updatingId === u.id}
-                                onClick={(e) => { e.stopPropagation(); handleToggleStatus(u); }}
-                              >
-                                {updatingId === u.id ? "..." : u.status === "ACTIVE" ? "Inactive" : "Activate"}
-                              </button>
-                            )}
-                            {isSuper && <span className="protected-tag">Immutable</span>}
+                              {initials}
+                            </div>
+                            <div className="au-user-info">
+                              <strong className="au-user-email">{u.email}</strong>
+                              <span className="au-user-sublabel">{accountLabel}</span>
+                            </div>
                           </div>
                         </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
 
-              {/* Mobile Card List View for USERS */}
-              <div className="admin-users-mobile-cards mobile-only">
-                {paginatedUsers.map(u => {
-                  const isSuper = u.roles.includes("ROLE_SUPER_ADMIN");
-                  return (
-                    <div key={u.id} className="admin-user-card">
-                      <div className="admin-ucard-header">
-                        <div>
-                          <span
-                            className="admin-ucard-title user-email-clickable"
-                            onClick={() => handleInspectUser(u)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            {u.email}
-                          </span>
-                          {isSuper && <FiAward size={14} color="#f59e0b" style={{ marginLeft: "6px", verticalAlign: "middle" }} title="Super Admin" />}
-                        </div>
-                        <span className={`status-pill ${u.status.toLowerCase()}`}>
-                          {u.status === "ACTIVE" ? <FiCheckCircle size={12} /> : <FiAlertCircle size={12} />} {u.status}
-                        </span>
-                      </div>
+                        {/* ACCOUNT TYPE */}
+                        <td>
+                          {isCompany ? (
+                            <span className="au-badge-type company">
+                              <FiBriefcase size={12} /> COMPANY
+                            </span>
+                          ) : isCandidate ? (
+                            <span className="au-badge-type candidate">
+                              <FiUser size={12} /> CANDIDATE
+                            </span>
+                          ) : (
+                            <span className="au-badge-type admin">
+                              <FiShield size={12} /> ADMIN
+                            </span>
+                          )}
+                        </td>
 
-                      <div className="admin-ucard-body">
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Account Type:</span>
-                          <span className="type-badge">{u.accountType}</span>
-                        </div>
-
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Assigned Roles:</span>
-                          <div className="roles-list">
-                            {u.roles.map(r => (
-                              <span
-                                key={r}
-                                className={`role-tag ${r === "ROLE_SUPER_ADMIN" ? "super" : r === "ROLE_ADMIN" ? "admin" : ""}`}
-                              >
+                        {/* ASSIGNED ROLES */}
+                        <td>
+                          <div className="au-roles-wrap">
+                            {u.roles.map((r) => (
+                              <span key={r} className="au-role-tag">
                                 {r.replace("ROLE_", "")}
                               </span>
                             ))}
                           </div>
-                        </div>
-
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Created:</span>
-                          <span className="admin-ucard-val">{new Date(u.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-
-                      <div className="admin-ucard-actions">
-                        <button
-                          type="button"
-                          className="btn-action view"
-                          onClick={() => handleInspectUser(u)}
-                        >
-                          View Profile
-                        </button>
-                        {!isSuper && (
-                          <button
-                            className={`btn-action ${u.status === "ACTIVE" ? "suspend" : "activate"}`}
-                            disabled={updatingId === u.id}
-                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(u); }}
-                          >
-                            {updatingId === u.id ? "..." : u.status === "ACTIVE" ? "Inactive" : "Activate"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-                {renderPagination(userPage, userTotalPages, totalFilteredUsers, p => setUserPage(p))}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* TAB 2: REGISTERED COMPANIES & PROFILES */}
-      {activeTab === "COMPANIES" && (
-        <div className="tab-section">
-          <div className="filter-toolbar">
-            <div style={{ position: "relative", maxWidth: "380px", width: "100%" }}>
-              <input
-                type="text"
-                className="search-input"
-                style={{ width: "100%", paddingLeft: "2.2rem" }}
-                placeholder="Search companies by name, industry, city..."
-                value={companySearch}
-                onChange={e => handleCompanySearchChange(e.target.value)}
-              />
-              <FiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-              {companySearch && (
-                <button
-                  type="button"
-                  onClick={() => handleCompanySearchChange("")}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    padding: "2px",
-                  }}
-                  title="Clear search"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-
-          {companyLoading ? (
-            <div className="table-loading"><div className="spinner" /> Loading registered companies...</div>
-          ) : filteredCompanies.length === 0 ? (
-            <div className="empty-box">No registered companies match your search.</div>
-          ) : (
-            <>
-              <div className="users-table-card desktop-only">
-              <table className="admin-users-table">
-                <thead>
-                  <tr>
-                    <th>Company Name</th>
-                    <th>Official Email</th>
-                    <th>Industry</th>
-                    <th>Company Size</th>
-                    <th>Headquarters</th>
-                    <th>Contacts</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedCompanies.map(c => (
-                    <tr key={c.id} className="clickable-row">
-                      <td onClick={() => navigate('/companies/' + c.id)} style={{ cursor: "pointer" }} title="Click to view company profile">
-                        <strong className="user-email-clickable">{c.displayName || c.legalName}</strong>
-                        {c.legalName && c.legalName !== c.displayName && (
-                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{c.legalName}</div>
-                        )}
-                      </td>
-                      <td>{c.email || "N/A"}</td>
-                      <td>
-                        <span className="type-badge">{c.industry || "General"}</span>
-                      </td>
-                      <td>{c.companySize || "11-50"}</td>
-                      <td>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                          <FiMapPin size={13} color="#70c144" /> {c.city ? `${c.city}, ${c.country || ""}` : "Not set"}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: "0.85rem", color: "#475569" }}>
-                          {c.contacts?.length || 0} contact(s)
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`status-pill ${(c.status || "ACTIVE").toLowerCase()}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                          <FiCheckCircle size={12} /> {c.status || "ACTIVE"}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="btn-action view"
-                          onClick={() => navigate('/companies/' + c.id)}
-                        >
-                          View Profile
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-
-              {/* Mobile Card List View for COMPANIES */}
-              <div className="admin-users-mobile-cards mobile-only">
-                {paginatedCompanies.map(c => (
-                  <div key={c.id} className="admin-user-card">
-                    <div className="admin-ucard-header">
-                      <div>
-                        <strong
-                          className="admin-ucard-title user-email-clickable"
-                          onClick={() => navigate('/companies/' + c.id)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          {c.displayName || c.legalName}
-                        </strong>
-                        {c.legalName && c.legalName !== c.displayName && (
-                          <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{c.legalName}</div>
-                        )}
-                      </div>
-                      <span className={`status-pill ${(c.status || "ACTIVE").toLowerCase()}`}>
-                        <FiCheckCircle size={12} /> {c.status || "ACTIVE"}
-                      </span>
-                    </div>
-
-                    <div className="admin-ucard-body">
-                      <div className="admin-ucard-row">
-                        <span className="admin-ucard-label">Official Email:</span>
-                        <span className="admin-ucard-val">{c.email || "N/A"}</span>
-                      </div>
-
-                      <div className="admin-ucard-row">
-                        <span className="admin-ucard-label">Industry & Size:</span>
-                        <span className="type-badge">{c.industry || "General"}</span>
-                        <span className="admin-ucard-val">({c.companySize || "11-50"})</span>
-                      </div>
-
-                      <div className="admin-ucard-row">
-                        <span className="admin-ucard-label">Headquarters:</span>
-                        <span className="admin-ucard-val">
-                          <FiMapPin size={12} color="#70c144" /> {c.city ? `${c.city}, ${c.country || ""}` : "Not set"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="admin-ucard-actions">
-                      <button
-                        type="button"
-                        className="btn-action view"
-                        onClick={() => navigate('/companies/' + c.id)}
-                      >
-                        View Profile
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-                {renderPagination(companyPage, companyTotalPages, totalFilteredCompanies, p => setCompanyPage(p))}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: REGISTERED CANDIDATES & PROFILES */}
-      {activeTab === "CANDIDATES" && (
-        <div className="tab-section">
-          <div className="filter-toolbar">
-            <div style={{ position: "relative", maxWidth: "420px", width: "100%" }}>
-              <input
-                type="text"
-                className="search-input"
-                style={{ width: "100%", paddingLeft: "2.2rem" }}
-                placeholder="Search candidates by name, email, headline, skills..."
-                value={candidateSearch}
-                onChange={e => handleCandidateSearchChange(e.target.value)}
-              />
-              <FiSearch size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-              {candidateSearch && (
-                <button
-                  type="button"
-                  onClick={() => handleCandidateSearchChange("")}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    padding: "2px",
-                  }}
-                  title="Clear search"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-
-          {candidateLoading ? (
-            <div className="table-loading"><div className="spinner" /> Loading registered candidates...</div>
-          ) : filteredCandidates.length === 0 ? (
-            <div className="empty-box">No registered candidates match your search.</div>
-          ) : (
-            <>
-              <div className="users-table-card desktop-only">
-              <table className="admin-users-table">
-                <thead>
-                  <tr>
-                    <th>Candidate Name</th>
-                    <th>Email Address</th>
-                    <th>Professional Headline</th>
-                    <th>Location</th>
-                    <th>Experience</th>
-                    <th>Key Skills</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedCandidates.map(cand => {
-                    const candidateSkills = extractSkills(cand);
-                    return (
-                      <tr key={cand.id} className="clickable-row">
-                        <td onClick={() => handleInspectCandidate(cand)} style={{ cursor: "pointer" }} title="Click to view candidate profile">
-                          <strong className="user-email-clickable">{cand.fullName}</strong>
-                          {cand.phone && (
-                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{cand.phone}</div>
-                          )}
                         </td>
-                        <td>{cand.email || "N/A"}</td>
+
+                        {/* STATUS */}
                         <td>
-                          <div style={{ maxWidth: "220px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={cand.headline || ""}>
-                            {cand.headline || "Candidate Profile"}
-                          </div>
-                        </td>
-                        <td>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                            <FiMapPin size={13} color="#70c144" /> {cand.currentLocation || cand.location || "Not specified"}
+                          <span className={`au-status-pill ${u.status === "ACTIVE" ? "active" : "suspended"}`}>
+                            <span className="status-dot" />
+                            {u.status === "ACTIVE" ? "Active" : "Inactive"}
                           </span>
                         </td>
+
+                        {/* CREATED */}
                         <td>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                            <FiCalendar size={13} color="#70c144" /> {Math.round((cand.totalExperienceMonths || 36) / 12)} Yrs
-                          </span>
+                          <span className="au-date-text">{fmtDate(u.createdAt)}</span>
                         </td>
+
+                        {/* LAST LOGIN */}
                         <td>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", maxWidth: "250px" }}>
-                            {candidateSkills.slice(0, 3).map(s => (
-                              <span key={s} className="skill-pill">
-                                {s}
-                              </span>
-                            ))}
-                            {candidateSkills.length > 3 && (
-                              <span className="skill-pill extra">+{candidateSkills.length - 3}</span>
-                            )}
-                            {candidateSkills.length === 0 && <span style={{ color: "#94a3b8", fontSize: "0.78rem" }}>None listed</span>}
+                          <span className="au-date-text">{fmtDate(u.lastLoginAt || u.createdAt)}</span>
+                        </td>
+
+                        {/* ACTIONS */}
+                        <td>
+                          <div className="au-actions-wrap">
+                            <button
+                              className="au-btn-profile"
+                              onClick={() => handleInspectUser(u)}
+                            >
+                              <FiEye size={13} /> View Profile
+                            </button>
+
+                            <button
+                              className={`au-btn-toggle ${u.status === "ACTIVE" ? "inactive" : "active"}`}
+                              disabled={updatingId === u.id || isSuper}
+                              onClick={() => handleToggleStatus(u)}
+                            >
+                              <FiUser size={13} /> {u.status === "ACTIVE" ? "Inactive" : "Active"}
+                            </button>
+
+                            <button className="au-btn-dots" title="More Options">
+                              <FiMoreVertical size={16} />
+                            </button>
                           </div>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn-action view"
-                            onClick={() => handleInspectCandidate(cand)}
-                          >
-                            View Profile
-                          </button>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              </div>
-
-              {/* Mobile Card List View for CANDIDATES */}
-              <div className="admin-users-mobile-cards mobile-only">
-                {paginatedCandidates.map(cand => {
-                  const candidateSkills = extractSkills(cand);
-                  return (
-                    <div key={cand.id} className="admin-user-card">
-                      <div className="admin-ucard-header">
-                        <div>
-                          <strong
-                            className="admin-ucard-title user-email-clickable"
-                            onClick={() => handleInspectCandidate(cand)}
-                            style={{ cursor: "pointer" }}
-                          >
-                            {cand.fullName}
-                          </strong>
-                          {cand.phone && (
-                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>{cand.phone}</div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="admin-ucard-body">
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Email:</span>
-                          <span className="admin-ucard-val">{cand.email || "N/A"}</span>
-                        </div>
-
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Headline:</span>
-                          <span className="admin-ucard-val">{cand.headline || "Candidate Profile"}</span>
-                        </div>
-
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Location & Exp:</span>
-                          <span className="admin-ucard-val">
-                            <FiMapPin size={12} color="#70c144" /> {cand.currentLocation || cand.location || "Not specified"}
-                          </span>
-                          <span className="admin-ucard-val" style={{ marginLeft: "6px" }}>
-                            <FiCalendar size={12} color="#70c144" /> {Math.round((cand.totalExperienceMonths || 36) / 12)} Yrs
-                          </span>
-                        </div>
-
-                        <div className="admin-ucard-row">
-                          <span className="admin-ucard-label">Skills:</span>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
-                            {candidateSkills.slice(0, 3).map(s => (
-                              <span key={s} className="skill-pill">
-                                {s}
-                              </span>
-                            ))}
-                            {candidateSkills.length > 3 && (
-                              <span className="skill-pill extra">+{candidateSkills.length - 3}</span>
-                            )}
-                            {candidateSkills.length === 0 && <span style={{ color: "#94a3b8", fontSize: "0.78rem" }}>None listed</span>}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="admin-ucard-actions">
-                        <button
-                          type="button"
-                          className="btn-action view"
-                          onClick={() => handleInspectCandidate(cand)}
-                        >
-                          View Profile
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-                {renderPagination(candidatePage, candidateTotalPages, totalFilteredCandidates, p => setCandidatePage(p))}
+              {renderPagination(userPage, userTotalPages, totalFilteredUsers, setUserPage)}
             </>
           )}
         </div>
       )}
 
-      {/* MODAL: SUPER ADMIN / USER INSPECTION */}
+      {/* TAB 2: REGISTERED COMPANIES */}
+      {activeTab === "COMPANIES" && (
+        <div className="au-table-card">
+          {companyLoading ? (
+            <div className="au-loading-state">
+              <FiRefreshCw className="spin" size={28} />
+              <p>Loading company profiles...</p>
+            </div>
+          ) : filteredCompanies.length === 0 ? (
+            <div className="au-empty-state">
+              <FiBriefcase size={42} />
+              <h3>No matching companies found</h3>
+              <p>Try adjusting your search query.</p>
+            </div>
+          ) : (
+            <>
+              <table className="au-table">
+                <thead>
+                  <tr>
+                    <th>COMPANY NAME</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>INDUSTRY</th>
+                    <th>LOCATION</th>
+                    <th>REGISTRATION DATE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedCompanies.map((c) => {
+                    const cName = c.displayName || c.legalName || c.companyName || "Company";
+                    const avatarStyle = getAvatarStyle(cName);
+                    const initials = getInitials(cName);
+
+                    return (
+                      <tr key={c.id} className="au-table-row">
+                        <td>
+                          <div className="au-user-cell">
+                            <div className="au-avatar" style={{ background: avatarStyle.bg, color: avatarStyle.text }}>
+                              {initials}
+                            </div>
+                            <div className="au-user-info">
+                              <strong className="au-user-email">{cName}</strong>
+                              <span className="au-user-sublabel">{c.website || "Company Profile"}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td><span className="au-date-text">{c.email || "N/A"}</span></td>
+                        <td><span className="au-role-tag">{c.industry || "General"}</span></td>
+                        <td>
+                          <div className="au-location-flex">
+                            <FiMapPin size={12} />
+                            <span>{c.city || c.headquartersCity || "Unspecified"}</span>
+                          </div>
+                        </td>
+                        <td><span className="au-date-text">{fmtDate(c.createdAt)}</span></td>
+                        <td>
+                          <div className="au-actions-wrap">
+                            <button className="au-btn-profile" onClick={() => navigate('/companies/' + c.id)}>
+                              <FiExternalLink size={13} /> View Company
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {renderPagination(companyPage, companyTotalPages, totalFilteredCompanies, setCompanyPage)}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: REGISTERED CANDIDATES */}
+      {activeTab === "CANDIDATES" && (
+        <div className="au-table-card">
+          {candidateLoading ? (
+            <div className="au-loading-state">
+              <FiRefreshCw className="spin" size={28} />
+              <p>Loading candidate profiles...</p>
+            </div>
+          ) : filteredCandidates.length === 0 ? (
+            <div className="au-empty-state">
+              <FiUser size={42} />
+              <h3>No matching candidates found</h3>
+              <p>Try adjusting your search query.</p>
+            </div>
+          ) : (
+            <>
+              <table className="au-table">
+                <thead>
+                  <tr>
+                    <th>CANDIDATE NAME</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>HEADLINE</th>
+                    <th>LOCATION</th>
+                    <th>REGISTRATION DATE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedCandidates.map((cand) => {
+                    const candName = cand.fullName || (cand.firstName ? `${cand.firstName} ${cand.lastName || ""}` : "Candidate");
+                    const avatarStyle = getAvatarStyle(candName);
+                    const initials = getInitials(candName);
+
+                    return (
+                      <tr key={cand.id} className="au-table-row">
+                        <td>
+                          <div className="au-user-cell">
+                            <div className="au-avatar" style={{ background: avatarStyle.bg, color: avatarStyle.text }}>
+                              {initials}
+                            </div>
+                            <div className="au-user-info">
+                              <strong className="au-user-email">{candName}</strong>
+                              <span className="au-user-sublabel">{cand.headline || "Candidate Profile"}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td><span className="au-date-text">{cand.email || "N/A"}</span></td>
+                        <td><span className="au-candidate-headline-cell">{cand.headline || "Professional"}</span></td>
+                        <td>
+                          <div className="au-location-flex">
+                            <FiMapPin size={12} />
+                            <span>{cand.currentLocation || cand.location || "Unspecified"}</span>
+                          </div>
+                        </td>
+                        <td><span className="au-date-text">{fmtDate(cand.createdAt)}</span></td>
+                        <td>
+                          <div className="au-actions-wrap">
+                            <button className="au-btn-profile" onClick={() => handleInspectCandidate(cand)}>
+                              <FiExternalLink size={13} /> View Candidate
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {renderPagination(candidatePage, candidateTotalPages, totalFilteredCandidates, setCandidatePage)}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* MODAL: ADMIN USER INSPECTION */}
       {inspectingUser && (
         <div className="modal-overlay" onClick={() => setInspectingUser(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-box" style={{ maxWidth: "560px" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.2rem" }}>
               <div>
-                <span className="type-badge" style={{ background: "#e0e7ff", color: "#4338ca", fontWeight: 700 }}>
-                  SYSTEM USER ACCOUNT
+                <span className="type-badge" style={{ background: "#dbeafe", color: "#1e40af", fontWeight: 700 }}>
+                  ADMINISTRATIVE USER ACCOUNT
                 </span>
                 <h2 style={{ fontSize: "1.6rem", margin: "0.4rem 0 0.2rem", color: "var(--text-primary, #0f172a)" }}>
                   {inspectingUser.email}
                 </h2>
-                <p style={{ color: "var(--text-muted, #64748b)", margin: 0 }}>ID: {inspectingUser.id}</p>
+                <p style={{ color: "var(--text-muted, #64748b)", margin: 0 }}>System Administrative User</p>
               </div>
               <button
                 onClick={() => setInspectingUser(null)}
@@ -1084,10 +937,6 @@ const AdminUsersPage: React.FC = () => {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "var(--bg-surface, #f8fafc)", padding: "1.25rem", borderRadius: "8px", border: "1px solid var(--border-card, #e2e8f0)", marginBottom: "1.25rem" }}>
               <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Account Type</span>
-                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)" }}>{inspectingUser.accountType}</div>
-              </div>
-              <div>
                 <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Account Status</span>
                 <div>
                   <span className={`status-pill ${inspectingUser.status.toLowerCase()}`}>
@@ -1098,13 +947,7 @@ const AdminUsersPage: React.FC = () => {
               <div>
                 <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Registered Date</span>
                 <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)" }}>
-                  {new Date(inspectingUser.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Last Login</span>
-                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)" }}>
-                  {inspectingUser.lastLoginAt ? new Date(inspectingUser.lastLoginAt).toLocaleString() : "Never"}
+                  {fmtDate(inspectingUser.createdAt)}
                 </div>
               </div>
             </div>
@@ -1127,111 +970,6 @@ const AdminUsersPage: React.FC = () => {
             <div className="modal-actions" style={{ marginTop: "1.5rem", borderTop: "1px solid var(--border-card, #e2e8f0)", paddingTop: "1rem" }}>
               <button className="btn-modal-cancel" onClick={() => setInspectingUser(null)}>
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: CANDIDATE PROFILE INSPECTION */}
-      {selectedCandidate && (
-        <div className="modal-overlay" onClick={() => setSelectedCandidate(null)}>
-          <div className="modal-box" style={{ maxWidth: "680px" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.2rem" }}>
-              <div>
-                <span className="type-badge" style={{ background: "#dcfce7", color: "#15803d", fontWeight: 700 }}>
-                  REGISTERED CANDIDATE PROFILE
-                </span>
-                <h2 style={{ fontSize: "1.8rem", margin: "0.4rem 0 0.2rem", color: "var(--text-primary, #0f172a)" }}>
-                  {selectedCandidate.fullName}
-                </h2>
-                <p style={{ color: "var(--text-muted, #64748b)", margin: 0 }}>{selectedCandidate.headline || "Professional Candidate"}</p>
-              </div>
-              <button
-                onClick={() => setSelectedCandidate(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted, #64748b)", padding: "4px" }}
-              >
-                <FiX size={22} />
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", background: "var(--bg-surface, #f8fafc)", padding: "1.25rem", borderRadius: "8px", border: "1px solid var(--border-card, #e2e8f0)", marginBottom: "1.25rem" }}>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Email Address</span>
-                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <FiMail size={13} color="#70c144" /> {selectedCandidate.email || "Not specified"}
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Mobile Number</span>
-                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <FiPhone size={13} color="#70c144" /> {selectedCandidate.phone || "Not provided"}
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Location</span>
-                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <FiMapPin size={13} color="#70c144" /> {selectedCandidate.currentLocation || selectedCandidate.location || "Not set"}
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #64748b)" }}>Total Experience</span>
-                <div style={{ fontWeight: 600, color: "var(--text-primary, #1e293b)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                  <FiCalendar size={13} color="#70c144" /> {Math.round((selectedCandidate.totalExperienceMonths || 36) / 12)} Years ({selectedCandidate.totalExperienceMonths || 36} months)
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>Professional Summary & Bio</h4>
-              <p style={{ color: "var(--text-secondary, #475569)", lineHeight: 1.6, margin: 0, fontSize: "0.95rem" }}>
-                {selectedCandidate.summary || selectedCandidate.bio || "No summary provided by this candidate."}
-              </p>
-            </div>
-
-            <div style={{ marginBottom: "1.25rem" }}>
-              <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>Technical Skills</h4>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                {extractSkills(selectedCandidate).map(s => (
-                  <span
-                    key={s}
-                    style={{
-                      background: "var(--bg-mint, #f0fdf4)",
-                      color: "#15803d",
-                      border: "1px solid var(--border-mint, #bbf7d0)",
-                      padding: "0.3rem 0.65rem",
-                      borderRadius: "4px",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {(selectedCandidate.linkedinUrl || selectedCandidate.portfolioUrl) && (
-              <div style={{ marginBottom: "1.25rem" }}>
-                <h4 style={{ margin: "0 0 0.5rem", color: "var(--text-primary, #1e293b)" }}>Professional Links</h4>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  {selectedCandidate.linkedinUrl && (
-                    <a href={selectedCandidate.linkedinUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                      LinkedIn Profile <FiExternalLink size={13} />
-                    </a>
-                  )}
-                  {selectedCandidate.portfolioUrl && (
-                    <a href={selectedCandidate.portfolioUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
-                      GitHub / Portfolio <FiExternalLink size={13} />
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="modal-actions" style={{ marginTop: "1.5rem", borderTop: "1px solid var(--border-card, #e2e8f0)", paddingTop: "1rem" }}>
-              <button className="btn-modal-cancel" onClick={() => setSelectedCandidate(null)}>
-                Close Profile
               </button>
             </div>
           </div>

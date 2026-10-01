@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -13,12 +13,19 @@ import {
   FiZap,
   FiBriefcase,
   FiCode,
-  FiLock,
   FiTrendingUp,
   FiCheck,
   FiCompass,
+  FiChevronDown,
+  FiChevronUp,
 } from "react-icons/fi";
 import "./AboutPage.css";
+
+interface FaqItem {
+  id: number;
+  question: string;
+  answer: string;
+}
 
 const AboutPage: React.FC = () => {
   const { user } = useAuth();
@@ -29,124 +36,128 @@ const AboutPage: React.FC = () => {
     isCompanyUser ? "company" : "candidate"
   );
 
+  // FAQ open states
+  const [openFaqId, setOpenFaqId] = useState<number | null>(null);
+
+  const toggleFaq = (id: number) => {
+    setOpenFaqId(openFaqId === id ? null : id);
+  };
+
+  const faqList: FaqItem[] = [
+    {
+      id: 1,
+      question: "Is StrengthOut completely free for students and freshers?",
+      answer:
+        "Yes! StrengthOut is 100% free for candidates. You can create your verified talent portfolio, record 60-second video introductions, take RightPath skill assessments, and receive direct inbound connection requests from top hiring companies without any charges.",
+    },
+    {
+      id: 2,
+      question: "How does company matching work once I publish?",
+      answer:
+        "Once your profile is completed and verified, verified companies and recruiters search our talent discovery pool by technical skills, work preference (Remote/Hybrid/Onsite), and experience. When a matching role opens, companies send a direct connection request specifying role parameters and compensation.",
+    },
+    {
+      id: 3,
+      question: "What is the RightPath skill assessment benchmark?",
+      answer:
+        "RightPath provides standardized, tamper-proof technical skill assessments covering Java, React, Python, Cloud Architecture, and core Problem Solving. Earning verified score badges proves your capability upfront without requiring redundant initial screening tests.",
+    },
+    {
+      id: 4,
+      question: "How is my personal contact information shielded from recruiters?",
+      answer:
+        "Your privacy is fully protected. Your phone number, personal email address, and exact location remain shielded until you explicitly accept a company's inbound connection request.",
+    },
+  ];
+
   return (
     <div className="about-page-wrapper">
-      {/* Hero Header */}
-      <header className="about-hero">
-        <div className="about-hero-inner">
-          <span className="about-badge">
-            <FiZap size={14} /> The Next-Gen Talent & Discovery Ecosystem
-          </span>
+      <div className="about-page-container">
+        {/* Dark Hero Card Block matching reference image */}
+        <header className="about-dark-hero">
+          <div className="dark-hero-content">
+            <div className="dark-hero-badge">
+              <FiZap size={13} /> THE NEXT-GEN TALENT & DISCOVERY ECOSYSTEM
+            </div>
 
-          {activeTab === "candidate" ? (
-            <>
-              <h1 className="about-title">
-                Your Skills Deserve <span className="highlight-text">Direct Recognition</span>, Not an ATS Black Hole
-              </h1>
-              <p className="about-subtitle">
-                StrengthOut empowers skilled candidates, freshers, and experienced engineers to break past traditional resume filters.
-                Showcase verified RightPath assessment evidence, 60-second video introductions, and authentic project codebases that prove what you can build.
-              </p>
-            </>
-          ) : (
-            <>
-              <h1 className="about-title">
-                Empowering Companies with <span className="highlight-text">Verified, High-Impact</span> Talent
-              </h1>
-              <p className="about-subtitle">
-                StrengthOut bridges the gap between ambitious professionals and innovative organizations.
-                By substituting unverified claims with authentic assessment evidence, video introductions,
-                and real-world project portfolios, we make hiring transparent, fast, and reliable.
-              </p>
-            </>
-          )}
-
-          {/* Perspective Switcher Tabs */}
-          <div className="about-tab-switcher">
-            <button
-              type="button"
-              className={`about-tab-btn ${activeTab === "candidate" ? "active" : ""}`}
-              onClick={() => setActiveTab("candidate")}
-            >
-              <FiAward size={16} /> For Skilled Candidates
-            </button>
-            <button
-              type="button"
-              className={`about-tab-btn ${activeTab === "company" ? "active" : ""}`}
-              onClick={() => setActiveTab("company")}
-            >
-              <FiBriefcase size={16} /> For Hiring Companies
-            </button>
-          </div>
-
-          <div className="about-cta-row">
             {activeTab === "candidate" ? (
               <>
-                <Link to="/profile" className="btn-about-primary">
-                  <span>View & Polish My Profile</span>
-                  <FiArrowRight size={16} />
-                </Link>
-                <Link to="/services" className="btn-about-secondary">
-                  Explore Candidate Services
-                </Link>
-              </>
-            ) : isCompanyUser ? (
-              <>
-                <Link to="/discover" className="btn-about-primary">
-                  <span>Discover Verified Candidates</span>
-                  <FiArrowRight size={16} />
-                </Link>
-                <Link to="/my-requests" className="btn-about-secondary">
-                  View My Requests
-                </Link>
+                <h1 className="dark-hero-title">
+                  Your Skills Deserve <span className="accent-text">Direct Recognition</span>, Not an ATS Black Hole
+                </h1>
+                <svg className="wavy-underline" viewBox="0 0 400 20" fill="none">
+                  <path d="M5 12 Q 55 2, 105 12 T 205 12 T 305 12 T 395 12" stroke="#10b981" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+                <p className="dark-hero-subtitle">
+                  StrengthOut empowers skilled candidates, freshers, and experienced engineers to break past traditional resume filters. Showcase verified RightPath assessment evidence, 60-second video introductions, and authentic project codebases that prove what you can build.
+                </p>
               </>
             ) : (
               <>
-                <Link to="/profile" className="btn-about-primary">
-                  <span>Enhance My Profile</span>
-                  <FiArrowRight size={16} />
-                </Link>
-                <Link to="/services" className="btn-about-secondary">
-                  Explore Candidate Services
-                </Link>
+                <h1 className="dark-hero-title">
+                  Empowering Companies with <span className="accent-text">Verified, High-Impact</span> Talent
+                </h1>
+                <svg className="wavy-underline" viewBox="0 0 400 20" fill="none">
+                  <path d="M5 12 Q 55 2, 105 12 T 205 12 T 305 12 T 395 12" stroke="#10b981" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+                <p className="dark-hero-subtitle">
+                  StrengthOut bridges the gap between ambitious professionals and innovative organizations. By substituting unverified claims with authentic assessment evidence, video introductions, and real-world project portfolios, we make hiring transparent, fast, and reliable.
+                </p>
               </>
             )}
-          </div>
-        </div>
-      </header>
 
-      {/* Main Container */}
-      <div className="about-container">
-        {/* Quick Highlights Bar */}
-        <div className="quick-highlights-bar">
-          <div className="highlight-item">
-            <FiCheckCircle size={18} color="#16a34a" />
-            <span><strong>100% Free</strong> for Candidates</span>
-          </div>
-          <div className="highlight-item">
-            <FiAward size={18} color="#16a34a" />
-            <span><strong>RightPath</strong> Verified Scores</span>
-          </div>
-          <div className="highlight-item">
-            <FiVideo size={18} color="#16a34a" />
-            <span><strong>60s Video</strong> Pitch Studio</span>
-          </div>
-          <div className="highlight-item">
-            <FiLock size={18} color="#16a34a" />
-            <span><strong>Shielded</strong> Contact Privacy</span>
-          </div>
-        </div>
+            {/* Perspective Switcher Tabs */}
+            <div className="about-tab-switcher">
+              <button
+                type="button"
+                className={"about-tab-btn " + (activeTab === "candidate" ? "active" : "")}
+                onClick={() => setActiveTab("candidate")}
+              >
+                <FiAward size={15} /> For Skilled Candidates
+              </button>
+              <button
+                type="button"
+                className={"about-tab-btn " + (activeTab === "company" ? "active" : "")}
+                onClick={() => setActiveTab("company")}
+              >
+                <FiBriefcase size={15} /> For Hiring Companies
+              </button>
+            </div>
 
-        {/* ============================================================
-            CANDIDATE PERSPECTIVE CONTENT
-           ============================================================ */}
+            <div className="dark-hero-cta">
+              {activeTab === "candidate" ? (
+                <>
+                  <Link to="/candidate/profile" className="btn-hero-primary">
+                    <span>View & Polish My Profile</span>
+                    <FiArrowRight size={16} />
+                  </Link>
+                  <Link to="/services" className="btn-hero-secondary">
+                    Explore Candidate Services
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/company/discover" className="btn-hero-primary">
+                    <span>Start Discovering Talent</span>
+                    <FiArrowRight size={16} />
+                  </Link>
+                  <Link to="/services" className="btn-hero-secondary">
+                    Explore Platform Services
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* CANDIDATE PERSPECTIVE CONTENT */}
         {activeTab === "candidate" && (
           <>
             {/* The Motive for Candidates */}
             <section className="about-section-card motive-card">
               <div className="section-head">
                 <div className="section-icon-badge candidate-badge">
-                  <FiTarget size={24} color="#70c144" />
+                  <FiTarget size={22} color="#047857" />
                 </div>
                 <div>
                   <span className="eyebrow-tag">THE PROBLEM & OUR MOTIVE</span>
@@ -194,7 +205,7 @@ const AboutPage: React.FC = () => {
             <section className="about-section-card comparison-section">
               <div className="section-head">
                 <div className="section-icon-badge candidate-badge">
-                  <FiCompass size={24} color="#70c144" />
+                  <FiCompass size={22} color="#047857" />
                 </div>
                 <div>
                   <span className="eyebrow-tag">COMPARISON BREAKDOWN</span>
@@ -245,7 +256,7 @@ const AboutPage: React.FC = () => {
               </div>
             </section>
 
-            {/* How StrengthOut Helps Skilled Candidates (Core Pillars) */}
+            {/* Core Pillars */}
             <section className="about-pillars-section">
               <span className="eyebrow-tag" style={{ display: "inline-block", marginBottom: "0.5rem" }}>CANDIDATE ADVANTAGES</span>
               <h2 className="pillars-title">How StrengthOut Helps You Stand Out</h2>
@@ -256,7 +267,7 @@ const AboutPage: React.FC = () => {
               <div className="pillars-grid">
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiVideo size={24} />
+                    <FiVideo size={22} />
                   </div>
                   <h3>60-Second Video Pitch</h3>
                   <p>
@@ -266,7 +277,7 @@ const AboutPage: React.FC = () => {
 
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiCheckCircle size={24} />
+                    <FiCheckCircle size={22} />
                   </div>
                   <h3>RightPath Assessment Evidence</h3>
                   <p>
@@ -276,7 +287,7 @@ const AboutPage: React.FC = () => {
 
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiCode size={24} />
+                    <FiCode size={22} />
                   </div>
                   <h3>Live Projects & GitHub Repositories</h3>
                   <p>
@@ -286,112 +297,26 @@ const AboutPage: React.FC = () => {
 
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiBriefcase size={24} />
+                    <FiBriefcase size={22} />
                   </div>
-                  <h3>Practical Internship Records</h3>
+                  <h3>Curated Direct Connections</h3>
                   <p>
-                    Document your real-world contributions, tools used, and responsibilities during internships to demonstrate industry readiness and teamwork ability.
+                    Receive connection invitations directly from hiring teams looking for your specific skills, eliminating unread applications and unhelpful automated emails.
                   </p>
-                </div>
-
-                <div className="pillar-card">
-                  <div className="pillar-icon-box">
-                    <FiLock size={24} />
-                  </div>
-                  <h3>Privacy-First Protection</h3>
-                  <p>
-                    Your personal contact details (phone, email, full address) are kept protected from unauthorized scraping. Only companies you accept a connection with can access your direct details.
-                  </p>
-                </div>
-
-                <div className="pillar-card">
-                  <div className="pillar-icon-box">
-                    <FiZap size={24} />
-                  </div>
-                  <h3>Role & Work Preferences</h3>
-                  <p>
-                    Specify your target roles (e.g. Full Stack Developer, Data Engineer) and preferred work model (Remote, Hybrid, On-site) to receive accurately matched opportunities.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Step by Step Journey for Candidates */}
-            <section className="about-section-card how-it-works-card">
-              <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-                <span className="eyebrow-tag">STEP-BY-STEP WORKFLOW</span>
-                <h2 className="section-main-title">
-                  Your Pathway to Getting Hired
-                </h2>
-                <p className="section-subtitle">
-                  Four clear steps from profile creation to receiving tailored job offers.
-                </p>
-              </div>
-
-              <div className="steps-container">
-                <div className="step-item">
-                  <div className="step-num">01</div>
-                  <h4>Build & Detail Your Profile</h4>
-                  <p>Fill out education, key technical skills, past internships, and academic projects with repository links.</p>
-                </div>
-
-                <div className="step-item">
-                  <div className="step-num">02</div>
-                  <h4>Add Video & Verified Evidence</h4>
-                  <p>Upload a 1-minute introduction pitch video and complete verified assessments through RightPath.</p>
-                </div>
-
-                <div className="step-item">
-                  <div className="step-num">03</div>
-                  <h4>Publish to Discovery</h4>
-                  <p>Once your profile completion reaches 50%+, publish your profile to become instantly searchable by hiring companies.</p>
-                </div>
-
-                <div className="step-item">
-                  <div className="step-num">04</div>
-                  <h4>Receive Direct Invitations</h4>
-                  <p>Review incoming connection requests from recruiters, evaluate role details, and schedule interviews.</p>
-                </div>
-              </div>
-            </section>
-
-            {/* Key Advantages Summary */}
-            <section className="about-section-card" style={{ background: "#f0fdf4", borderColor: "#bbf7d0" }}>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#14532d", margin: "0 0 1rem" }}>
-                Why Skilled Candidates Prefer StrengthOut
-              </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
-                <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
-                  <FiCheck size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "0.92rem", color: "#166534" }}><strong>Zero Resume Spam:</strong> You only interact with companies genuinely interested in your specific verified skills.</span>
-                </div>
-                <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
-                  <FiCheck size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "0.92rem", color: "#166534" }}><strong>Standardized Assessment Benchmarks:</strong> No need to repeatedly take 2-hour technical screening tests for every company.</span>
-                </div>
-                <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
-                  <FiCheck size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "0.92rem", color: "#166534" }}><strong>Direct Recruiter Reach:</strong> Decision makers see your video introduction and repositories upfront.</span>
-                </div>
-                <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start" }}>
-                  <FiCheck size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "0.92rem", color: "#166534" }}><strong>Protected Contact Privacy:</strong> Full control over who sees your phone number and email address.</span>
                 </div>
               </div>
             </section>
           </>
         )}
 
-        {/* ============================================================
-            COMPANY PERSPECTIVE CONTENT
-           ============================================================ */}
+        {/* COMPANY PERSPECTIVE CONTENT */}
         {activeTab === "company" && (
           <>
             {/* Motive & Mission Section */}
             <section className="about-section-card motive-card">
               <div className="section-head">
                 <div className="section-icon-badge">
-                  <FiTarget size={24} color="#70c144" />
+                  <FiTarget size={22} color="#047857" />
                 </div>
                 <div>
                   <span className="eyebrow-tag">THE PROBLEM & OUR MOTIVE</span>
@@ -446,7 +371,7 @@ const AboutPage: React.FC = () => {
               <div className="pillars-grid">
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiVideo size={24} />
+                    <FiVideo size={22} />
                   </div>
                   <h3>Introduction Videos</h3>
                   <p>
@@ -456,7 +381,7 @@ const AboutPage: React.FC = () => {
 
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiCheckCircle size={24} />
+                    <FiCheckCircle size={22} />
                   </div>
                   <h3>RightPath Verified Evidence</h3>
                   <p>
@@ -466,7 +391,7 @@ const AboutPage: React.FC = () => {
 
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiLayers size={24} />
+                    <FiLayers size={22} />
                   </div>
                   <h3>Projects & Code Repositories</h3>
                   <p>
@@ -476,7 +401,7 @@ const AboutPage: React.FC = () => {
 
                 <div className="pillar-card">
                   <div className="pillar-icon-box">
-                    <FiUsers size={24} />
+                    <FiUsers size={22} />
                   </div>
                   <h3>Privacy-First Engagement</h3>
                   <p>
@@ -527,22 +452,55 @@ const AboutPage: React.FC = () => {
           </>
         )}
 
+        {/* FREQUENTLY ASKED QUESTIONS SECTION matching reference screenshot */}
+        <section className="faq-section-card">
+          <h2 className="faq-section-title">Frequently Asked Questions</h2>
+          <div className="faq-accordion-stack">
+            {faqList.map((f) => {
+              const isOpen = openFaqId === f.id;
+              return (
+                <div key={f.id} className={"faq-item-drawer " + (isOpen ? "open" : "")}>
+                  <div
+                    className="faq-question-bar"
+                    onClick={() => toggleFaq(f.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") toggleFaq(f.id);
+                    }}
+                  >
+                    <span className="faq-question-text">{f.question}</span>
+                    <div className="faq-toggle-icon">
+                      {isOpen ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div className="faq-answer-body">
+                      <p>{f.answer}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Powered by Banner */}
-        <section className="powered-by-card">
-          <div className="powered-content">
-            <span className="powered-tag">Enterprise Foundation</span>
+        <section className="about-consultation-banner">
+          <div className="consultation-left">
+            <span className="consultation-tag">ENTERPRISE FOUNDATION</span>
             <h3>Powered by iSignTech & RightPath Technologies</h3>
             <p>
               StrengthOut is engineered by iSignTech with rigorous validation architecture, empowering both skilled candidates and forward-thinking hiring companies worldwide.
             </p>
           </div>
-          <div className="powered-action">
+          <div className="consultation-right">
             {isCompanyUser ? (
-              <Link to="/discover" className="btn-powered-cta">
+              <Link to="/company/discover" className="btn-consultation-cta">
                 Start Discovering Talent
               </Link>
             ) : (
-              <Link to="/profile" className="btn-powered-cta">
+              <Link to="/candidate/profile" className="btn-consultation-cta">
                 Enhance My Profile
               </Link>
             )}

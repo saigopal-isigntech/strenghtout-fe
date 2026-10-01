@@ -1541,7 +1541,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     </div>
                     <div className="pv-exp-meta">
                       <span className="pv-exp-date">
-                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? ' � Present' : (exp.endDate ? ` � ${exp.endDate}` : '')}
+                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? '  –  Present' : (exp.endDate ? `  –  ${exp.endDate}` : '')}
                       </span>
                       {exp.isCurrent && <span className="pv-exp-badge">Ongoing</span>}
                     </div>
@@ -1651,7 +1651,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     <div>
                       <strong style={{ fontSize: '0.92rem', color: '#0f172a', display: 'block' }}>{r.roleName || 'Target Role'}</strong>
                       <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        {r.workType || 'Remote'} {r.preferredLocation ? `� ${r.preferredLocation}` : ''}
+                        {r.workType || 'Remote'} {r.preferredLocation ? ` –  ${r.preferredLocation}` : ''}
                       </span>
                     </div>
                     {!isReadOnly && (
@@ -2353,7 +2353,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       <h3 className="record-title">{exp.title}</h3>
                       <p className="record-subtitle">{exp.companyName}</p>
                       <span className="record-meta">
-                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? ' � Present' : (exp.endDate ? ` � ${exp.endDate}` : '')}
+                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? '  –  Present' : (exp.endDate ? `  –  ${exp.endDate}` : '')}
                         {exp.isCurrent && <span className="ongoing-tag">Ongoing</span>}
                       </span>
                       {exp.description && <p className="record-desc">{exp.description}</p>}
@@ -2411,7 +2411,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                         <span className="role-work-model-badge">{r.workType || 'Remote'}</span>
                         {r.preferredLocation && (
                           <span className="role-location-text">
-                            � {r.preferredLocation}
+                             –  {r.preferredLocation}
                           </span>
                         )}
                       </p>

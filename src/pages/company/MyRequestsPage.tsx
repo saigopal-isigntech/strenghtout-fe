@@ -1,32 +1,59 @@
-﻿import React, { useEffect, useState, useCallback, Fragment } from "react";
+import React, { useEffect, useState, useCallback, useMemo, Fragment } from "react";
 import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
 import {
-  FiBriefcase, FiMapPin, FiCalendar, FiClock,
-  FiChevronDown, FiChevronUp, FiRefreshCw, FiInbox, FiCheckCircle,
+  FiBriefcase,
+  FiMapPin,
+  FiCalendar,
+  FiClock,
+  FiRefreshCw,
+  FiCheckCircle,
+  FiSend,
+  FiUsers,
+  FiMessageSquare,
+  FiRotateCcw,
+  FiSearch,
+  FiSliders,
+  FiGrid,
+  FiList,
+  FiMoreVertical,
+  FiArrowRight,
+  FiInbox,
 } from "react-icons/fi";
 import "./MyRequests.css";
 
-const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  SUBMITTED:            { label: "Submitted",            color: "#92400e", bg: "#fef3c7", border: "#fde68a" },
-  UNDER_REVIEW:         { label: "Under Review",         color: "#1e40af", bg: "#dbeafe", border: "#bfdbfe" },
-  COMPANY_CONTACTED:    { label: "Company Contacted",    color: "#065f46", bg: "#d1fae5", border: "#6ee7b7" },
-  CANDIDATE_DISCUSSION: { label: "Candidate Discussion", color: "#4c1d95", bg: "#ede9fe", border: "#c4b5fd" },
-  SELECTED:             { label: "Selected",             color: "#064e3b", bg: "#a7f3d0", border: "#34d399" },
-  NOT_PROCEEDING:       { label: "Not Proceeding",       color: "#991b1b", bg: "#fee2e2", border: "#fca5a5" },
-  RETURNED:             { label: "Returned",             color: "#78350f", bg: "#fef3c7", border: "#fde68a" },
-  CLOSED:               { label: "Closed",               color: "#374151", bg: "#f3f4f6", border: "#d1d5db" },
+const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
+  SUBMITTED:            { label: "Submitted",            color: "#6b21a8", bg: "#f3e8ff", border: "#e9d5ff", dot: "#9333ea" },
+  UNDER_REVIEW:         { label: "Under Review",         color: "#92400e", bg: "#fef3c7", border: "#fde68a", dot: "#d97706" },
+  COMPANY_CONTACTED:    { label: "Company Contacted",    color: "#1e40af", bg: "#dbeafe", border: "#bfdbfe", dot: "#2563eb" },
+  CANDIDATE_DISCUSSION: { label: "Candidate Discussion", color: "#4c1d95", bg: "#ede9fe", border: "#c4b5fd", dot: "#7c3aed" },
+  SELECTED:             { label: "Selected / Hired",     color: "#065f46", bg: "#d1fae5", border: "#6ee7b7", dot: "#10b981" },
+  NOT_PROCEEDING:       { label: "Not Proceeding",       color: "#991b1b", bg: "#fee2e2", border: "#fca5a5", dot: "#ef4444" },
+  RETURNED:             { label: "Returned",             color: "#991b1b", bg: "#fee2e2", border: "#fca5a5", dot: "#ef4444" },
+  CLOSED:               { label: "Closed",               color: "#374151", bg: "#f3f4f6", border: "#d1d5db", dot: "#6b7280" },
 };
 
-const sm = (s: string) => STATUS_META[s] ?? { label: s, color: "#374151", bg: "#f3f4f6", border: "#d1d5db" };
+const sm = (s: string) => STATUS_META[s] ?? { label: s, color: "#374151", bg: "#f3f4f6", border: "#d1d5db", dot: "#6b7280" };
 
-const fmtDate = (iso?: string | null) => {
+const fmtDateDisplay = (iso?: string | null) => {
   if (!iso) return "—";
   try {
     const d = new Date(iso);
-    return isNaN(d.getTime()) ? String(iso) : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   } catch {
     return String(iso);
+  }
+};
+
+const fmtTimeDisplay = (iso?: string | null) => {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase();
+  } catch {
+    return "";
   }
 };
 
@@ -38,6 +65,23 @@ const expLabel = (months?: number) => {
   return y > 0 ? (m > 0 ? `${y}y ${m}m` : `${y} yr`) : `${m} mo`;
 };
 
+const AVATAR_COLORS = [
+  { bg: "#3b82f6", color: "#ffffff" },
+  { bg: "#8b5cf6", color: "#ffffff" },
+  { bg: "#10b981", color: "#ffffff" },
+  { bg: "#ec4899", color: "#ffffff" },
+  { bg: "#f59e0b", color: "#ffffff" },
+  { bg: "#14b8a6", color: "#ffffff" },
+];
+
+const getAvatarStyle = (name?: string) => {
+  if (!name) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
 
 const STAGES = [
   { key: "SUBMITTED",            label: "Submitted" },
@@ -101,20 +145,24 @@ const RequestLifecycleStepper: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-const MyRequestsPage: React.FC = () => {
-  const [requests, setRequests]     = useState<ConnectionRequest[]>([]);
-  const [total, setTotal]           = useState(0);
-  const [page, setPage]             = useState(0);
-  const [loading, setLoading]       = useState(false);
-  const [expanded, setExpanded]     = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+export const MyRequestsPage: React.FC = () => {
+  const [requests, setRequests] = useState<ConnectionRequest[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "candidate" | "role">("date");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const PAGE_SIZE = 12;
 
   const load = useCallback(async (p = 0) => {
     setLoading(true);
     try {
-      const res  = await connectionsApi.getMyRequests(p, PAGE_SIZE);
+      const res = await connectionsApi.getMyRequests(p, PAGE_SIZE);
       const data = res.data?.data;
       setRequests(data?.content || []);
       setTotal(data?.totalElements || 0);
@@ -127,171 +175,452 @@ const MyRequestsPage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { load(0); }, [load]);
+  useEffect(() => {
+    load(0);
+  }, [load]);
 
-  const filtered   = statusFilter ? requests.filter(r => r.status === statusFilter) : requests;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const statuses   = Object.keys(STATUS_META);
+  // Compute 6 Top Summary Card Metrics
+  const metrics = useMemo(() => {
+    const totalCount = requests.length;
+    let underReview = 0;
+    let companyContacted = 0;
+    let inDiscussion = 0;
+    let selectedHired = 0;
+    let returnedClosed = 0;
+
+    requests.forEach(r => {
+      if (r.status === "UNDER_REVIEW") underReview++;
+      else if (r.status === "COMPANY_CONTACTED") companyContacted++;
+      else if (r.status === "CANDIDATE_DISCUSSION") inDiscussion++;
+      else if (r.status === "SELECTED") selectedHired++;
+      else if (r.status === "RETURNED" || r.status === "CLOSED" || r.status === "NOT_PROCEEDING") returnedClosed++;
+    });
+
+    return { total: totalCount, underReview, companyContacted, inDiscussion, selectedHired, returnedClosed };
+  }, [requests]);
+
+  // Compute Filter Tab Counts
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: requests.length,
+      SUBMITTED: 0,
+      UNDER_REVIEW: 0,
+      COMPANY_CONTACTED: 0,
+      CANDIDATE_DISCUSSION: 0,
+      SELECTED: 0,
+      RETURNED: 0,
+      CLOSED: 0,
+    };
+
+    requests.forEach(r => {
+      if (counts[r.status] !== undefined) counts[r.status]++;
+      if (r.status === "NOT_PROCEEDING") counts["CLOSED"]++;
+    });
+
+    return counts;
+  }, [requests]);
+
+  // Filter & Sort Requests
+  const filteredRequests = useMemo(() => {
+    let list = requests;
+
+    if (statusFilter && statusFilter !== "ALL") {
+      list = list.filter(r => r.status === statusFilter);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        r =>
+          (r.candidateFullName || "").toLowerCase().includes(q) ||
+          (r.candidateHeadline || "").toLowerCase().includes(q) ||
+          (r.roleTitle || "").toLowerCase().includes(q) ||
+          (r.location || "").toLowerCase().includes(q) ||
+          (r.candidateLocation || "").toLowerCase().includes(q)
+      );
+    }
+
+    if (sortBy === "candidate") {
+      return [...list].sort((a, b) => (a.candidateFullName || "").localeCompare(b.candidateFullName || ""));
+    }
+    if (sortBy === "role") {
+      return [...list].sort((a, b) => (a.roleTitle || "").localeCompare(b.roleTitle || ""));
+    }
+
+    return [...list].sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
+  }, [requests, statusFilter, searchQuery, sortBy]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
   return (
-    <div className="mr-page">
+    <div className="mr-page-container">
+      {/* 1. Hero Header Banner matching reference mockup */}
+      <div className="mr-hero-banner">
+        <svg
+          className="hero-bg-waves"
+          viewBox="0 0 1000 220"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path d="M380,220 C380,120 480,30 1000,45 L1000,220 Z" fill="#a7f3d0" opacity="0.45" />
+          <path d="M440,220 C440,140 580,55 1000,75 L1000,220 Z" fill="#6ee7b7" opacity="0.2" />
+        </svg>
 
-      {/* ── Page Header ── */}
-      <div className="mr-page-header">
-        <div>
-          <div className="mr-page-badge">MY REQUEST HISTORY</div>
-          <h1 className="mr-page-title">My Connection Requests</h1>
-          <p className="mr-page-sub">
+        <div className="hero-left-col">
+          <div className="mr-hero-badge">MY REQUEST HISTORY</div>
+          <h1 className="mr-hero-title">My Connection Requests</h1>
+          <p className="mr-hero-sub">
             Track all candidate outreach requests you have submitted via StrengthOut.
           </p>
         </div>
-        <button className="mr-refresh-btn" onClick={() => load(page)} disabled={loading}>
-          <FiRefreshCw size={15} className={loading ? "spin" : ""} />
-          Refresh
-        </button>
+
+        <div className="hero-right-col">
+          <button
+            type="button"
+            className="mr-refresh-btn"
+            onClick={() => load(page)}
+            disabled={loading}
+          >
+            <FiRefreshCw size={15} className={loading ? "spin" : ""} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Filter + Count bar ── */}
-      <div className="mr-filter-bar">
-        <div className="mr-filter-left">
-          <span className="mr-filter-label">Filter:</span>
-          <div className="mr-chip-row">
-            <button
-              className={`filter-chip${statusFilter === "" ? " active" : ""}`}
-              onClick={() => setStatusFilter("")}
-            >
-              All
-            </button>
-            {statuses.map(s => (
-              <button
-                key={s}
-                className={`filter-chip${statusFilter === s ? " active" : ""}`}
-                onClick={() => setStatusFilter(statusFilter === s ? "" : s)}
-                style={statusFilter === s ? { background: sm(s).bg, color: sm(s).color, borderColor: sm(s).border } : {}}
-              >
-                {sm(s).label}
-              </button>
-            ))}
+      {/* 2. Top Metric Summary Cards Row (6 Cards matching reference mockup) */}
+      <div className="mr-metrics-grid">
+        <div className="metric-card card-blue">
+          <div className="metric-icon-box blue">
+            <FiSend size={18} />
+          </div>
+          <div className="metric-info">
+            <strong className="metric-val">{metrics.total}</strong>
+            <span className="metric-lbl">Total Requests</span>
           </div>
         </div>
-        <span className="mr-count-badge">{total} request{total !== 1 ? "s" : ""}</span>
+
+        <div className="metric-card card-amber">
+          <div className="metric-icon-box amber">
+            <FiClock size={18} />
+          </div>
+          <div className="metric-info">
+            <strong className="metric-val">{metrics.underReview}</strong>
+            <span className="metric-lbl">Under Review</span>
+          </div>
+        </div>
+
+        <div className="metric-card card-mint">
+          <div className="metric-icon-box mint">
+            <FiUsers size={18} />
+          </div>
+          <div className="metric-info">
+            <strong className="metric-val">{metrics.companyContacted}</strong>
+            <span className="metric-lbl">Company Contacted</span>
+          </div>
+        </div>
+
+        <div className="metric-card card-purple">
+          <div className="metric-icon-box purple">
+            <FiMessageSquare size={18} />
+          </div>
+          <div className="metric-info">
+            <strong className="metric-val">{metrics.inDiscussion}</strong>
+            <span className="metric-lbl">In Discussion</span>
+          </div>
+        </div>
+
+        <div className="metric-card card-green">
+          <div className="metric-icon-box green">
+            <FiCheckCircle size={18} />
+          </div>
+          <div className="metric-info">
+            <strong className="metric-val">{metrics.selectedHired}</strong>
+            <span className="metric-lbl">Selected / Hired</span>
+          </div>
+        </div>
+
+        <div className="metric-card card-red">
+          <div className="metric-icon-box red">
+            <FiRotateCcw size={18} />
+          </div>
+          <div className="metric-info">
+            <strong className="metric-val">{metrics.returnedClosed}</strong>
+            <span className="metric-lbl">Returned / Closed</span>
+          </div>
+        </div>
       </div>
 
-      {/* ── Content ── */}
-      {loading && requests.length === 0 ? (
-        <div className="mr-loading">
-          <div className="spinner-lg" />
-          <span>Loading requests…</span>
+      {/* 3. Search Bar & Controls Row */}
+      <div className="mr-toolbar-bar">
+        <div className="mr-search-box">
+          <FiSearch size={18} className="search-icon-left" />
+          <input
+            type="text"
+            className="search-field"
+            placeholder="Search by candidate name, role, skills, or location..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button type="button" className="clear-search-btn" onClick={() => setSearchQuery("")}>
+              ×
+            </button>
+          )}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="mr-empty">
-          <FiInbox size={48} className="mr-empty-icon" />
-          <h3>No requests found</h3>
-          <p>
-            {statusFilter
-              ? `No requests with status "${sm(statusFilter).label}". Try clearing the filter.`
-              : "You haven't submitted any connection requests yet. Go to Discover and click Connect on a candidate."}
-          </p>
+
+        <div className="mr-toolbar-right">
+          <div className="sort-dropdown-wrapper">
+            <FiSliders size={14} className="sort-icon" />
+            <span className="sort-label">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as any)}
+              className="sort-select"
+            >
+              <option value="date">Submitted Date</option>
+              <option value="candidate">Candidate Name</option>
+              <option value="role">Role Title</option>
+            </select>
+          </div>
+
+          <div className="view-mode-toggle">
+            <button
+              type="button"
+              className={`view-mode-btn ${viewMode === "list" ? "active" : ""}`}
+              onClick={() => setViewMode("list")}
+              title="List View"
+            >
+              <FiList size={16} />
+            </button>
+            <button
+              type="button"
+              className={`view-mode-btn ${viewMode === "grid" ? "active" : ""}`}
+              onClick={() => setViewMode("grid")}
+              title="Grid View"
+            >
+              <FiGrid size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Filter Tabs Row (Pills with Counts matching mockup) */}
+      <div className="mr-tabs-row">
+        <div className="tabs-pill-group">
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "ALL" ? "active" : ""}`}
+            onClick={() => setStatusFilter("ALL")}
+          >
+            <span>All</span>
+            <span className="count-pill">{tabCounts.ALL}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "SUBMITTED" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "SUBMITTED" ? "ALL" : "SUBMITTED")}
+          >
+            <span>Submitted</span>
+            <span className="count-pill">{tabCounts.SUBMITTED}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "UNDER_REVIEW" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "UNDER_REVIEW" ? "ALL" : "UNDER_REVIEW")}
+          >
+            <span>Under Review</span>
+            <span className="count-pill">{tabCounts.UNDER_REVIEW}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "COMPANY_CONTACTED" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "COMPANY_CONTACTED" ? "ALL" : "COMPANY_CONTACTED")}
+          >
+            <span>Company Contacted</span>
+            <span className="count-pill">{tabCounts.COMPANY_CONTACTED}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "CANDIDATE_DISCUSSION" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "CANDIDATE_DISCUSSION" ? "ALL" : "CANDIDATE_DISCUSSION")}
+          >
+            <span>Candidate Discussion</span>
+            <span className="count-pill">{tabCounts.CANDIDATE_DISCUSSION}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "SELECTED" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "SELECTED" ? "ALL" : "SELECTED")}
+          >
+            <span>Selected / Hired</span>
+            <span className="count-pill">{tabCounts.SELECTED}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "RETURNED" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "RETURNED" ? "ALL" : "RETURNED")}
+          >
+            <span>Returned</span>
+            <span className="count-pill">{tabCounts.RETURNED}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`tab-pill ${statusFilter === "CLOSED" ? "active" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "CLOSED" ? "ALL" : "CLOSED")}
+          >
+            <span>Closed</span>
+            <span className="count-pill">{tabCounts.CLOSED}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 5. Request Content (Table Stream / Loading / Empty) */}
+      {loading && requests.length === 0 ? (
+        <div className="mr-loading-state">
+          <div className="spinner" />
+          <span>Loading your candidate connection requests...</span>
+        </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="mr-empty-state">
+          <FiInbox size={44} className="empty-icon" />
+          <h3>No connection requests found</h3>
+          <p>No outreach requests match your selected status or search filter.</p>
         </div>
       ) : (
-        <>
-        <div className="mr-table-card">
-          <table className="mr-table">
+        <div className="mr-table-card-wrapper">
+          <table className="mr-custom-table">
             <thead>
               <tr>
-                <th style={{ width: "36%" }}>Candidate</th>
-                <th style={{ width: "25%" }}>Role</th>
-                <th style={{ width: "18%" }}>Status</th>
-                <th style={{ width: "16%" }}>Submitted</th>
-                <th style={{ width: "5%", textAlign: "center" }}></th>
+                <th>CANDIDATE</th>
+                <th>ROLE & OPPORTUNITY</th>
+                <th>STATUS</th>
+                <th>SUBMITTED ON</th>
+                <th style={{ textAlign: "right" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, index) => {
-                const meta  = sm(r.status);
+              {filteredRequests.map((r, index) => {
+                const meta = sm(r.status);
                 const isExp = expanded === r.id;
-                const exp   = expLabel(r.candidateExperienceMonths);
                 const itemKey = r.id || `req-${index}`;
+                const avatarStyle = getAvatarStyle(r.candidateFullName);
+                const exp = expLabel(r.candidateExperienceMonths || (r as any).candidateTotalExperienceMonths);
+                const dateStr = fmtDateDisplay(r.submittedAt);
+                const timeStr = fmtTimeDisplay(r.submittedAt);
 
                 return (
                   <Fragment key={itemKey}>
-                    <tr
-                      className={`mr-row${isExp ? " mr-row-open" : ""}`}
-                      onClick={() => setExpanded(isExp ? null : r.id)}
-                    >
-                      {/* Candidate */}
+                    <tr className={`mr-table-row ${isExp ? "expanded" : ""}`}>
+                      {/* CANDIDATE */}
                       <td>
-                        <div className="mr-cand-cell">
-                          <div className="mr-cand-avatar">
+                        <div className="mr-cand-flex">
+                          <div
+                            className="mr-cand-avatar"
+                            style={{ background: avatarStyle.bg, color: avatarStyle.color }}
+                          >
                             {(r.candidateFullName || "?")[0].toUpperCase()}
                           </div>
-                          <div className="mr-cand-info">
-                            <div className="mr-cand-name">{r.candidateFullName}</div>
+                          <div className="mr-cand-details">
+                            <h4 className="cand-name">{r.candidateFullName || "Candidate User"}</h4>
                             {r.candidateHeadline && (
-                              <div className="mr-cand-headline">{r.candidateHeadline}</div>
+                              <p className="cand-headline">{r.candidateHeadline}</p>
                             )}
-                            <div className="mr-cand-meta">
+                            <div className="cand-meta-line">
                               {r.candidateLocation && (
-                                <span><FiMapPin size={10} /> {r.candidateLocation}</span>
+                                <span className="cand-meta-item">
+                                  <FiMapPin size={11} /> {r.candidateLocation}
+                                </span>
                               )}
-                              {exp && <span><FiBriefcase size={10} /> {exp}</span>}
+                              {exp && (
+                                <span className="cand-meta-item">
+                                  <FiBriefcase size={11} /> {exp}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
                       </td>
-                      {/* Role */}
+
+                      {/* ROLE & OPPORTUNITY */}
                       <td>
-                        <div className="mr-role-name">{r.roleTitle}</div>
-                        <div className="mr-role-chips">
-                          <span className={`mr-worktype mr-worktype-${r.workType?.toLowerCase()}`}>
-                            {r.workType}
+                        <div className="mr-role-col">
+                          <h4 className="role-title">{r.roleTitle}</h4>
+                          <span className={`worktype-tag tag-${(r.workType || "hybrid").toLowerCase()}`}>
+                            {r.workType || "HYBRID"}
                           </span>
-                          {r.location && (
-                            <span className="mr-loc-chip">
-                              <FiMapPin size={10} /> {r.location}
-                            </span>
-                          )}
-                          {r.expectedStart && (
-                            <span className="mr-loc-chip">
-                              <FiCalendar size={10} /> {fmtDate(r.expectedStart)}
+                        </div>
+                      </td>
+
+                      {/* STATUS */}
+                      <td>
+                        <span
+                          className="mr-status-pill-badge"
+                          style={{
+                            color: meta.color,
+                            background: meta.bg,
+                            borderColor: meta.border,
+                          }}
+                        >
+                          <span className="status-dot" style={{ background: meta.dot }} />
+                          <span>{meta.label}</span>
+                        </span>
+                      </td>
+
+                      {/* SUBMITTED ON */}
+                      <td>
+                        <div className="mr-datetime-col">
+                          <span className="date-item">
+                            <FiCalendar size={13} /> {dateStr}
+                          </span>
+                          {timeStr && (
+                            <span className="time-item">
+                              <FiClock size={12} /> {timeStr}
                             </span>
                           )}
                         </div>
                       </td>
-                      {/* Status */}
+
+                      {/* ACTIONS */}
                       <td>
-                        <span
-                          className="mr-status-badge"
-                          style={{ color: meta.color, background: meta.bg, borderColor: meta.border }}
-                        >
-                          {meta.label}
-                        </span>
-                      </td>
-                      {/* Date */}
-                      <td className="mr-date-cell">
-                        <span><FiClock size={11} /> {fmtDate(r.submittedAt)}</span>
-                        {r.closedAt && (
-                          <div className="mr-closed-date">Closed {fmtDate(r.closedAt)}</div>
-                        )}
-                      </td>
-                      {/* Expand arrow */}
-                      <td className="mr-expand-cell">
-                        {isExp ? <FiChevronUp size={15} /> : <FiChevronDown size={15} />}
+                        <div className="mr-actions-cell">
+                          <button
+                            type="button"
+                            className="btn-view-details-action"
+                            onClick={() => setExpanded(isExp ? null : r.id!)}
+                          >
+                            <span>View Details</span>
+                            <FiArrowRight size={14} />
+                          </button>
+                          <button type="button" className="btn-options-action" title="Options">
+                            <FiMoreVertical size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
 
+                    {/* Expandable Details Row */}
                     {isExp && (
                       <tr key={`${itemKey}-detail`} className="mr-detail-row">
                         <td colSpan={5}>
                           <div className="mr-detail-panel">
                             <RequestLifecycleStepper status={r.status} />
+
                             <div className="mr-detail-section">
-                              <span className="mr-detail-label">Opportunity Summary</span>
+                              <h5 className="mr-detail-label">Opportunity Summary</h5>
                               <p className="mr-detail-text">{r.opportunitySummary || "—"}</p>
                             </div>
+
                             {Array.isArray(r.allowedNextStatuses) && r.allowedNextStatuses.length > 0 && (
                               <div className="mr-detail-section">
-                                <span className="mr-detail-label">Pending Stages</span>
+                                <h5 className="mr-detail-label">Pending Allowed Stages</h5>
                                 <div className="mr-next-row">
                                   {r.allowedNextStatuses.map(ns => {
                                     const nsMeta = sm(ns);
@@ -299,7 +628,11 @@ const MyRequestsPage: React.FC = () => {
                                       <span
                                         key={ns}
                                         className="mr-next-chip"
-                                        style={{ color: nsMeta.color, background: nsMeta.bg, borderColor: nsMeta.border }}
+                                        style={{
+                                          color: nsMeta.color,
+                                          background: nsMeta.bg,
+                                          borderColor: nsMeta.border,
+                                        }}
                                       >
                                         {nsMeta.label}
                                       </span>
@@ -318,79 +651,37 @@ const MyRequestsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Responsive Mobile Cards */}
-        <div className="mr-mobile-cards">
-          {filtered.map((r, index) => {
-            const meta  = sm(r.status);
-            const isExp = expanded === r.id;
-            const itemKey = r.id || `req-${index}`;
-            return (
-              <div key={itemKey} className="mr-mobile-card">
-                <div className="mr-mc-header">
-                  <div className="mr-mc-cand">
-                    <div className="mr-mc-avatar">
-                      {(r.candidateFullName || "?")[0].toUpperCase()}
-                    </div>
-                    <div className="mr-mc-cand-info">
-                      <div className="mr-mc-cand-name">{r.candidateFullName}</div>
-                      {r.candidateHeadline && (
-                        <div className="mr-mc-cand-headline">{r.candidateHeadline}</div>
-                      )}
-                    </div>
-                  </div>
-                  <span
-                    className="mr-status-badge"
-                    style={{ color: meta.color, background: meta.bg, borderColor: meta.border }}
-                  >
-                    {meta.label}
-                  </span>
-                </div>
-
-                <div className="mr-mc-body">
-                  <div className="mr-mc-row">
-                    <span className="mr-mc-label">Role:</span>
-                    <span className="mr-mc-val">{r.roleTitle} ({r.workType})</span>
-                  </div>
-                  <div className="mr-mc-row">
-                    <span className="mr-mc-label">Submitted:</span>
-                    <span className="mr-mc-val">{fmtDate(r.submittedAt)}</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="mr-mc-expand-btn"
-                  onClick={() => setExpanded(isExp ? null : r.id)}
-                >
-                  {isExp ? "Hide Details" : "View Details"} {isExp ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
-                </button>
-
-                {isExp && (
-                  <div className="mr-detail-panel" style={{ borderRadius: "8px", marginTop: "0.25rem" }}>
-                    <RequestLifecycleStepper status={r.status} />
-                    <div className="mr-detail-section">
-                      <span className="mr-detail-label">Opportunity Summary</span>
-                      <p className="mr-detail-text">{r.opportunitySummary || "—"}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </>
       )}
 
-      {/* ── Pagination ── */}
+      {/* 6. Pagination Bar */}
       {totalPages > 1 && (
-        <div className="mr-pagination">
-          <button className="mr-page-btn" disabled={page === 0 || loading} onClick={() => load(page - 1)}>
-            ← Previous
+        <div className="mr-pagination-bar">
+          <button
+            type="button"
+            className="pagination-nav-btn"
+            disabled={page === 0 || loading}
+            onClick={() => load(page - 1)}
+          >
+            Previous
           </button>
-          <span className="mr-page-info">Page {page + 1} of {totalPages}</span>
-          <button className="mr-page-btn" disabled={page >= totalPages - 1 || loading} onClick={() => load(page + 1)}>
-            Next →
+          <div className="pagination-page-nums">
+            {Array.from({ length: totalPages }, (_, i) => i).map(p => (
+              <button
+                key={p}
+                className={`page-num-btn ${p === page ? "active" : ""}`}
+                onClick={() => load(p)}
+              >
+                {p + 1}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="pagination-nav-btn"
+            disabled={page >= totalPages - 1 || loading}
+            onClick={() => load(page + 1)}
+          >
+            Next
           </button>
         </div>
       )}

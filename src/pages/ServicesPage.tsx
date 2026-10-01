@@ -13,7 +13,7 @@ import {
   FiX,
   FiSend,
   FiLock,
-  FiLayers,
+  FiCheck,
 } from "react-icons/fi";
 import "./ServicesPage.css";
 
@@ -21,15 +21,17 @@ interface ServiceItem {
   id: string;
   category: "assessment" | "profile" | "placement";
   icon: React.ReactNode;
-  tag: string;
-  tagColor: string;
-  badgeLabel?: string;
+  tag1: string;
+  tag2: string;
+  isFeatured?: boolean;
   title: string;
   description: string;
+  benefitsHeader: string;
   benefits: string[];
   actionLabel: string;
   actionLink?: string;
   isModalAction?: boolean;
+  bulletIcon: "check" | "dot";
 }
 
 const ServicesPage: React.FC = () => {
@@ -49,53 +51,54 @@ const ServicesPage: React.FC = () => {
     {
       id: "assessment",
       category: "assessment",
-      icon: <FiAward size={26} />,
-      tag: "Verification",
-      tagColor: "#15803d",
-      badgeLabel: "Standardized",
+      icon: <FiAward size={22} />,
+      tag1: "STANDARDIZED",
+      tag2: "VERIFICATION",
       title: "RightPath Skill Assessments & Evidence",
       description:
         "Take standardized technical and problem-solving assessments. Earn verified benchmark score badges that prove your authentic competency directly to hiring managers without redundant initial screening tests.",
+      benefitsHeader: "KEY HIGHLIGHTS:",
+      bulletIcon: "check",
       benefits: [
-        "Verified objective scores for Java, React, Python, Cloud & more",
-        "Permanent tamper-proof evidence badges linked to your profile",
         "Directly bypass early-stage ATS keyword filters",
+        "Proves real coding & problem-solving capability",
       ],
       actionLabel: "Verify Skills via RightPath",
-      actionLink: "/profile/edit#roles",
+      actionLink: "/candidate/profile",
     },
     {
       id: "video-pitch",
       category: "profile",
-      icon: <FiVideo size={26} />,
-      tag: "Personal Pitch",
-      tagColor: "#2563eb",
-      badgeLabel: "Free Included",
+      icon: <FiVideo size={22} />,
+      tag1: "FREE INCLUDED",
+      tag2: "PERSONAL PITCH",
+      isFeatured: true,
       title: "60-Second Video Pitch Studio",
       description:
         "Stand out from thousands of text resumes. Record or upload a 1-minute video introduction to showcase your communication skills, technical passion, and personal articulation before live interviews.",
+      benefitsHeader: "KEY HIGHLIGHTS:",
+      bulletIcon: "check",
       benefits: [
-        "Showcase real communication, articulation & passion",
-        "Direct visibility to engineering directors & recruiters",
         "Actionable tips on structuring an impactful 60-second pitch",
+        "Integrated browser teleprompter and camera tuning",
       ],
       actionLabel: "Upload / Update Video Pitch",
-      actionLink: "/profile/edit",
+      actionLink: "/candidate/profile",
     },
     {
       id: "profile-optimization",
       category: "profile",
-      icon: <FiCheckCircle size={26} />,
-      tag: "Portfolio Coaching",
-      tagColor: "#7c3aed",
-      badgeLabel: "Advisory",
+      icon: <FiCheckCircle size={22} />,
+      tag1: "ADVISORY",
+      tag2: "PORTFOLIO COACHING",
       title: "Comprehensive Profile Review & Optimization",
       description:
         "Transform your StrengthOut profile into an irresistible talent portfolio. Learn how to highlight live GitHub repositories, architectural contributions, and practical internship milestones.",
+      benefitsHeader: "KEY HIGHLIGHTS:",
+      bulletIcon: "check",
       benefits: [
-        "Repository & code quality presentation guidance",
-        "Effective headline, summary, and skill clustering",
         "Increase inbound recruiter interest by up to 300%",
+        "Actionable code repo and readme feedback",
       ],
       actionLabel: "Request Profile Review",
       isModalAction: true,
@@ -103,56 +106,59 @@ const ServicesPage: React.FC = () => {
     {
       id: "company-matching",
       category: "placement",
-      icon: <FiBriefcase size={26} />,
-      tag: "Direct Inbound",
-      tagColor: "#b45309",
-      badgeLabel: "Direct Connect",
+      icon: <FiBriefcase size={22} />,
+      tag1: "DIRECT CONNECT",
+      tag2: "DIRECT INBOUND",
       title: "Curated Company Matching & Inbound Requests",
       description:
         "Gain exposure to vetted tech companies actively looking for your exact skills. Companies browse verified talent pools and send direct connection requests with clear role details and work models.",
+      benefitsHeader: "KEY HIGHLIGHTS:",
+      bulletIcon: "dot",
       benefits: [
         "Zero resume spam or unread application black holes",
         "Receive direct opportunity requests from hiring teams",
         "Filter opportunities by Remote, Hybrid, or On-site preference",
       ],
-      actionLabel: "Publish Profile to Discovery",
-      actionLink: "/profile",
+      actionLabel: "View Match Preferences",
+      actionLink: "/candidate/opportunities",
     },
     {
       id: "interview-prep",
       category: "assessment",
-      icon: <FiTrendingUp size={26} />,
-      tag: "Skill Growth",
-      tagColor: "#0284c7",
-      badgeLabel: "Advisory",
+      icon: <FiTrendingUp size={22} />,
+      tag1: "ADVISORY",
+      tag2: "SKILL GROWTH",
       title: "Technical Interview & Architecture Coaching",
       description:
         "Prepare for high-stakes technical interviews with curated system design guidelines, DSA problem-solving benchmarks, and practical mock assessment feedback.",
+      benefitsHeader: "KEY HIGHLIGHTS:",
+      bulletIcon: "dot",
       benefits: [
         "Real-world behavioral & technical interview frameworks",
         "Live coding and architecture presentation patterns",
         "Domain-specific interview preparation kits",
       ],
-      actionLabel: "Explore Preparation Tracks",
+      actionLabel: "Book Mock Session",
       isModalAction: true,
     },
     {
       id: "privacy-shield",
       category: "placement",
-      icon: <FiShield size={26} />,
-      tag: "Security",
-      tagColor: "#dc2626",
-      badgeLabel: "Full Privacy",
+      icon: <FiShield size={22} />,
+      tag1: "FULL PRIVACY",
+      tag2: "SECURITY",
       title: "Candidate Contact Privacy Shield",
       description:
         "Take complete control over your personal data. Your phone number, email address, and home location stay protected and shielded until you mutually accept an inbound company opportunity.",
+      benefitsHeader: "KEY HIGHLIGHTS:",
+      bulletIcon: "dot",
       benefits: [
         "Protection from recruitment cold-calls & data scraping",
         "Disclose contact information on your terms only",
         "Maintain confidential job hunting while currently employed",
       ],
-      actionLabel: "Manage Privacy & Details",
-      actionLink: "/profile",
+      actionLabel: "Privacy Shield Active (100%)",
+      actionLink: "/candidate/profile",
     },
   ];
 
@@ -177,7 +183,7 @@ const ServicesPage: React.FC = () => {
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
-      setToastMsg(`Thank you! Your request for "${formData.topic}" has been submitted. Our career advisory team will reach out shortly.`);
+      setToastMsg("Thank you! Your request for \"" + formData.topic + "\" has been submitted. Our career advisory team will reach out shortly.");
       setModalService(null);
       setTimeout(() => setToastMsg(""), 6000);
     }, 700);
@@ -196,156 +202,160 @@ const ServicesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Header - Aligned with About Page Hero */}
-      <header className="services-hero">
-        <div className="services-hero-inner">
-          <span className="services-badge">
-            <FiZap size={14} /> Career Growth & Discovery Services
-          </span>
-          <h1 className="services-title">
-            Services Engineered to <span className="highlight-text">Accelerate Your Career</span>
-          </h1>
-          <p className="services-subtitle">
-            From standardized RightPath competency scoring to video pitch recording and privacy shielding,
-            discover all the tools designed to get skilled candidates hired directly by top companies.
-          </p>
+      {/* Main Page Layout Container */}
+      <div className="services-page-container">
+        {/* 1. Hero Banner - Dark Card Block matching reference */}
+        <header className="services-dark-hero">
+          <div className="dark-hero-content">
+            <div className="dark-hero-badge">
+              <FiZap size={13} /> CAREER GROWTH & DISCOVERY SERVICES
+            </div>
+            <h1 className="dark-hero-title">
+              Services Engineered to<br />
+              <span className="accent-text">Accelerate Your Career</span>
+            </h1>
+            <svg className="wavy-underline" viewBox="0 0 400 20" fill="none">
+              <path d="M5 12 Q 55 2, 105 12 T 205 12 T 305 12 T 395 12" stroke="#10b981" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+            <p className="dark-hero-subtitle">
+              From standardized RightPath competency scoring to video pitch recording and privacy shielding,
+              discover all the tools designed to get skilled candidates hired directly by top companies.
+            </p>
 
-          <div className="services-cta-row">
-            <Link to="/profile" className="btn-services-primary">
-              <span>View & Polish My Profile</span>
-              <FiArrowRight size={16} />
-            </Link>
-            <Link to="/about" className="btn-services-secondary">
-              Read Why StrengthOut Works
-            </Link>
+            <div className="dark-hero-cta">
+              <Link to="/candidate/profile" className="btn-hero-primary">
+                <span>View & Polish My Profile</span>
+                <FiArrowRight size={16} />
+              </Link>
+              <Link to="/about" className="btn-hero-secondary">
+                Read Why StrengthOut Works
+              </Link>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Container */}
-      <div className="services-container">
-        {/* Quick Highlights Bar - Aligned with About Page */}
-        <div className="quick-highlights-bar">
-          <div className="highlight-item">
-            <FiCheckCircle size={18} color="#16a34a" />
+        {/* 2. Value Highlights White Bar matching reference */}
+        <div className="value-highlights-bar">
+          <div className="v-highlight-item">
+            <FiCheckCircle size={16} className="v-check-icon" />
             <span><strong>100% Free</strong> for Candidates</span>
           </div>
-          <div className="highlight-item">
-            <FiAward size={18} color="#16a34a" />
-            <span><strong>RightPath</strong> Verified Scores</span>
+          <div className="v-highlight-item">
+            <FiCheckCircle size={16} className="v-check-icon" />
+            <span><strong>RightPath</strong> Verified Scoring</span>
           </div>
-          <div className="highlight-item">
-            <FiVideo size={18} color="#16a34a" />
+          <div className="v-highlight-item">
+            <FiVideo size={16} className="v-icon" />
             <span><strong>60s Video</strong> Pitch Studio</span>
           </div>
-          <div className="highlight-item">
-            <FiLock size={18} color="#16a34a" />
+          <div className="v-highlight-item">
+            <FiShield size={16} className="v-icon" />
             <span><strong>Shielded</strong> Contact Privacy</span>
           </div>
         </div>
 
-        {/* Category Filter Tabs */}
-        <div className="services-category-nav">
+        {/* 3. Category Filter Tabs Row */}
+        <div className="services-filter-row">
           <button
             type="button"
-            className={`category-tab-btn ${selectedCategory === "all" ? "active" : ""}`}
+            className={"filter-tab-btn " + (selectedCategory === "all" ? "active" : "")}
             onClick={() => setSelectedCategory("all")}
           >
-            <FiLayers size={15} />
-            <span>All Services ({servicesList.length})</span>
+            All Services (6)
           </button>
           <button
             type="button"
-            className={`category-tab-btn ${selectedCategory === "assessment" ? "active" : ""}`}
+            className={"filter-tab-btn " + (selectedCategory === "assessment" ? "active" : "")}
             onClick={() => setSelectedCategory("assessment")}
           >
-            <FiAward size={15} />
-            <span>Assessment & Evidence</span>
+            <FiAward size={14} /> Assessment & Evidence
           </button>
           <button
             type="button"
-            className={`category-tab-btn ${selectedCategory === "profile" ? "active" : ""}`}
+            className={"filter-tab-btn " + (selectedCategory === "profile" ? "active" : "")}
             onClick={() => setSelectedCategory("profile")}
           >
-            <FiVideo size={15} />
-            <span>Profile & Video Pitch</span>
+            <FiVideo size={14} /> Profile & Video Pitch
           </button>
           <button
             type="button"
-            className={`category-tab-btn ${selectedCategory === "placement" ? "active" : ""}`}
+            className={"filter-tab-btn " + (selectedCategory === "placement" ? "active" : "")}
             onClick={() => setSelectedCategory("placement")}
           >
-            <FiBriefcase size={15} />
-            <span>Placement & Privacy</span>
+            <FiShield size={14} /> Placement & Privacy
           </button>
         </div>
 
-        {/* Services Cards Section */}
-        <section className="services-section-card">
-          <div className="section-head">
-            <div className="section-icon-badge candidate-badge">
-              <FiZap size={24} color="#70c144" />
+        {/* 4. Candidate Enablement Services Grid Section */}
+        <section className="services-grid-section">
+          <div className="section-head-wrap">
+            <div className="section-pill-tag">
+              <FiZap size={13} /> PORTFOLIO & CAREER ACCELERATION
             </div>
-            <div>
-              <span className="eyebrow-tag">PORTFOLIO & CAREER ACCELERATION</span>
-              <h2 className="section-main-title">Candidate Enablement Services</h2>
-              <p className="section-subtitle">
-                Tools and guidance designed to turn your technical skills into direct inbound interview opportunities.
-              </p>
-            </div>
+            <h2 className="section-main-heading">Candidate Enablement Services</h2>
+            <p className="section-main-sub">
+              Tools and guidance designed to turn your technical skills into direct inbound interview opportunities.
+            </p>
           </div>
 
           <div className="services-cards-grid">
-            {filteredServices.map(s => (
-              <div key={s.id} className="service-card">
-                <div className="service-card-top">
-                  <div className="service-icon-box">{s.icon}</div>
-                  <div className="service-badges-group">
-                    {s.badgeLabel && (
-                      <span className="service-status-pill">{s.badgeLabel}</span>
-                    )}
-                    <span
-                      className="service-tag"
-                      style={{
-                        backgroundColor: `${s.tagColor}15`,
-                        color: s.tagColor,
-                        border: `1px solid ${s.tagColor}35`,
-                      }}
-                    >
-                      {s.tag}
+            {filteredServices.map((s) => (
+              <div
+                key={s.id}
+                className={"service-item-card " + (s.isFeatured ? "featured" : "")}
+              >
+                <div className="card-top-head">
+                  <div className="icon-badge-box">
+                    {s.icon}
+                  </div>
+                  <div className="tags-row">
+                    <span className="tag-pill tag-muted">{s.tag1}</span>
+                    <span className={"tag-pill " + (s.isFeatured ? "tag-emerald" : "tag-purple")}>
+                      {s.tag2}
                     </span>
                   </div>
                 </div>
 
-                <h3 className="service-title">{s.title}</h3>
-                <p className="service-desc">{s.description}</p>
+                <h3 className="card-title">{s.title}</h3>
+                <p className="card-description">{s.description}</p>
 
-                <div className="service-benefits">
-                  <span className="benefits-label">Key Highlights:</span>
-                  <ul className="benefits-list">
+                <div className="card-highlights-box">
+                  <span className="highlights-title">{s.benefitsHeader}</span>
+                  <ul className="highlights-list">
                     {s.benefits.map((b, idx) => (
                       <li key={idx}>
-                        <FiCheckCircle size={14} className="benefit-check" />
+                        {s.bulletIcon === "check" ? (
+                          <FiCheck size={14} className="h-check-icon" />
+                        ) : (
+                          <span className="h-dot">•</span>
+                        )}
                         <span>{b}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="service-card-footer">
+                <div className="card-action-wrap">
                   {s.actionLink ? (
-                    <Link to={s.actionLink} className="btn-service-action">
+                    <Link
+                      to={s.actionLink}
+                      className={"btn-card-action " + (s.isFeatured ? "btn-featured" : "btn-outline")}
+                    >
                       <span>{s.actionLabel}</span>
-                      <FiArrowRight size={15} />
+                      {s.id === "privacy-shield" ? (
+                        <FiLock size={14} />
+                      ) : (
+                        <FiArrowRight size={14} />
+                      )}
                     </Link>
                   ) : (
                     <button
                       type="button"
-                      className="btn-service-action"
+                      className={"btn-card-action " + (s.isFeatured ? "btn-featured" : "btn-outline")}
                       onClick={() => handleServiceClick(s)}
                     >
                       <span>{s.actionLabel}</span>
-                      <FiArrowRight size={15} />
+                      <FiArrowRight size={14} />
                     </button>
                   )}
                 </div>
@@ -354,59 +364,67 @@ const ServicesPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 3-Step Success Pathway - Aligned with About Page */}
-        <section className="services-section-card pathway-section">
-          <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-            <span className="eyebrow-tag">STEP-BY-STEP PATHWAY</span>
-            <h2 className="section-main-title">How Our Services Fast-Track Your Placement</h2>
-            <p className="section-subtitle">
+        {/* 5. 3-Step Success Pathway Section */}
+        <section className="services-pathway-card">
+          <div className="pathway-head">
+            <div className="section-pill-tag">
+              STEP-BY-STEP PATHWAY
+            </div>
+            <h2>How Our Services Fast-Track Your Placement</h2>
+            <p>
               Follow this proven pathway to maximize your inbound recruiter opportunities on StrengthOut.
             </p>
           </div>
 
-          <div className="steps-container">
-            <div className="step-item">
-              <div className="step-num">01</div>
-              <div className="pathway-step-icon">
-                <FiAward size={22} />
+          <div className="pathway-steps-grid">
+            <div className="p-step-box">
+              <span className="step-big-num">01</span>
+              <div className="step-icon-wrap">
+                <FiAward size={20} />
               </div>
               <h4>Verify & Document</h4>
-              <p>Complete RightPath skill assessments and link working GitHub repositories to earn verified proof badges.</p>
+              <p>
+                Complete RightPath skill assessments and link working GitHub repositories to earn verified proof badges.
+              </p>
             </div>
 
-            <div className="step-item">
-              <div className="step-num">02</div>
-              <div className="pathway-step-icon">
-                <FiVideo size={22} />
+            <div className="p-step-box">
+              <span className="step-big-num">02</span>
+              <div className="step-icon-wrap">
+                <FiVideo size={20} />
               </div>
               <h4>Pitch & Publish</h4>
-              <p>Record your 60-second video introduction and publish your profile to the company discovery network.</p>
+              <p>
+                Record your 60-second video introduction and publish your profile to the company discovery network.
+              </p>
             </div>
 
-            <div className="step-item">
-              <div className="step-num">03</div>
-              <div className="pathway-step-icon">
-                <FiBriefcase size={22} />
+            <div className="p-step-box">
+              <span className="step-big-num">03</span>
+              <div className="step-icon-wrap">
+                <FiBriefcase size={20} />
               </div>
               <h4>Connect & Get Hired</h4>
-              <p>Receive inbound company requests, review offer parameters, and coordinate directly with hiring teams.</p>
+              <p>
+                Receive inbound company requests, review offer parameters, and coordinate directly with hiring teams.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* Advisory Consultation Banner - Aligned with About Page Powered By Card */}
-        <section className="powered-by-card">
-          <div className="powered-content">
-            <span className="powered-tag">Personalized Assistance</span>
+        {/* 6. Advisory Consultation Callout Banner matching reference */}
+        <section className="services-consultation-banner">
+          <div className="consultation-left">
+            <span className="consultation-tag">PERSONALIZED ASSISTANCE</span>
             <h3>Need Help Elevating Your Technical Portfolio?</h3>
             <p>
               Our dedicated talent advisors help review your projects, optimize your technical summaries, and guide you through RightPath verification to ensure you stand out.
             </p>
           </div>
-          <div className="powered-action">
+          <div className="consultation-right">
             <button
               type="button"
-              className="btn-powered-cta"
+              className="btn-consultation-cta"
               onClick={() => {
                 setFormData(prev => ({ ...prev, topic: "Portfolio Consultation" }));
                 setModalService("Portfolio Consultation");

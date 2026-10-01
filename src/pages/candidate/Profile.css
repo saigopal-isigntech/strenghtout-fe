@@ -8,13 +8,13 @@
 .profile-page-wrapper {
   background-color: #f8fafc;
   min-height: calc(100vh - 70px);
-  padding: 2rem 1.5rem 4rem;
+  padding: 2.5rem 3rem 5rem;
   color: #1f2937;
   font-family: inherit;
 }
 
 .profile-container {
-  max-width: 1140px;
+  max-width: 1320px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1506,8 +1506,11 @@ select option {
    CANDIDATE PROFILE DARK MODE STYLES
    ========================================================================== */
 [data-theme="dark"] .profile-page-wrapper {
-  background-color: #090d16;
-  color: #f8fafc;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 70px);
+  padding: 2.5rem 3rem 5rem;
+  color: #1f2937;
+  font-family: inherit;
 }
 
 [data-theme="dark"] .btn-toggle-edit,
@@ -2350,4 +2353,215 @@ select option {
   .profile-container, .profile-page {
     padding: 0.75rem 0.5rem 2.5rem !important;
   }
+}
+
+
+/* ============================================================
+   CANDIDATE PROFILE PAGE - REFERENCE MOCKUP DESIGN SYSTEM
+   ============================================================ */
+
+/* 1. Header Card (Exact Match to Reference Image) */
+.profile-header-card,
+.pv-header-card {
+  background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 50%, #e8f5e9 100%) !important;
+  border: 1px solid #bbf7d0 !important;
+  border-radius: 16px !important;
+  padding: 2.25rem 2.5rem !important;
+  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.08) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.avatar-inner-placeholder,
+.pv-avatar-placeholder {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: 3px solid #ffffff !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25) !important;
+}
+
+.btn-avatar-camera {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+.pv-candidate-name,
+.header-name-row h1 {
+  font-size: 2.2rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.02em !important;
+}
+
+.btn-icon-edit {
+  color: #64748b !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: color 0.15s ease !important;
+}
+
+.btn-icon-edit:hover {
+  color: #059669 !important;
+}
+
+/* Contact Details Meta Pills Row */
+.pv-detail-grid,
+.profile-meta-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.75rem !important;
+  margin-top: 1rem !important;
+}
+
+.pv-detail-item {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 9999px !important;
+  padding: 0.4rem 1.1rem !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+}
+
+.pv-detail-item .detail-icon {
+  color: #059669 !important;
+}
+
+/* Top Right Published Status Badge */
+.pv-publish-status,
+.publish-badge-pill {
+  background: #dcfce7 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  padding: 0.45rem 1.1rem !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+}
+
+/* 2. Section Navigation Tabs */
+.profile-nav-tabs {
+  display: flex !important;
+  gap: 1.75rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  margin: 1.75rem 0 1.5rem !important;
+  padding-bottom: 0 !important;
+}
+
+.nav-tab-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  padding: 0 0 0.75rem 0 !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transition: color 0.15s ease !important;
+}
+
+.nav-tab-btn:hover {
+  color: #0f172a !important;
+}
+
+.nav-tab-btn.active {
+  color: #059669 !important;
+  font-weight: 700 !important;
+  border-bottom: 3px solid #10b981 !important;
+}
+
+/* 3. Section Card Headers with Single Clean Green Accent Line */
+.pv-card-title,
+.section-title-wrap {
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  border-left: 4px solid #10b981 !important;
+  padding-left: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+.pv-card-title::before { content: none !important; display: none !important; }
+
+.pv-dark-card,
+.profile-section-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  padding: 1.75rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* Edit Button on Skill/Section Header */
+.section-action-link {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #059669 !important;
+  padding: 0.35rem 0.85rem !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.section-action-link:hover {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+}
+
+/* Mint Green Skill Pills */
+.pv-skill-badge,
+.skill-pill {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  color: #047857 !important;
+  border-radius: 9999px !important;
+  padding: 0.45rem 1.1rem !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+
+/* Clean Inner Item Cards without left border lines */
+.project-record,
+.pv-proj-item,
+.pv-exp-item,
+.pv-edu-item,
+.education-record,
+.exp-record {
+  border-left: 1px solid #e2e8f0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+  padding: 1.15rem 1.4rem !important;
+  margin-bottom: 0.85rem !important;
+}
+
+[data-theme="dark"] .project-record,
+[data-theme="dark"] .pv-proj-item,
+[data-theme="dark"] .pv-exp-item,
+[data-theme="dark"] .pv-edu-item {
+  background: #1e293b !important;
+  border-color: #334155 !important;
 }

@@ -4,7 +4,6 @@ import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
 import {
   FiBriefcase,
-  FiMapPin,
   FiClock,
   FiRefreshCw,
   FiSearch,
@@ -15,7 +14,7 @@ import {
   FiCheckCircle,
   FiInfo,
   FiArrowRight,
-  FiActivity,
+  FiTrendingUp,
   FiAward,
 } from "react-icons/fi";
 import "./CandidateOpportunities.css";
@@ -57,7 +56,7 @@ const STATUS_META: Record<
     desc: "Opportunity in direct progress. Your talent coordinator is engaging with you.",
   },
   SELECTED: {
-    label: "Selected 🎉",
+    label: "Selected",
     bg: "#f0fdf4",
     color: "#15803d",
     border: "#86efac",
@@ -97,6 +96,11 @@ const STEPS = [
   { step: 4, label: "In Discussion" },
   { step: 5, label: "Selected" },
 ];
+
+const cleanText = (str?: string) => {
+  if (!str) return "";
+  return str.replace(/[\uFFFD\uFFFC\u0000-\u001F\u007F-\u009F]/g, "").trim();
+};
 
 const fmtDate = (str?: string) => {
   if (!str) return "-";
@@ -187,11 +191,11 @@ const CandidateOpportunitiesPage: React.FC = () => {
 
   return (
     <div className="candidate-opp-page">
-      {/* Page Header */}
+      {/* Page Header matching reference */}
       <div className="opp-header">
         <div className="opp-header-left">
           <div className="opp-header-badge">
-            <FiActivity size={14} /> Candidate Career Portal
+            <FiTrendingUp size={13} /> CANDIDATE CAREER PORTAL
           </div>
           <h1>My Opportunities</h1>
           <p>
@@ -205,56 +209,56 @@ const CandidateOpportunitiesPage: React.FC = () => {
           disabled={loading}
           title="Refresh opportunities"
         >
-          <FiRefreshCw size={15} className={loading ? "spin" : ""} />
+          <FiRefreshCw size={14} className={loading ? "spin" : ""} />
           <span>Refresh</span>
         </button>
       </div>
 
-      {/* Metrics Banner */}
+      {/* Metrics Banner matching reference mockup (value left, icon right) */}
       <div className="opp-metrics-grid">
         <div className="opp-metric-card">
-          <div className="metric-icon blue">
-            <FiSend size={20} />
-          </div>
           <div className="metric-meta">
             <span className="metric-value">{total}</span>
             <span className="metric-label">Total Received</span>
           </div>
+          <div className="metric-icon blue">
+            <FiSend size={18} />
+          </div>
         </div>
 
         <div className="opp-metric-card">
-          <div className="metric-icon amber">
-            <FiClock size={20} />
-          </div>
           <div className="metric-meta">
             <span className="metric-value">{activeCount}</span>
             <span className="metric-label">Active Pipeline</span>
           </div>
+          <div className="metric-icon amber">
+            <FiClock size={18} />
+          </div>
         </div>
 
         <div className="opp-metric-card">
-          <div className="metric-icon purple">
-            <FiBriefcase size={20} />
-          </div>
           <div className="metric-meta">
             <span className="metric-value">{inDiscussionCount}</span>
             <span className="metric-label">In Discussion</span>
           </div>
+          <div className="metric-icon purple">
+            <FiBriefcase size={18} />
+          </div>
         </div>
 
         <div className="opp-metric-card">
-          <div className="metric-icon green">
-            <FiAward size={20} />
-          </div>
           <div className="metric-meta">
             <span className="metric-value">{selectedCount}</span>
             <span className="metric-label">Selected</span>
           </div>
+          <div className="metric-icon green">
+            <FiAward size={18} />
+          </div>
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="opp-filter-bar">
+      {/* Single Search & Filter Panel matching reference */}
+      <div className="opp-filter-panel">
         <div className="opp-search-wrap">
           <FiSearch className="opp-search-icon" size={16} />
           <input
@@ -269,35 +273,35 @@ const CandidateOpportunitiesPage: React.FC = () => {
         <div className="opp-chip-row">
           <button
             type="button"
-            className={`opp-filter-chip ${statusFilter === "ALL" ? "active" : ""}`}
+            className={"opp-filter-chip " + (statusFilter === "ALL" ? "active" : "")}
             onClick={() => setStatusFilter("ALL")}
           >
             All ({total})
           </button>
           <button
             type="button"
-            className={`opp-filter-chip ${statusFilter === "ACTIVE" ? "active" : ""}`}
+            className={"opp-filter-chip " + (statusFilter === "ACTIVE" ? "active" : "")}
             onClick={() => setStatusFilter("ACTIVE")}
           >
             Active ({activeCount})
           </button>
           <button
             type="button"
-            className={`opp-filter-chip ${statusFilter === "DISCUSSION" ? "active" : ""}`}
+            className={"opp-filter-chip " + (statusFilter === "DISCUSSION" ? "active" : "")}
             onClick={() => setStatusFilter("DISCUSSION")}
           >
             In Discussion ({inDiscussionCount})
           </button>
           <button
             type="button"
-            className={`opp-filter-chip ${statusFilter === "SELECTED" ? "active" : ""}`}
+            className={"opp-filter-chip " + (statusFilter === "SELECTED" ? "active" : "")}
             onClick={() => setStatusFilter("SELECTED")}
           >
             Selected ({selectedCount})
           </button>
           <button
             type="button"
-            className={`opp-filter-chip ${statusFilter === "CLOSED" ? "active" : ""}`}
+            className={"opp-filter-chip " + (statusFilter === "CLOSED" ? "active" : "")}
             onClick={() => setStatusFilter("CLOSED")}
           >
             Concluded
@@ -343,10 +347,12 @@ const CandidateOpportunitiesPage: React.FC = () => {
             const compName = r.companyDisplayName || r.companyName || "Interested Employer";
             const initial = (compName[0] || "C").toUpperCase();
             const currentStep = meta.step;
+            const industryText = cleanText(r.companyIndustry);
+            const locationText = cleanText(r.location || r.companyCity);
 
             return (
-              <div key={r.id} className={`opp-card ${isExp ? "expanded" : ""}`}>
-                {/* Main Card Header / Summary */}
+              <div key={r.id} className={"opp-card " + (isExp ? "expanded" : "")}>
+                {/* Main Row Matching Reference Mockup */}
                 <div
                   className="opp-card-main"
                   onClick={() => setExpandedId(isExp ? null : r.id)}
@@ -361,47 +367,36 @@ const CandidateOpportunitiesPage: React.FC = () => {
                   <div className="opp-comp-avatar">{initial}</div>
 
                   <div className="opp-card-body">
-                    <div className="opp-top-row">
-                      <h3 className="opp-role-title">{r.roleTitle || "Software Engineer"}</h3>
-                      <span
-                        className="opp-status-badge"
-                        style={{
-                          background: meta.bg,
-                          color: meta.color,
-                          borderColor: meta.border,
-                        }}
-                      >
-                        {meta.label}
-                      </span>
-                    </div>
-
-                    <div className="opp-comp-row">
-                      <strong className="opp-comp-name">{compName}</strong>
-                      {r.companyIndustry && <span className="opp-dot">&bull;</span>}
-                      {r.companyIndustry && <span className="opp-industry">{r.companyIndustry}</span>}
-                    </div>
-
-                    <div className="opp-meta-row">
+                    <div className="opp-title-row">
+                      <h3 className="opp-role-title">{cleanText(r.roleTitle) || "Software Engineer"}</h3>
                       {r.workType && (
-                        <span className={`opp-worktype-chip ${r.workType.toLowerCase()}`}>
-                          {r.workType}
-                        </span>
+                        <span className="opp-worktype-inline">{cleanText(r.workType)}</span>
                       )}
-                      {(r.location || r.companyCity) && (
-                        <span className="opp-meta-item">
-                          <FiMapPin size={12} /> {r.location || r.companyCity}
-                        </span>
-                      )}
-                      {r.submittedAt && (
-                        <span className="opp-meta-item">
-                          <FiClock size={12} /> Received {fmtDate(r.submittedAt)}
-                        </span>
-                      )}
+                    </div>
+
+                    <div className="opp-meta-line">
+                      <span className="opp-comp-name">{cleanText(compName)}</span>
+                      {industryText && <span className="opp-sep">•</span>}
+                      {industryText && <span>{industryText}</span>}
+                      {locationText && <span className="opp-sep">•</span>}
+                      {locationText && <span>{locationText}</span>}
                     </div>
                   </div>
 
-                  <div className="opp-expand-toggle" aria-label="Toggle details">
-                    {isExp ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
+                  <div className="opp-right-actions">
+                    <span
+                      className="opp-status-badge"
+                      style={{
+                        background: meta.bg,
+                        color: meta.color,
+                        borderColor: meta.border,
+                      }}
+                    >
+                      {meta.label}
+                    </span>
+                    <div className="opp-expand-circle" aria-label="Toggle details">
+                      {isExp ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+                    </div>
                   </div>
                 </div>
 
@@ -419,7 +414,7 @@ const CandidateOpportunitiesPage: React.FC = () => {
                             return (
                               <div
                                 key={s.step}
-                                className={`opp-step-item ${isDone ? "completed" : ""} ${isCurrent ? "current" : ""}`}
+                                className={"opp-step-item " + (isDone ? "completed " : "") + (isCurrent ? "current" : "")}
                               >
                                 <div className="step-node">
                                   {isDone ? <FiCheckCircle size={14} /> : s.step}
@@ -444,6 +439,11 @@ const CandidateOpportunitiesPage: React.FC = () => {
                         {r.opportunitySummary ||
                           "The company has initiated interest in your verified skill profile. Our talent team is reviewing matching requirements."}
                       </p>
+                      {r.submittedAt && (
+                        <span className="opp-date-tag">
+                          Received {fmtDate(r.submittedAt)}
+                        </span>
+                      )}
                     </div>
 
                     {/* Information / Next Steps Notice */}
