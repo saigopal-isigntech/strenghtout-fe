@@ -59,14 +59,14 @@
 .mr-hero-title {
   font-size: 2.1rem;
   font-weight: 800;
-  color: #064e3b;
+  color: #0f172a;
   margin: 0;
   letter-spacing: -0.02em;
 }
 
 .mr-hero-sub {
   font-size: 0.95rem;
-  color: #047857;
+  color: #475569;
   margin: 0;
   line-height: 1.5;
   font-weight: 500;
@@ -525,17 +525,33 @@
   background: #f0fdf4;
   color: #047857;
   border: 1px solid #bbf7d0;
-  padding: 6px 14px;
+  padding: 7px 14px;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.825rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .btn-view-details-action:hover {
   background: #dcfce7;
   border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.btn-view-details-action.is-expanded {
+  background: #047857;
+  color: #ffffff;
+  border-color: #047857;
+  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.25);
+}
+
+.btn-view-details-action.is-expanded:hover {
+  background: #065f46;
+  border-color: #065f46;
+  color: #ffffff;
 }
 
 .btn-options-action {
@@ -568,77 +584,277 @@
   gap: 1.25rem;
 }
 
+/* ==========================================================================
+   Enhanced Modern Request Progress Lifecycle Stepper
+   ========================================================================== */
 .mr-stepper-wrap {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #ffffff;
+  gap: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: 14px;
+  padding: 1.35rem 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
 }
 
 .mr-stepper-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.mr-stepper-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mr-stepper-header-icon {
+  color: #059669;
 }
 
 .mr-stepper-title {
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
   color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.mr-current-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.775rem;
+  font-weight: 600;
+}
+
+.stage-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulseGreen 1.8s infinite;
+}
+
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Stepper Container & Connecting Progress Bar */
+.mr-stepper-container {
+  position: relative;
+  padding: 8px 10px 4px 10px;
+}
+
+.mr-stepper-track-bg {
+  position: absolute;
+  top: 26px;
+  left: 36px;
+  right: 36px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.mr-stepper-track-fill {
+  position: absolute;
+  top: 26px;
+  left: 36px;
+  height: 4px;
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+  border-radius: 4px;
+  z-index: 2;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .mr-stepper {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   position: relative;
+  z-index: 3;
 }
 
 .mr-step-node {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  z-index: 2;
+  gap: 8px;
+  width: 120px;
+  text-align: center;
 }
 
-.mr-step-icon {
-  width: 32px;
-  height: 32px;
+.mr-step-icon-box {
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: #ffffff;
   color: #94a3b8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 0.825rem;
   font-weight: 700;
-  border: 2px solid #e2e8f0;
+  border: 2.5px solid #cbd5e1;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-.mr-step-node.completed .mr-step-icon {
-  background: #047857;
+/* Completed Step */
+.mr-step-node.completed .mr-step-icon-box {
+  background: #059669;
   color: #ffffff;
-  border-color: #047857;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15), 0 2px 6px rgba(5, 150, 105, 0.3);
 }
 
-.mr-step-node.current .mr-step-icon {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border-color: #3b82f6;
+.mr-step-node.completed .icon-check {
+  color: #ffffff;
+}
+
+/* Current Active Step */
+.mr-step-node.current .mr-step-icon-box {
+  background: #ffffff;
+  color: #047857;
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.2), 0 4px 10px rgba(5, 150, 105, 0.25);
+  transform: scale(1.08);
+}
+
+.mr-step-node.current .icon-current {
+  color: #047857;
+}
+
+.mr-step-pulse-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #059669;
+  animation: rippleRing 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+@keyframes rippleRing {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* Upcoming Step */
+.mr-step-node.upcoming .mr-step-icon-box {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
+
+.step-num {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.mr-step-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .mr-step-label {
-  font-size: 0.775rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  transition: color 0.2s ease;
+  line-height: 1.2;
 }
 
-.mr-step-node.completed .mr-step-label { color: #047857; }
-.mr-step-node.current .mr-step-label { color: #1d4ed8; font-weight: 700; }
+.mr-step-node.completed .mr-step-label {
+  color: #047857;
+}
+
+.mr-step-node.current .mr-step-label {
+  color: #047857;
+  font-weight: 800;
+}
+
+.mr-step-sub {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.mr-step-node.completed .mr-step-sub {
+  color: #059669;
+}
+
+.mr-step-node.current .mr-step-sub {
+  color: #047857;
+  font-weight: 600;
+}
+
+/* Stepper Status Callout */
+.mr-stepper-status-callout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-left: 3.5px solid #059669;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.825rem;
+  color: #1e293b;
+  margin-top: 4px;
+}
+
+.mr-stepper-status-callout .callout-icon {
+  color: #059669;
+  flex-shrink: 0;
+}
+
+.mr-stepper-status-callout .callout-text {
+  color: #334155;
+}
+
+.mr-stepper-status-callout .callout-text strong {
+  color: #065f46;
+}
+
+/* Responsive adjustment for stepper */
+@media (max-width: 768px) {
+  .mr-stepper-track-bg,
+  .mr-stepper-track-fill {
+    display: none;
+  }
+  .mr-stepper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .mr-step-node {
+    flex-direction: row;
+    width: 100%;
+    text-align: left;
+    gap: 12px;
+  }
+  .mr-step-text-group {
+    align-items: flex-start;
+  }
+}
 
 .mr-detail-section {
   display: flex;
@@ -739,4 +955,15 @@
   font-size: 1.1rem;
   color: #0f172a;
   margin: 8px 0 4px 0;
+}
+
+/* Candidate Photo thumbnail in Requests Table */
+.mr-cand-photo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
 }

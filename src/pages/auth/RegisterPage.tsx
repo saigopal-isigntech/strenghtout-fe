@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
 import logoImg from '../../assets/logo.png';
@@ -87,6 +87,17 @@ const RegisterPage: React.FC = () => {
 
   const [loading, setLoading]                 = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Prevent background scrolling when register success modal is open
+  useEffect(() => {
+    if (showSuccessModal) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [showSuccessModal]);
   const [error, setError]                     = useState('');
 
   const [fieldErrors, setFieldErrors]         = useState<{

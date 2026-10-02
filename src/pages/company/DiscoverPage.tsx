@@ -1,4 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+// Helper to normalize external links with protocol
+const normalizeExternalUrl = (url?: string | null): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
 import { useSearchParams } from "react-router-dom";
 import { candidatesApi } from "../../api/candidates";
 import { connectionsApi } from "../../api/connections";
@@ -10,6 +21,7 @@ import {
   FiBriefcase,
   FiCalendar,
   FiCheckCircle,
+  FiSend,
   FiChevronLeft,
   FiChevronRight,
   FiStar,
@@ -31,7 +43,7 @@ import {
   FiUserCheck,
   FiGithub,
 } from "react-icons/fi";
-import { validateRequired } from "../../utils/validators";
+
 import "./Discover.css";
 
 const PAGE_SIZE = 12;
@@ -99,14 +111,32 @@ export const DiscoverPage: React.FC = () => {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // Connect request modal state
+  // Candidate selection & Connect request modal state
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
   const [connectModalOpen, setConnectModalOpen] = useState(false);
-  const [connectCandidate, setConnectCandidate] = useState<CandidateProfile | null>(null);
+  const [connectCandidates, setConnectCandidates] = useState<CandidateProfile[]>([]);
   const [roleTitle, setRoleTitle] = useState("");
   const [opportunitySummary, setOpportunitySummary] = useState("");
   const [workType, setWorkType] = useState<"REMOTE" | "HYBRID" | "ONSITE">("HYBRID");
+  const [companyLocation, setCompanyLocation] = useState("");
+  const [salaryRange, setSalaryRange] = useState("");
+  const [workTimings, setWorkTimings] = useState("");
+  const [experienceRequired, setExperienceRequired] = useState("");
+  const [openingsCount, setOpeningsCount] = useState<string | number>("1");
+  const [expectedStart, setExpectedStart] = useState("");
   const [sending, setSending] = useState(false);
   const [connectErrors, setConnectErrors] = useState<Record<string, string>>({});
+
+  // Prevent background scrolling when any modal popup is open
+  useEffect(() => {
+    if (selectedCandidate || connectModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [selectedCandidate, connectModalOpen]);
 
   useEffect(() => {
     candidatesApi
@@ -227,50 +257,6 @@ export const DiscoverPage: React.FC = () => {
     }
   };
 
-  const handleOpenConnect = (e: React.MouseEvent, c: CandidateProfile) => {
-    e.stopPropagation();
-    setConnectCandidate(c);
-    setRoleTitle("");
-    setOpportunitySummary("");
-    setWorkType("HYBRID");
-    setSending(false);
-    setConnectErrors({});
-    setConnectModalOpen(true);
-  };
-
-  const handleSubmitConnect = async () => {
-    if (!connectCandidate?.id) return;
-
-    const errors: Record<string, string> = {};
-    const rErr = validateRequired(roleTitle, "Role title", 3);
-    if (rErr) errors.roleTitle = rErr;
-
-    const oErr = validateRequired(opportunitySummary, "Opportunity summary", 10);
-    if (oErr) errors.opportunitySummary = oErr;
-
-    if (Object.keys(errors).length > 0) {
-      setConnectErrors(errors);
-      return;
-    }
-
-    setSending(true);
-    try {
-      await connectionsApi.submit({
-        candidateId: connectCandidate.id,
-        roleTitle: roleTitle.trim(),
-        opportunitySummary: opportunitySummary.trim(),
-        workType,
-      });
-      setToastMsg(`Successfully sent connection request to ${connectCandidate.fullName}!`);
-      setConnectModalOpen(false);
-      setTimeout(() => setToastMsg(""), 4000);
-    } catch {
-      setConnectErrors(prev => ({ ...prev, submit: "Failed to submit request. Please try again." }));
-    } finally {
-      setSending(false);
-    }
-  };
-
   // Filter candidates by tab
   const displayedCandidates = useMemo(() => {
     let list = candidates;
@@ -316,6 +302,154 @@ export const DiscoverPage: React.FC = () => {
     }
     return list;
   }, [candidates, discoverTab, shortlist, sortBy, query, selectedRoleId, selectedExpRange, selectedWorkType]);
+
+  // Multi-selection handlers
+  const toggleSelectCandidate = (e: React.MouseEvent, candidateId: string) => {
+    e.stopPropagation();
+    setSelectedCandidateIds(prev =>
+      prev.includes(candidateId) ? prev.filter(id => id !== candidateId) : [...prev, candidateId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const pageIds = displayedCandidates.map(c => c.id!).filter(Boolean);
+    const allSelected = pageIds.length > 0 && pageIds.every(id => selectedCandidateIds.includes(id));
+    if (allSelected) {
+      setSelectedCandidateIds(prev => prev.filter(id => !pageIds.includes(id)));
+    } else {
+      setSelectedCandidateIds(prev => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCandidateIds([]);
+  };
+
+  const handleOpenConnectSingle = (e: React.MouseEvent, candidate: CandidateProfile) => {
+    e.stopPropagation();
+    setConnectCandidates([candidate]);
+    setRoleTitle("");
+    setOpportunitySummary("");
+    setWorkType("HYBRID");
+    setCompanyLocation(candidate.location || (candidate as any).currentLocation || "");
+    setSalaryRange("");
+    setWorkTimings("");
+    setExperienceRequired("");
+    setOpeningsCount("1");
+    setExpectedStart("");
+    setSending(false);
+    setConnectErrors({});
+    setConnectModalOpen(true);
+  };
+
+  const handleOpenConnectSelected = () => {
+    const targets = displayedCandidates.filter(c => c.id && selectedCandidateIds.includes(c.id));
+    if (targets.length === 0) return;
+    setConnectCandidates(targets);
+    setRoleTitle("");
+    setOpportunitySummary("");
+    setWorkType("HYBRID");
+    setCompanyLocation("");
+    setSalaryRange("");
+    setWorkTimings("");
+    setExperienceRequired("");
+    setOpeningsCount(String(targets.length));
+    setExpectedStart("");
+    setSending(false);
+    setConnectErrors({});
+    setConnectModalOpen(true);
+  };
+
+  const handleOpenConnectAll = () => {
+    if (displayedCandidates.length === 0) return;
+    setConnectCandidates(displayedCandidates);
+    setRoleTitle("");
+    setOpportunitySummary("");
+    setWorkType("HYBRID");
+    setCompanyLocation("");
+    setSalaryRange("");
+    setWorkTimings("");
+    setExperienceRequired("");
+    setOpeningsCount(String(displayedCandidates.length));
+    setExpectedStart("");
+    setSending(false);
+    setConnectErrors({});
+    setConnectModalOpen(true);
+  };
+
+  const handleSubmitConnect = async () => {
+    if (!connectCandidates || connectCandidates.length === 0) return;
+    const errors: Record<string, string> = {};
+    if (!roleTitle.trim()) errors.roleTitle = "Role title is required";
+    if (!opportunitySummary.trim()) errors.opportunitySummary = "Opportunity summary is required";
+    if (Object.keys(errors).length > 0) {
+      setConnectErrors(errors);
+      return;
+    }
+
+    setSending(true);
+    const totalCount = connectCandidates.length;
+    let successCount = 0;
+    let conflictCount = 0;
+    let failMsg = "";
+
+    try {
+      const results = await Promise.allSettled(
+        connectCandidates.map(c =>
+          connectionsApi.submit({
+            candidateId: c.id!,
+            roleTitle: roleTitle.trim(),
+            opportunitySummary: opportunitySummary.trim(),
+            workType,
+            location: companyLocation.trim() || undefined,
+            salaryRange: salaryRange.trim() || undefined,
+            workTimings: workTimings.trim() || undefined,
+            experienceRequired: experienceRequired.trim() || undefined,
+            openingsCount: openingsCount ? parseInt(String(openingsCount), 10) || 1 : 1,
+            expectedStart: expectedStart.trim() || undefined,
+          })
+        )
+      );
+
+      results.forEach(res => {
+        if (res.status === "fulfilled") {
+          successCount++;
+        } else {
+          const errMsg = res.reason?.response?.data?.message || res.reason?.message || "";
+          if (errMsg.toLowerCase().includes("active connection request already exists") || res.reason?.response?.status === 409) {
+            conflictCount++;
+          } else {
+            failMsg = errMsg;
+          }
+        }
+      });
+
+      if (successCount > 0) {
+        if (totalCount === 1) {
+          setToastMsg(`Connection request sent to ${connectCandidates[0].fullName}!`);
+        } else {
+          let msg = `Successfully sent connection requests to ${successCount} candidate${successCount > 1 ? "s" : ""}!`;
+          if (conflictCount > 0) {
+            msg += ` (${conflictCount} already had active requests).`;
+          }
+          setToastMsg(msg);
+        }
+        setSelectedCandidateIds([]);
+        setConnectModalOpen(false);
+        setTimeout(() => setToastMsg(""), 4000);
+      } else {
+        if (conflictCount > 0) {
+          setConnectErrors({ form: totalCount === 1 ? "An active connection request already exists for this candidate." : `All ${conflictCount} selected candidate(s) already have active requests.` });
+        } else {
+          setConnectErrors({ form: failMsg || "Failed to send connection requests. Please try again." });
+        }
+      }
+    } catch (err: any) {
+      setConnectErrors({ form: err.response?.data?.message || "Failed to send connection request. Please try again." });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
@@ -382,14 +516,14 @@ export const DiscoverPage: React.FC = () => {
           <button
             type="button"
             className={`tab-pill ${discoverTab === "ALL" ? "active" : ""}`}
-            onClick={() => setDiscoverTab("ALL")}
+            onClick={() => { setDiscoverTab("ALL"); setSelectedCandidateIds([]); }}
           >
             All Candidates
           </button>
           <button
             type="button"
             className={`tab-pill ${discoverTab === "SHORTLISTED" ? "active" : ""}`}
-            onClick={() => setDiscoverTab("SHORTLISTED")}
+            onClick={() => { setDiscoverTab("SHORTLISTED"); setSelectedCandidateIds([]); }}
           >
             <FiStar size={14} className="star-icon" />
             <span>Shortlisted Candidates</span>
@@ -469,46 +603,173 @@ export const DiscoverPage: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Results Info Bar & Sort / View Mode */}
-      <div className="results-bar">
-        <div className="results-count-text">
-          Showing <strong>{total > 0 ? page * PAGE_SIZE + 1 : 0}–{Math.min((page + 1) * PAGE_SIZE, total)}</strong> of <strong>{total}</strong> candidates
-        </div>
+      {/* 4. Results Info Bar, Selection Actions & Sort / View Mode */}
+      <div className="results-bar" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+            {discoverTab === "SHORTLISTED" && displayedCandidates.length > 0 && (
+              <label
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: "#1e293b",
+                  background: "#f1f5f9",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  userSelect: "none",
+                }}
+                onClick={handleSelectAll}
+              >
+                <input
+                  type="checkbox"
+                  checked={displayedCandidates.length > 0 && displayedCandidates.every(c => c.id && selectedCandidateIds.includes(c.id))}
+                  onChange={() => {}}
+                  style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#059669" }}
+                />
+                <span>Select All ({displayedCandidates.length})</span>
+              </label>
+            )}
 
-        <div className="results-right-controls">
-          <div className="sort-dropdown-wrapper">
-            <FiSliders size={14} className="sort-icon" />
-            <span className="sort-label">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as any)}
-              className="sort-select"
-            >
-              <option value="relevance">Most Relevant</option>
-              <option value="completion">Profile Completion</option>
-              <option value="name">Candidate Name</option>
-            </select>
+            <div className="results-count-text">
+              Showing <strong>{total > 0 ? page * PAGE_SIZE + 1 : 0}–{Math.min((page + 1) * PAGE_SIZE, total)}</strong> of <strong>{total}</strong> candidates
+            </div>
           </div>
 
-          <div className="view-mode-toggle">
-            <button
-              type="button"
-              className={`view-mode-btn ${viewMode === "grid" ? "active" : ""}`}
-              onClick={() => setViewMode("grid")}
-              title="Grid View"
-            >
-              <FiGrid size={16} />
-            </button>
-            <button
-              type="button"
-              className={`view-mode-btn ${viewMode === "list" ? "active" : ""}`}
-              onClick={() => setViewMode("list")}
-              title="List View"
-            >
-              <FiList size={16} />
-            </button>
+          <div className="results-right-controls">
+            {/* Quick Connect with All Shortlisted Button */}
+            {discoverTab === "SHORTLISTED" && displayedCandidates.length > 0 && (
+              <button
+                type="button"
+                className="btn-connect-all-header"
+                onClick={handleOpenConnectAll}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "#ecfdf5",
+                  color: "#047857",
+                  border: "1px solid #a7f3d0",
+                  padding: "0 14px",
+                  height: "38px",
+                  borderRadius: "10px",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                title="Send connection request to all shortlisted candidates"
+              >
+                <FiSend size={14} /> Connect with All Shortlisted ({displayedCandidates.length})
+              </button>
+            )}
+
+            <div className="sort-dropdown-wrapper">
+              <FiSliders size={14} className="sort-icon" />
+              <span className="sort-label">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as any)}
+                className="sort-select"
+              >
+                <option value="relevance">Most Relevant</option>
+                <option value="completion">Profile Completion</option>
+                <option value="name">Candidate Name</option>
+              </select>
+            </div>
+
+            <div className="view-mode-toggle">
+              <button
+                type="button"
+                className={`view-mode-btn ${viewMode === "grid" ? "active" : ""}`}
+                onClick={() => setViewMode("grid")}
+                title="Grid View"
+              >
+                <FiGrid size={16} />
+              </button>
+              <button
+                type="button"
+                className={`view-mode-btn ${viewMode === "list" ? "active" : ""}`}
+                onClick={() => setViewMode("list")}
+                title="List View"
+              >
+                <FiList size={16} />
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Floating / Active Bulk Selection Bar (Only in Shortlisted view) */}
+        {discoverTab === "SHORTLISTED" && selectedCandidateIds.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "linear-gradient(135deg, #065f46, #047857)",
+              color: "#ffffff",
+              padding: "10px 18px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 14px rgba(5, 150, 105, 0.25)",
+              flexWrap: "wrap",
+              gap: "10px",
+              animation: "fadeIn 0.2s ease-in-out",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontWeight: 700, fontSize: "0.92rem", letterSpacing: "0.2px" }}>
+                ✓ {selectedCandidateIds.length} candidate{selectedCandidateIds.length > 1 ? "s" : ""} selected
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={handleOpenConnectSelected}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  background: "#ffffff",
+                  color: "#065f46",
+                  border: "none",
+                  padding: "7px 16px",
+                  borderRadius: "8px",
+                  fontSize: "0.88rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+                }}
+              >
+                <FiUserPlus size={16} /> Connect with Selected ({selectedCandidateIds.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.4)",
+                  padding: "7px 14px",
+                  borderRadius: "8px",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                <FiX size={14} /> Clear Selection
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 5. Candidates Grid / List Stream */}
@@ -542,11 +803,32 @@ export const DiscoverPage: React.FC = () => {
             return (
               <div
                 key={c.id || idx}
-                className={`candidate-card-item ${isStarred ? "is-starred" : ""}`}
+                className={`candidate-card-item ${isStarred ? "is-starred" : ""} ${c.id && selectedCandidateIds.includes(c.id) ? "is-card-selected" : ""}`}
                 onClick={() => handleOpenProfile(c)}
+                style={discoverTab === "SHORTLISTED" && c.id && selectedCandidateIds.includes(c.id) ? { borderColor: "#059669", background: "#f0fdf4", boxShadow: "0 4px 14px rgba(5, 150, 105, 0.12)" } : {}}
               >
-                {/* Top Row: Initials Avatar, Name, Headline, Location, Star Button */}
-                <div className="card-header-row">
+                {/* Top Row: Selection Checkbox (Shortlisted tab only), Initials Avatar, Name, Headline, Location, Star Button */}
+                <div className="card-header-row" style={{ position: "relative" }}>
+                  {discoverTab === "SHORTLISTED" && c.id && (
+                    <div
+                      style={{
+                        marginRight: "2px",
+                        display: "flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        padding: "2px",
+                      }}
+                      onClick={e => toggleSelectCandidate(e, c.id!)}
+                      title={selectedCandidateIds.includes(c.id) ? "Deselect candidate" : "Select candidate for bulk connect"}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCandidateIds.includes(c.id)}
+                        onChange={() => {}}
+                        style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "#059669" }}
+                      />
+                    </div>
+                  )}
                   {(c.avatarUrl || (c as any).avatarUrl) ? (
                     <img
                       src={c.avatarUrl || (c as any).avatarUrl}
@@ -624,7 +906,7 @@ export const DiscoverPage: React.FC = () => {
                   <button
                     type="button"
                     className="btn-connect-candidate"
-                    onClick={e => handleOpenConnect(e, c)}
+                    onClick={e => handleOpenConnectSingle(e, c)}
                   >
                     <FiUserPlus size={15} />
                     <span>Connect with Candidate</span>
@@ -736,38 +1018,25 @@ export const DiscoverPage: React.FC = () => {
               </div>
 
               {/* Contact & External Links */}
-              <div className="profile-links-bar">
-                
-                
-                {(selectedCandidate as any).githubUrl && (
-                  <a href={(selectedCandidate as any).githubUrl} target="_blank" rel="noopener noreferrer" className="modal-link-btn github">
-                    <FiGithub size={14} /> GitHub <FiExternalLink size={12} />
-                  </a>
-                )}
-                {selectedCandidate.linkedinUrl && (
-                  <a href={selectedCandidate.linkedinUrl} target="_blank" rel="noopener noreferrer" className="modal-link-btn linkedin">
-                    <FiLinkedin size={14} /> LinkedIn <FiExternalLink size={12} />
-                  </a>
-                )}
-                {selectedCandidate.portfolioUrl && (
-                  <a href={selectedCandidate.portfolioUrl} target="_blank" rel="noopener noreferrer" className="modal-link-btn portfolio">
-                    <FiGlobe size={14} /> Portfolio <FiExternalLink size={12} />
-                  </a>
-                )}
-                
-                {selectedCandidate.videoUrl && (
-                  <button
-                    type="button"
-                    className="modal-link-btn video"
-                    onClick={() => {
-                      const el = document.getElementById('candidate-video-section');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    <FiVideo size={14} /> Watch Video Intro
-                  </button>
-                )}
-              </div>
+              {((selectedCandidate as any).githubUrl || selectedCandidate.linkedinUrl || selectedCandidate.portfolioUrl) && (
+                <div className="profile-links-bar">
+                  {(selectedCandidate as any).githubUrl && (
+                    <a href={normalizeExternalUrl((selectedCandidate as any).githubUrl)} target="_blank" rel="noopener noreferrer" className="modal-link-btn github">
+                      <FiGithub size={14} /> GitHub Profile <FiExternalLink size={12} />
+                    </a>
+                  )}
+                  {selectedCandidate.linkedinUrl && (
+                    <a href={normalizeExternalUrl(selectedCandidate.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="modal-link-btn linkedin">
+                      <FiLinkedin size={14} /> LinkedIn <FiExternalLink size={12} />
+                    </a>
+                  )}
+                  {selectedCandidate.portfolioUrl && (
+                    <a href={normalizeExternalUrl(selectedCandidate.portfolioUrl)} target="_blank" rel="noopener noreferrer" className="modal-link-btn portfolio">
+                      <FiGlobe size={14} /> Portfolio <FiExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+              )}
 
               {loadingProfile && (
                 <div className="modal-loading-inline">
@@ -852,13 +1121,30 @@ export const DiscoverPage: React.FC = () => {
                         <div className="project-card-header">
                           <h5>{proj.name || "Project"}</h5>
                           <div className="project-links-row">
-                            {(proj.githubUrl || proj.github || proj.codeUrl || (selectedCandidate as any).githubUrl) && (
-                              <a href={proj.githubUrl || proj.github || proj.codeUrl || (selectedCandidate as any).githubUrl} target="_blank" rel="noopener noreferrer" className="proj-link github-proj-link">
-                                <FiGithub size={13} /> GitHub Repository <FiExternalLink size={11} />
-                              </a>
-                            )}
+                            {(() => {
+                              const rawUrl = proj.githubUrl || proj.github || proj.codeUrl || (selectedCandidate as any).githubUrl;
+                              const finalUrl = normalizeExternalUrl(rawUrl) || `https://github.com/search?q=${encodeURIComponent(proj.name || 'project')}`;
+                              return (
+                                <a
+                                  href={finalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="proj-link github-proj-link"
+                                  onClick={e => e.stopPropagation()}
+                                  title={`Open ${proj.name || 'Project'} repository`}
+                                >
+                                  <FiGithub size={13} /> GitHub Repository <FiExternalLink size={11} />
+                                </a>
+                              );
+                            })()}
                             {(proj.demoUrl || proj.liveUrl || proj.projectUrl) && (
-                              <a href={proj.demoUrl || proj.liveUrl || proj.projectUrl} target="_blank" rel="noopener noreferrer" className="proj-link demo-proj-link">
+                              <a
+                                href={normalizeExternalUrl(proj.demoUrl || proj.liveUrl || proj.projectUrl)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="proj-link demo-proj-link"
+                                onClick={e => e.stopPropagation()}
+                              >
                                 <FiExternalLink size={13} /> Live Demo
                               </a>
                             )}
@@ -924,7 +1210,7 @@ export const DiscoverPage: React.FC = () => {
                 onClick={e => {
                   const c = selectedCandidate;
                   setSelectedCandidate(null);
-                  handleOpenConnect(e, c);
+                  handleOpenConnectSingle(e, c);
                 }}
               >
                 <FiUserPlus size={16} /> Connect with Candidate
@@ -935,55 +1221,168 @@ export const DiscoverPage: React.FC = () => {
       )}
 
       {/* Connection Request Modal */}
-      {connectModalOpen && connectCandidate && (
+      {connectModalOpen && connectCandidates.length > 0 && (
         <div className="modal-backdrop" onClick={() => setConnectModalOpen(false)}>
           <div className="modal-dialog-connect" onClick={e => e.stopPropagation()}>
             <div className="modal-header-bar">
-              <h2>Connect with Candidate</h2>
+              <h2>{connectCandidates.length > 1 ? `Connect with ${connectCandidates.length} Candidates` : "Connect with Candidate"}</h2>
               <button type="button" className="btn-close-modal" onClick={() => setConnectModalOpen(false)}>
                 <FiX size={18} />
               </button>
             </div>
-            <div className="modal-body-content">
-              <p className="connect-subtitle">
-                Sending connection request to <strong>{connectCandidate.fullName}</strong>
-              </p>
+            <div className="modal-body-content" style={{ maxHeight: "78vh", overflowY: "auto" }}>
+              <div style={{ background: "#f8fafc", padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                {connectCandidates.length === 1 ? (
+                  <p className="connect-subtitle" style={{ margin: 0, color: "#334155", fontSize: "0.92rem" }}>
+                    Sending connection request to <strong>{connectCandidates[0].fullName}</strong>
+                  </p>
+                ) : (
+                  <div>
+                    <p style={{ margin: "0 0 6px 0", color: "#1e293b", fontSize: "0.9rem", fontWeight: 700 }}>
+                      Sending connection request to {connectCandidates.length} candidates:
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxHeight: "80px", overflowY: "auto" }}>
+                      {connectCandidates.map(c => (
+                        <span key={c.id} style={{ background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "12px", fontSize: "0.78rem", fontWeight: 600 }}>
+                          {c.fullName}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {connectErrors.form && (
+                <div style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "10px 14px", borderRadius: "8px", fontSize: "0.88rem" }}>
+                  {connectErrors.form}
+                </div>
+              )}
 
               <div className="form-group">
-                <label>Target Role Title *</label>
+                <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  Target Role Title <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Full Stack Developer"
+                  placeholder="e.g. Senior Full Stack Developer / Data Engineer"
                   value={roleTitle}
                   onChange={e => setRoleTitle(e.target.value)}
                 />
-                {connectErrors.roleTitle && <span className="field-error">{connectErrors.roleTitle}</span>}
+                {connectErrors.roleTitle && <span className="field-error" style={{ color: "#ef4444", fontSize: "0.82rem" }}>{connectErrors.roleTitle}</span>}
+              </div>
+
+              <div className="form-row-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                    Work Type
+                  </label>
+                  <select
+                    className="form-input"
+                    value={workType}
+                    onChange={e => setWorkType(e.target.value as any)}
+                  >
+                    <option value="HYBRID">Hybrid</option>
+                    <option value="REMOTE">Remote</option>
+                    <option value="ONSITE">On-Site</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                    Company / Job Location
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Hyderabad, India / Bengaluru"
+                    value={companyLocation}
+                    onChange={e => setCompanyLocation(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                    Salary / Compensation Range
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. ₹12 - 18 LPA / $90,000 - $120,000"
+                    value={salaryRange}
+                    onChange={e => setSalaryRange(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                    Work Timings / Shift
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. 9:00 AM - 6:00 PM IST / Flexible"
+                    value={workTimings}
+                    onChange={e => setWorkTimings(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                    Experience Required
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. 2+ Years / Fresher / 3-5 Years"
+                    value={experienceRequired}
+                    onChange={e => setExperienceRequired(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                    No. of Openings / Members to Hire
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-input"
+                    placeholder="e.g. 1, 2, 5 profiles"
+                    value={openingsCount}
+                    onChange={e => setOpeningsCount(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
-                <label>Opportunity Summary *</label>
+                <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  Expected Joining Date
+                </label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={expectedStart}
+                  onChange={e => setExpectedStart(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  Opportunity Summary <span style={{ color: "#ef4444" }}>*</span>
+                </label>
                 <textarea
                   className="form-textarea"
                   rows={3}
-                  placeholder="Provide a short description of the role and opportunity..."
+                  placeholder="Describe key responsibilities, role perks, and candidate expectations..."
                   value={opportunitySummary}
                   onChange={e => setOpportunitySummary(e.target.value)}
                 />
-                {connectErrors.opportunitySummary && <span className="field-error">{connectErrors.opportunitySummary}</span>}
-              </div>
-
-              <div className="form-group">
-                <label>Preferred Work Type</label>
-                <select
-                  className="form-input"
-                  value={workType}
-                  onChange={e => setWorkType(e.target.value as any)}
-                >
-                  <option value="HYBRID">Hybrid</option>
-                  <option value="REMOTE">Remote</option>
-                  <option value="ONSITE">On-Site</option>
-                </select>
+                {connectErrors.opportunitySummary && <span className="field-error" style={{ color: "#ef4444", fontSize: "0.82rem" }}>{connectErrors.opportunitySummary}</span>}
               </div>
             </div>
             <div className="modal-footer-bar">
@@ -993,7 +1392,7 @@ export const DiscoverPage: React.FC = () => {
                 onClick={handleSubmitConnect}
                 disabled={sending}
               >
-                {sending ? "Sending..." : "Submit Connection Request"}
+                {sending ? `Sending to ${connectCandidates.length} candidate${connectCandidates.length > 1 ? "s" : ""}...` : connectCandidates.length > 1 ? `Submit Request for ${connectCandidates.length} Candidates` : "Submit Connection Request"}
               </button>
             </div>
           </div>

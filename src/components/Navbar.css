@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    NAVBAR - StrengthOut  (Naukri-style horizontal bar)
    Primary: #70c144 (green)   Secondary: #1d72f2 (blue)
    ============================================================ */
@@ -229,7 +229,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #70c144, #5ea836);
+  background: #059669;
   color: #fff;
   display: flex;
   align-items: center;
@@ -237,7 +237,7 @@
   font-size: 0.8rem;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #70c144;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #10b981;
   overflow: hidden;
 }
 .nav-avatar.super {
@@ -323,7 +323,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #70c144, #5ea836);
+  background: #059669;
   color: #fff;
   display: flex;
   align-items: center;
@@ -424,7 +424,7 @@
 }
 .nav-btn-login:hover { border-color: #70c144; color: #70c144; }
 .nav-btn-register {
-  background: linear-gradient(135deg, #70c144, #5ea836);
+  background: #059669;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 700;
@@ -713,7 +713,7 @@
 }
 
 [data-theme="dark"] .nav-avatar {
-  box-shadow: 0 0 0 2px #0f172a, 0 0 0 3.5px #70c144;
+  box-shadow: 0 0 0 2px #0f172a, 0 0 0 3.5px #10b981;
 }
 
 [data-theme="dark"] .nav-avatar.super {
@@ -823,7 +823,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #70c144, #5ea836);
+  background: #059669;
   color: #fff;
   font-weight: 700;
   font-size: 0.9rem;

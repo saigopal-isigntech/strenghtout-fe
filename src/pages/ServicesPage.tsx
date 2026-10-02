@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -38,6 +38,17 @@ const ServicesPage: React.FC = () => {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<"all" | "assessment" | "profile" | "placement">("all");
   const [modalService, setModalService] = useState<string | null>(null);
+
+  // Prevent background scrolling when service modal is open
+  useEffect(() => {
+    if (modalService) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [modalService]);
   const [formData, setFormData] = useState({
     name: user?.fullName || "",
     email: user?.email || "",

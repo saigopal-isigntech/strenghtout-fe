@@ -220,6 +220,7 @@ export interface CandidateProfile {
   dateOfBirth?: string;
   maritalStatus?: string;
   permanentAddress?: string;
+  strengths?: string;
   languages?: string[] | string;
   visibilityStatus?: string;
   completionPct?: number;
@@ -283,11 +284,16 @@ export interface ConnectionRequest {
   candidateHeadline?: string;
   candidateLocation?: string;
   candidateExperienceMonths?: number;
+  candidateAvatarUrl?: string;
   roleTitle?: string;
   opportunitySummary?: string;
   message?: string;
   workType?: string;
   location?: string;
+  salaryRange?: string;
+  workTimings?: string;
+  experienceRequired?: string;
+  openingsCount?: number | string;
   expectedStart?: string;
   status: string;
   submittedAt: string;

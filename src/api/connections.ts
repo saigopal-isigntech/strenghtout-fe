@@ -8,6 +8,10 @@ export const connectionsApi = {
     opportunitySummary: string;
     workType?: string;
     location?: string;
+    salaryRange?: string;
+    workTimings?: string;
+    experienceRequired?: string;
+    openingsCount?: number | string;
     expectedStart?: string;
   }) =>
     apiClient.post<ApiResponse<ConnectionRequest>>('/connection-requests', payload),

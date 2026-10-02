@@ -328,6 +328,8 @@
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  min-height: 420px;
+  transition: min-height 0.2s ease;
 }
 
 .au-table {
@@ -629,6 +631,7 @@
 
 /* Modal Overlay */
 .modal-overlay {
+  overscroll-behavior: contain;
   position: fixed;
   inset: 0;
   z-index: 1100;

@@ -187,7 +187,7 @@
 .company-name-title {
   font-size: 2rem;
   font-weight: 800;
-  color: #064e3b;
+  color: #0f172a;
   margin: 0;
   letter-spacing: -0.02em;
 }
@@ -637,4 +637,475 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+
+
+/* ==========================================================================
+   COMPANY PROFILE EDIT - REFERENCE DESIGN 1 (PIXEL PERFECT)
+   ========================================================================== */
+
+.company-edit-redesign-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* 1. Hero Banner */
+.comp-edit-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 45%, #e6fcf5 70%, #dcfce7 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px -4px rgba(5, 150, 105, 0.08);
+}
+
+.comp-edit-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 2;
+}
+
+.comp-banner-badge-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+  border: 1px solid #a7f3d0;
+  flex-shrink: 0;
+}
+
+.comp-banner-headings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comp-banner-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.comp-banner-sub {
+  font-size: 0.875rem;
+  color: #475569;
+  margin: 0;
+  font-weight: 450;
+}
+
+.comp-edit-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 2;
+}
+
+.comp-banner-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-art-svg {
+  width: 110px;
+  height: 55px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
+}
+
+.comp-banner-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.comp-banner-cancel-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+/* 2. Top Grid: Basic Info + Logo */
+.comp-edit-top-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .comp-edit-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 3. Reusable Card Sections */
+.comp-card-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.comp-card-section:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.comp-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.comp-card-icon-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #d1fae5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.comp-card-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.comp-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.comp-card-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Form 2-Column Row inside Cards */
+.comp-card-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 640px) {
+  .comp-card-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 4. Form Fields & Labels */
+.comp-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comp-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.comp-label-icon {
+  color: #059669;
+}
+
+.comp-icon-linkedin {
+  color: #0a66c2 !important;
+}
+
+.req-star {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.comp-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #111827;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.comp-input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.comp-input-error {
+  border-color: #ef4444 !important;
+  background: #fef2f2;
+}
+
+.comp-field-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.comp-error-msg {
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Select element styling */
+.comp-select-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.comp-select {
+  width: 100%;
+  height: 40px;
+  padding: 0 32px 0 12px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #111827;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234B5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.comp-select:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+/* Textarea styling */
+.comp-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #111827;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.comp-textarea:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.comp-char-counter {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* 5. Company Logo Card Dropzone */
+.comp-logo-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.comp-logo-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed #cbd5e1;
+  background: #f8fafc;
+  border-radius: 10px;
+  height: 108px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.comp-logo-dropzone:hover {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+
+.comp-logo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.comp-logo-camera-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #d1fae5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-logo-upload-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.comp-logo-upload-types {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.comp-logo-preview-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comp-logo-preview-img {
+  max-width: 100%;
+  max-height: 100px;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.comp-logo-preview-hover {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.comp-logo-dropzone:hover .comp-logo-preview-hover {
+  opacity: 1;
+}
+
+/* 6. Footer Actions */
+.comp-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding-bottom: 20px;
+}
+
+.comp-btn-discard {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ffffff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.comp-btn-discard:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.comp-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #047857;
+  color: #ffffff;
+  border: 1px solid #047857;
+  border-radius: 8px;
+  padding: 9px 22px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25);
+}
+
+.comp-btn-save:hover:not(:disabled) {
+  background: #065f46;
+  border-color: #065f46;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(4, 120, 87, 0.35);
+}
+
+.comp-btn-save:disabled,
+.comp-btn-discard:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

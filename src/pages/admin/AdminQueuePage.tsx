@@ -780,8 +780,42 @@ const AdminQueuePage: React.FC = () => {
                                             <span className="aq-meta-val code">{r.id}</span>
                                           </div>
                                           <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Target Role</span>
+                                            <span className="aq-meta-val" style={{ fontWeight: 700, color: "#0f172a" }}>{r.roleTitle || "Opportunity"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
                                             <span className="aq-meta-label">Work Model</span>
-                                            <span className="aq-meta-val">{r.workType || "Onsite / Hybrid"}</span>
+                                            <span className="aq-meta-val">{r.workType || "HYBRID"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Company / Job Location</span>
+                                            <span className="aq-meta-val">{r.location || r.companyCity || "Not specified"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Salary / Compensation</span>
+                                            <span className="aq-meta-val" style={{ color: "#059669", fontWeight: 700 }}>
+                                              {r.salaryRange || "Not specified"}
+                                            </span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Work Timings / Shift</span>
+                                            <span className="aq-meta-val">{r.workTimings || "Standard Business Hours"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Experience Required</span>
+                                            <span className="aq-meta-val">{r.experienceRequired || "Not specified"}</span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Positions / Members Needed</span>
+                                            <span className="aq-meta-val" style={{ color: "#2563eb", fontWeight: 700 }}>
+                                              {r.openingsCount ? `${r.openingsCount} Candidate${Number(r.openingsCount) > 1 ? "s" : ""}` : "1 Candidate"}
+                                            </span>
+                                          </div>
+                                          <div className="aq-overview-block">
+                                            <span className="aq-meta-label">Expected Start Date</span>
+                                            <span className="aq-meta-val">
+                                              {r.expectedStart ? new Date(r.expectedStart).toLocaleDateString() : "Immediate / Flexible"}
+                                            </span>
                                           </div>
                                           <div className="aq-overview-block">
                                             <span className="aq-meta-label">Company Contact</span>
@@ -795,8 +829,8 @@ const AdminQueuePage: React.FC = () => {
 
                                         {(r.message || r.opportunitySummary) && (
                                           <div className="aq-message-box">
-                                            <span className="aq-meta-label">Covering Message / Request Note:</span>
-                                            <p>{r.message || r.opportunitySummary}</p>
+                                            <span className="aq-meta-label">Opportunity Summary & Covering Note:</span>
+                                            <p>{r.opportunitySummary || r.message}</p>
                                           </div>
                                         )}
                                       </div>

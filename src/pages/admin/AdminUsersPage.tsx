@@ -55,7 +55,7 @@ const getAvatarStyle = (str?: string) => {
 
 const AdminUsersPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const getInitialTab = (): AdminTab => {
     const param = (searchParams.get("tab") || "").toUpperCase();
@@ -82,8 +82,14 @@ const AdminUsersPage: React.FC = () => {
   const [candidateSearch, setCandidateSearchState] = useState<string>(() => (initialTab === "CANDIDATES" ? initialQ : ""));
 
   const updateUrlParams = (newTab = activeTab, newRole = roleFilter, newSearch?: string) => {
-    const params: Record<string, string> = { tab: newTab.toLowerCase() };
-    if (newRole && newRole !== "ALL") params.role = newRole.toLowerCase();
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", newTab.toLowerCase());
+    
+    if (newRole && newRole !== "ALL") {
+      url.searchParams.set("role", newRole.toLowerCase());
+    } else {
+      url.searchParams.delete("role");
+    }
     
     let searchVal = newSearch;
     if (searchVal === undefined) {
@@ -93,9 +99,11 @@ const AdminUsersPage: React.FC = () => {
     }
 
     if (searchVal && searchVal.trim()) {
-      params.q = searchVal.trim();
+      url.searchParams.set("q", searchVal.trim());
+    } else {
+      url.searchParams.delete("q");
     }
-    setSearchParams(params, { replace: true });
+    window.history.replaceState(null, "", url.pathname + url.search);
   };
 
   const handleTabChange = (tab: AdminTab) => {
@@ -131,30 +139,29 @@ const AdminUsersPage: React.FC = () => {
     updateUrlParams("CANDIDATES", roleFilter, val);
   };
 
+  // Handle browser back/forward navigation cleanly
   useEffect(() => {
-    const param = (searchParams.get("tab") || "").toUpperCase();
-    if ((param === "COMPANIES" || param === "COMPANY") && activeTab !== "COMPANIES") {
-      setActiveTabState("COMPANIES");
-    } else if ((param === "CANDIDATES" || param === "CANDIDATE") && activeTab !== "CANDIDATES") {
-      setActiveTabState("CANDIDATES");
-    } else if ((param === "USERS" || param === "USER") && activeTab !== "USERS") {
-      setActiveTabState("USERS");
-    }
+    const onPopState = () => {
+      const url = new URL(window.location.href);
+      const tabParam = (url.searchParams.get("tab") || "USERS").toUpperCase();
+      if (tabParam === "COMPANIES" || tabParam === "COMPANY") setActiveTabState("COMPANIES");
+      else if (tabParam === "CANDIDATES" || tabParam === "CANDIDATE") setActiveTabState("CANDIDATES");
+      else setActiveTabState("USERS");
 
-    const roleParam = (searchParams.get("role") || "").toUpperCase();
-    if (["ADMIN", "CANDIDATE", "COMPANY", "ALL"].includes(roleParam)) {
-      if (roleParam !== roleFilter) setRoleFilterState(roleParam);
-    }
+      const roleParam = (url.searchParams.get("role") || "ALL").toUpperCase();
+      if (["ADMIN", "CANDIDATE", "COMPANY", "ALL"].includes(roleParam)) {
+        setRoleFilterState(roleParam);
+      }
 
-    const qParam = searchParams.get("q") || "";
-    if (activeTab === "USERS" && qParam !== userSearch) {
-      setUserSearchState(qParam);
-    } else if (activeTab === "COMPANIES" && qParam !== companySearch) {
-      setCompanySearchState(qParam);
-    } else if (activeTab === "CANDIDATES" && qParam !== candidateSearch) {
-      setCandidateSearchState(qParam);
-    }
-  }, [searchParams, activeTab]);
+      const qParam = url.searchParams.get("q") || "";
+      if (tabParam === "COMPANIES" || tabParam === "COMPANY") setCompanySearchState(qParam);
+      else if (tabParam === "CANDIDATES" || tabParam === "CANDIDATE") setCandidateSearchState(qParam);
+      else setUserSearchState(qParam);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   // Users state
   const [users, setUsers] = useState<AdminUserItem[]>([]);
@@ -175,6 +182,17 @@ const AdminUsersPage: React.FC = () => {
   const [candidatePage, setCandidatePage] = useState(0);
   const [candidateLoading, setCandidateLoading] = useState(false);
   const [inspectingUser, setInspectingUser] = useState<AdminUserItem | null>(null);
+
+  // Prevent background scrolling when user inspection modal is open
+  useEffect(() => {
+    if (inspectingUser) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [inspectingUser]);
   
   const [toast, setToast] = useState("");
 
@@ -183,8 +201,8 @@ const AdminUsersPage: React.FC = () => {
     setTimeout(() => setToast(""), 3500);
   };
 
-  const loadUsers = async () => {
-    setUserLoading(true);
+  const loadUsers = async (showSpinner = false) => {
+    if (showSpinner || users.length === 0) setUserLoading(true);
     try {
       const res = await adminApi.getUsers({ page: 0, size: 100 });
       const list = res.data.data.content || [];
@@ -197,8 +215,8 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const loadCompanies = async () => {
-    setCompanyLoading(true);
+  const loadCompanies = async (showSpinner = false) => {
+    if (showSpinner || companies.length === 0) setCompanyLoading(true);
     try {
       const res = await adminApi.getCompanies({ page: 0, size: 100 });
       const list = res.data.data.content || [];
@@ -211,8 +229,8 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const loadCandidates = async () => {
-    setCandidateLoading(true);
+  const loadCandidates = async (showSpinner = false) => {
+    if (showSpinner || candidates.length === 0) setCandidateLoading(true);
     try {
       const res = await adminApi.getCandidates({ page: 0, size: 100 });
       const list = res.data.data.content || [];
@@ -257,9 +275,9 @@ const AdminUsersPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === "USERS") loadUsers();
-    else if (activeTab === "COMPANIES") loadCompanies();
-    else if (activeTab === "CANDIDATES") loadCandidates();
+    if (activeTab === "USERS" && users.length === 0) loadUsers(true);
+    else if (activeTab === "COMPANIES" && companies.length === 0) loadCompanies(true);
+    else if (activeTab === "CANDIDATES" && candidates.length === 0) loadCandidates(true);
   }, [activeTab]);
 
   const handleInspectCandidate = (cand: CandidateProfile) => {
@@ -487,7 +505,7 @@ const AdminUsersPage: React.FC = () => {
 
       {/* Hero Banner matching exact reference design */}
       <AdminHeroBanner
-          illustrationType="users"
+        illustrationType="users"
         badgeText="PLATFORM GOVERNANCE"
         badgeIcon={<FiShield size={14} />}
         title="Platform Directory & Governance"
@@ -560,9 +578,9 @@ const AdminUsersPage: React.FC = () => {
         <button
           className="au-refresh-btn"
           onClick={() => {
-            if (activeTab === "USERS") loadUsers();
-            if (activeTab === "COMPANIES") loadCompanies();
-            if (activeTab === "CANDIDATES") loadCandidates();
+            if (activeTab === "USERS") loadUsers(true);
+            if (activeTab === "COMPANIES") loadCompanies(true);
+            if (activeTab === "CANDIDATES") loadCandidates(true);
           }}
         >
           <FiRefreshCw size={14} /> Refresh Directory
@@ -626,7 +644,7 @@ const AdminUsersPage: React.FC = () => {
       {/* TAB 1: USER ACCOUNTS TABLE */}
       {activeTab === "USERS" && (
         <div className="au-table-card">
-          {userLoading ? (
+          {userLoading && users.length === 0 ? (
             <div className="au-loading-state">
               <FiRefreshCw className="spin" size={28} />
               <p>Loading user accounts...</p>
@@ -770,7 +788,7 @@ const AdminUsersPage: React.FC = () => {
       {/* TAB 2: REGISTERED COMPANIES */}
       {activeTab === "COMPANIES" && (
         <div className="au-table-card">
-          {companyLoading ? (
+          {companyLoading && companies.length === 0 ? (
             <div className="au-loading-state">
               <FiRefreshCw className="spin" size={28} />
               <p>Loading company profiles...</p>
@@ -843,7 +861,7 @@ const AdminUsersPage: React.FC = () => {
       {/* TAB 3: REGISTERED CANDIDATES */}
       {activeTab === "CANDIDATES" && (
         <div className="au-table-card">
-          {candidateLoading ? (
+          {candidateLoading && candidates.length === 0 ? (
             <div className="au-loading-state">
               <FiRefreshCw className="spin" size={28} />
               <p>Loading candidate profiles...</p>

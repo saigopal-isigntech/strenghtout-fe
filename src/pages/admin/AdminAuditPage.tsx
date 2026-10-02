@@ -541,11 +541,13 @@ export const AdminAuditPage: React.FC = () => {
     <div className="admin-audit-page-container">
       {/* 1. Hero Header Banner matching exact design with Dual Badges */}
       <AdminHeroBanner
+        illustrationType="audit"
         badgeText="LIVE INGESTION ACTIVE"
         badgeIcon={<span className="live-pulse-dot" />}
         secondBadgeText="TAMPER-EVIDENT LEDGER"
         secondBadgeIcon={<FiShield size={13} />}
         title="Platform Audit & Security Stream"
+        highlightText="Audit & Security Stream"
         subtitle="Cryptographically ordered immutable event logs tracking authentication, company registrations, profile updates, and access security."
       />
 

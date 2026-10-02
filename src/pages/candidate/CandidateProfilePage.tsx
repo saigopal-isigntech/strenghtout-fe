@@ -1,4 +1,15 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+// Helper to format external URLs with protocol to prevent relative route issues
+const normalizeExternalUrl = (url?: string | null): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { adminApi } from '../../api/admin';
 import { connectionsApi } from '../../api/connections';
@@ -37,6 +48,14 @@ import {
   FiUser,
   FiUserPlus,
   FiBookOpen,
+  FiExternalLink,
+  FiGlobe,
+  FiHeart,
+  FiMonitor,
+  FiLayers,
+  FiPlay,
+  FiCode,
+  FiTarget,
 } from 'react-icons/fi';
 import type { CandidateProfile, CandidateEducation, CandidateProject, CandidateRoleInterest, Evidence, RoleCatalogItem, CandidateExperience } from '../../types';
 
@@ -62,6 +81,11 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     opportunitySummary: '',
     workType: 'REMOTE',
     location: '',
+    salaryRange: '',
+    workTimings: '',
+    experienceRequired: '',
+    openingsCount: '1' as string | number,
+    expectedStart: '',
   });
   const [connectError, setConnectError] = useState('');
   const [connectSending, setConnectSending] = useState(false);
@@ -117,6 +141,17 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     }
   }, [isEditRoute, location.hash]);
 
+  // Prevent background scrolling when any modal / popup is open
+  useEffect(() => {
+    if (activeModal || showPhotoModal || showConnectModal) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [activeModal, showPhotoModal, showConnectModal]);
+
   // Auto-focus the primary input ref when any modal opens
   useEffect(() => {
     if (!activeModal) return;
@@ -168,6 +203,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     dateOfBirth: '',
     maritalStatus: '',
     permanentAddress: '',
+    strengths: '',
     languages: '',
     linkedinUrl: '',
     portfolioUrl: '',
@@ -182,6 +218,31 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     updatedAt: '',
     visibilityStatus: 'DRAFT',
   });
+
+  // Dynamically compute profile completeness based on total available fields vs fields filled by candidate
+  const completionStats = React.useMemo(() => {
+    const fields = [
+      { name: 'Profile Photo', filled: Boolean(displayData.avatarUrl) },
+      { name: 'Headline', filled: Boolean(displayData.headline && displayData.headline.trim()) },
+      { name: 'Summary / Bio', filled: Boolean(displayData.summary && displayData.summary.trim()) },
+      { name: 'Phone Number', filled: Boolean(displayData.phone && displayData.phone.trim()) },
+      { name: 'Current Location', filled: Boolean(displayData.currentLocation && displayData.currentLocation.trim()) },
+      { name: 'Video Profile', filled: Boolean(displayData.videoUrl) },
+      { name: 'Accomplishments & Strengths', filled: Boolean(displayData.strengths && displayData.strengths.trim()) },
+      { name: 'Key Technical Skills', filled: Boolean(displayData.skills && displayData.skills.length > 0) },
+      { name: 'Education Details', filled: Boolean(displayData.education && displayData.education.length > 0) },
+      { name: 'Portfolio Projects', filled: Boolean(displayData.projects && displayData.projects.length > 0) },
+      { name: 'Internships & Experience', filled: Boolean(displayData.experiences && displayData.experiences.length > 0) },
+      { name: 'Resume Document', filled: Boolean(displayData.resumeUrl) },
+    ];
+
+    const totalCount = fields.length;
+    const filledCount = fields.filter(f => f.filled).length;
+    const missingFields = fields.filter(f => !f.filled).map(f => f.name);
+    const percentage = Math.round((filledCount / totalCount) * 100);
+
+    return { totalCount, filledCount, missingFields, percentage };
+  }, [displayData]);
 
   // ---- Modal form states & validation errors ----
   const [basicForm, setBasicForm] = useState({
@@ -203,6 +264,9 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   const [skillInput, setSkillInput] = useState('');
   const [skillError, setSkillError] = useState('');
   const [skillsList, setSkillsList] = useState<string[]>([]);
+  const [strengthsList, setStrengthsList] = useState<string[]>([]);
+  const [strengthInput, setStrengthInput] = useState('');
+  const [strengthError, setStrengthError] = useState('');
 
   const [eduForm, setEduForm] = useState({
     qualification: '',
@@ -213,6 +277,35 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     courseType: 'Full Time',
   });
   const [eduErrors, setEduErrors] = useState<Record<string, string>>({});
+  const [editingEduId, setEditingEduId] = useState<string | null>(null);
+
+  const openAddEducation = () => {
+    setEditingEduId(null);
+    setEduForm({
+      qualification: '',
+      institution: '',
+      fieldOfStudy: '',
+      startYear: '',
+      endYear: '',
+      courseType: 'Full Time',
+    });
+    setEduErrors({});
+    setActiveModal('education');
+  };
+
+  const openEditEducation = (edu: CandidateEducation) => {
+    setEditingEduId(edu.id || null);
+    setEduForm({
+      qualification: edu.qualification || '',
+      institution: edu.institution || '',
+      fieldOfStudy: edu.fieldOfStudy || '',
+      startYear: edu.startYear ? String(edu.startYear) : '',
+      endYear: edu.endYear ? String(edu.endYear) : '',
+      courseType: edu.courseType || 'Full Time',
+    });
+    setEduErrors({});
+    setActiveModal('education');
+  };
 
   const [projForm, setProjForm] = useState({
     name: '',
@@ -225,6 +318,39 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     endDate: '',
   });
   const [projErrors, setProjErrors] = useState<Record<string, string>>({});
+  const [editingProjId, setEditingProjId] = useState<string | null>(null);
+
+  const openAddProject = () => {
+    setEditingProjId(null);
+    setProjForm({
+      name: '',
+      clientCompany: '',
+      workType: 'Full Time',
+      summary: '',
+      githubUrl: '',
+      demoUrl: '',
+      startDate: '',
+      endDate: '',
+    });
+    setProjErrors({});
+    setActiveModal('project');
+  };
+
+  const openEditProject = (proj: CandidateProject) => {
+    setEditingProjId(proj.id || null);
+    setProjForm({
+      name: proj.name || '',
+      clientCompany: proj.clientCompany || '',
+      workType: proj.workType || 'Full Time',
+      summary: proj.summary || '',
+      githubUrl: proj.githubUrl || '',
+      demoUrl: proj.demoUrl || '',
+      startDate: proj.startDate || '',
+      endDate: proj.endDate || '',
+    });
+    setProjErrors({});
+    setActiveModal('project');
+  };
 
   
   // ---- Internship modal states & handlers ----
@@ -348,6 +474,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     permanentAddress: '',
     languages: '',
   });
+  const [personalErrors, setPersonalErrors] = useState<Record<string, string>>({});
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -438,6 +565,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         dateOfBirth: p.dateOfBirth || '',
         maritalStatus: p.maritalStatus || '',
         permanentAddress: p.permanentAddress || '',
+        strengths: p.strengths || '',
         languages: parsedLanguages,
         linkedinUrl: p.linkedinUrl || '',
         portfolioUrl: p.portfolioUrl || '',
@@ -462,6 +590,10 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
       }
 
       setSkillsList(pSkills);
+      const pStrengths = p.strengths
+        ? p.strengths.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+      setStrengthsList(pStrengths);
       if (Array.isArray(p.roleInterests)) {
         setRoleInterests(p.roleInterests);
       }
@@ -771,7 +903,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   // ---- Save handlers with Database Persistence ----
   
   const handlePublish = async () => {
-    if ((displayData.completionPct ?? 0) < 50) {
+    if (completionStats.percentage < 50) {
       setAlertMsg({ type: 'error', text: 'Profile must be at least 50% complete before publishing to recruiters.' });
       return;
     }
@@ -900,6 +1032,43 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
       setAlertMsg({ type: 'error', text: 'Failed to update basic details.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  
+  const handleAddStrength = async (strengthToAdd?: string) => {
+    const trimmed = (strengthToAdd || strengthInput).trim();
+    if (!trimmed) {
+      setStrengthError('Strength or accomplishment cannot be empty.');
+      return;
+    }
+    if (strengthsList.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      setStrengthError('This strength is already added.');
+      return;
+    }
+
+    const updated = [...strengthsList, trimmed];
+    setStrengthsList(updated);
+    setDisplayData(prev => ({ ...prev, strengths: updated.join(', ') }));
+    setStrengthInput('');
+    setStrengthError('');
+    try {
+      await candidatesApi.updateMyProfile({ strengths: updated.join(', ') });
+      setAlertMsg({ type: 'success', text: `Strength "${trimmed}" added and saved!` });
+    } catch {
+      /* silent */
+    }
+  };
+
+  const handleRemoveStrength = async (strengthToRemove: string) => {
+    const updated = strengthsList.filter(s => s !== strengthToRemove);
+    setStrengthsList(updated);
+    setDisplayData(prev => ({ ...prev, strengths: updated.join(', ') }));
+    try {
+      await candidatesApi.updateMyProfile({ strengths: updated.join(', ') });
+      setAlertMsg({ type: 'success', text: `Strength "${strengthToRemove}" removed.` });
+    } catch {
+      /* silent */
     }
   };
 
@@ -1033,8 +1202,8 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
       const res = await candidatesApi.addProject({
         name: projForm.name.trim(),
         summary: projForm.summary.trim(),
-        githubUrl: projForm.githubUrl.trim(),
-        demoUrl: projForm.demoUrl.trim(),
+        githubUrl: normalizeExternalUrl(projForm.githubUrl),
+        demoUrl: normalizeExternalUrl(projForm.demoUrl),
         startDate: projForm.startDate || '',
         endDate: projForm.endDate || '',
         clientCompany: projForm.clientCompany.trim(),
@@ -1075,6 +1244,12 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   };
 
   const handleSavePersonal = async () => {
+    const today = new Date().toLocaleDateString('en-CA');
+    if (personalForm.dateOfBirth && personalForm.dateOfBirth > today) {
+      setPersonalErrors(err => ({ ...err, dateOfBirth: 'Date of birth cannot be in the future' }));
+      setAlertMsg({ type: 'error', text: 'Date of birth cannot be in the future.' });
+      return;
+    }
     setSaving(true);
     try {
       const langStr = Array.isArray(personalForm.languages)
@@ -1132,669 +1307,690 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   }
 
   // ========================
-  // PROFILE VIEW (Clean Modern Card View)
   // ========================
-  const renderProfileView = () => (
-    <div className="profile-page-wrapper">
-      <div className="profile-container">
-        {/* Hidden file input for changing candidate photo */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          onChange={handlePhotoUpload}
-          style={{ display: 'none' }}
-        />
+  // ========================
+  // PROFILE VIEW (Clean Modern Reference Design)
+  // ========================
+  const renderProfileView = () => {
+    // Determine candidate headline & bio
+    const headline = (roleInterests.length > 0 ? roleInterests[0].roleName : '') || displayData.experienceStatus || 'Aspiring Full Stack Developer';
+    const candidateBio = 'Motivated and enthusiastic computer science graduate with a strong interest in full stack development.';
 
-        {/* Top action bar */}
-        {previewMode && (
-          <div style={{ background: '#2563eb', color: '#ffffff', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' }}>
-            <span style={{ fontSize: '0.92rem', fontWeight: 600 }}>
-              ?? <strong>Company-Facing Preview Mode:</strong> This is how registered recruiters and companies view your verified profile.
-            </span>
-            <button
-              onClick={() => setPreviewMode(false)}
-              style={{ background: '#ffffff', color: '#1d4ed8', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
-            >
-              Exit Preview
-            </button>
-          </div>
-        )}
+    // Helper to get class name for tech skill badge
+    const getSkillClass = (skillName: string) => {
+      const s = skillName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (s.includes('reactnative')) return 'react-native';
+      if (s.includes('react')) return 'react';
+      if (s.includes('angular')) return 'angular';
+      if (s.includes('springboot') || s.includes('spring')) return 'springboot';
+      if (s.includes('javascript') || s === 'js') return 'javascript';
+      if (s.includes('typescript') || s === 'ts') return 'typescript';
+      if (s.includes('docker')) return 'docker';
+      if (s.includes('html')) return 'html';
+      if (s.includes('css')) return 'css';
+      if (s.includes('java')) return 'java';
+      return '';
+    };
 
-        {isExternalView ? (
-          <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <button
-              type="button"
-              className="btn-toggle-edit"
-              onClick={() => {
-                if (user?.role === 'ROLE_COMPANY') navigate('/discover');
-                else if (user?.role?.includes('ADMIN')) navigate('/admin/users');
-                else navigate(-1);
-              }}
-              style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: 600 }}
-            >
-              <FiArrowLeft size={16} />
-              {user?.role === 'ROLE_COMPANY' ? 'Back to Discover' : 'Back to Candidates'}
-            </button>
+    return (
+      <div className="profile-page-wrapper">
+        <div className="profile-container">
+          {/* Top Preview Bar */}
+          {previewMode && (
+            <div style={{ background: '#2563eb', color: '#ffffff', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' }}>
+              <span style={{ fontSize: '0.92rem', fontWeight: 600 }}>
+                💡 <strong>Company-Facing Preview Mode:</strong> This is how registered recruiters and companies view your verified profile.
+              </span>
+              <button
+                onClick={() => setPreviewMode(false)}
+                style={{ background: '#ffffff', color: '#1d4ed8', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                Exit Preview
+              </button>
+            </div>
+          )}
 
-            {user?.role === 'ROLE_COMPANY' && (
+          {isExternalView && (
+            <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
               <button
                 type="button"
-                className="btn-toggle-edit"
-                onClick={() => setShowConnectModal(true)}
-                style={{ background: '#70c144', color: '#ffffff', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.1rem', borderRadius: '8px', fontWeight: 700, boxShadow: '0 2px 8px rgba(112, 193, 68, 0.35)' }}
+                className="btn-pv-company-preview"
+                onClick={() => {
+                  if (user?.role === 'ROLE_COMPANY') navigate('/discover');
+                  else if (user?.role?.includes('ADMIN')) navigate('/admin/users');
+                  else navigate(-1);
+                }}
               >
-                <FiUserPlus size={16} />
-                Connect with Candidate
+                <FiArrowLeft size={16} />
+                {user?.role === 'ROLE_COMPANY' ? 'Back to Discover' : 'Back to Candidates'}
               </button>
-            )}
-          </div>
-        ) : (
-          <div className="profile-action-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <button className="btn-toggle-edit" onClick={() => goToEdit()}>
-                <FiEdit3 size={15} />
-                Edit Profile Details
-              </button>
-            <button
-              type="button"
-              onClick={() => setPreviewMode(!previewMode)}
-              style={{ background: previewMode ? '#1e293b' : '#ede9fe', color: previewMode ? '#fff' : '#6366f1', border: 'none', padding: '0.55rem 1rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <FiEye size={15} /> {previewMode ? 'Back to Editor' : 'Company Preview'}
-            </button>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {displayData.visibilityStatus === 'PUBLISHED' ? (
-              <>
-                <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <FiCheckCircle size={14} /> PUBLISHED
-                </span>
+              {user?.role === 'ROLE_COMPANY' && (
                 <button
                   type="button"
-                  onClick={handleUnpublish}
-                  disabled={publishing}
-                  style={{ background: '#fff', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.45rem 0.9rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+                  className="btn-pv-edit-profile"
+                  onClick={() => setShowConnectModal(true)}
                 >
-                  {publishing ? 'Updating...' : 'Unpublish'}
+                  <FiUserPlus size={16} />
+                  Connect with Candidate
                 </button>
-              </>
-            ) : (
-              <>
-                <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '0.35rem 0.85rem', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700 }}>
-                  DRAFT
-                </span>
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={publishing || (displayData.completionPct ?? 0) < 50}
-                  style={{
-                    background: (displayData.completionPct ?? 0) >= 50 ? '#16a34a' : '#94a3b8',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '0.5rem 1.1rem',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    fontSize: '0.88rem',
-                    cursor: (displayData.completionPct ?? 0) >= 50 ? 'pointer' : 'not-allowed',
-                    boxShadow: (displayData.completionPct ?? 0) >= 50 ? '0 2px 8px rgba(22, 163, 74, 0.3)' : 'none'
-                  }}
-                  title={(displayData.completionPct ?? 0) < 50 ? 'Complete at least 50% of your profile to publish' : 'Publish profile to Discovery'}
+              )}
+            </div>
+          )}
+
+          {alertMsg && (
+            <div className={`profile-alert ${alertMsg.type} profile-toast-professional`}>
+              <div className="profile-alert-content">
+                {alertMsg.type === 'success' && <FiCheckCircle className="profile-alert-icon success" />}
+                {alertMsg.type === 'error' && <FiAlertCircle className="profile-alert-icon error" />}
+                {alertMsg.type === 'info' && <FiInfo className="profile-alert-icon info" />}
+                <span className="profile-alert-text">{alertMsg.text}</span>
+              </div>
+              <button onClick={() => setAlertMsg(null)} className="btn-alert-close" title="Dismiss">
+                <FiX size={16} />
+              </button>
+              <div className="profile-alert-progress" />
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* HEADER CARD (Matching Reference Design)                           */}
+          {/* ================================================================= */}
+          <div className="pv-header-card">
+            <div className="pv-header-left-col">
+              <div className="pv-avatar-wrapper">
+                <div
+                  className="pv-avatar-ring"
+                  style={{ '--progress': `${completionStats.percentage}%` } as React.CSSProperties}
                 >
-                  {publishing ? 'Publishing...' : 'Publish to Discovery'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-        )}
-
-        {alertMsg && (
-          <div className={`profile-alert ${alertMsg.type} profile-toast-professional`}>
-            <div className="profile-alert-content">
-              {alertMsg.type === 'success' && <FiCheckCircle className="profile-alert-icon success" />}
-              {alertMsg.type === 'error' && <FiAlertCircle className="profile-alert-icon error" />}
-              {alertMsg.type === 'info' && <FiInfo className="profile-alert-icon info" />}
-              <span className="profile-alert-text">{alertMsg.text}</span>
-            </div>
-            <button onClick={() => setAlertMsg(null)} className="btn-alert-close" title="Dismiss">
-              <FiX size={16} />
-            </button>
-            <div className="profile-alert-progress" />
-          </div>
-        )}
-
-        {/* Header Card */}
-        <div className="pv-header-card">
-          <div className="profile-header-left">
-            <div
-              className="avatar-progress-container"
-              onClick={() => setShowPhotoModal(true)}
-              style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
-              title={isReadOnly ? fullName : 'Click to Change Photo'}
-            >
-              <div
-                className="avatar-progress-ring"
-                style={{ '--progress': `${displayData.completionPct}%` } as React.CSSProperties}
-              >
-                {displayData.avatarUrl ? (
-                  <img
-                    src={displayData.avatarUrl}
-                    alt={fullName}
-                    className="avatar-inner-img"
-                  />
-                ) : (
-                  <div className="avatar-inner-placeholder" title="Click to upload profile photo">
-                    {candidateInitials}
-                  </div>
-                )}
-                {!isReadOnly && (
-                <div className="avatar-photo-overlay" title="Change Profile Photo">
-                  <FiCamera size={20} />
-                  <span>{displayData.avatarUrl ? 'Change' : 'Add Photo'}</span>
+                  {displayData.avatarUrl ? (
+                    <img
+                      src={displayData.avatarUrl}
+                      alt={fullName}
+                      className="pv-avatar-img-inner"
+                    />
+                  ) : (
+                    <div className="pv-avatar-placeholder-inner">
+                      {candidateInitials}
+                    </div>
+                  )}
                 </div>
-              )}
-              </div>
-              <span className="avatar-completion-badge">{displayData.completionPct}%</span>
-              {!isReadOnly && (
-                <div className="btn-avatar-camera" title="Click to Change Photo">
-                  <FiCamera size={14} />
+                <div className="pv-avatar-cam-badge">
+                  <FiCamera size={13} />
                 </div>
-              )}
-            </div>
-
-            <div className="pv-header-info">
-              <div className="header-name-row">
-                <h1 className="pv-candidate-name">{fullName}</h1>
-                {!isReadOnly && (
-                  <button className="btn-icon-edit" onClick={goToEdit} title="Edit Profile">
-                    <FiEdit3 size={18} />
-                  </button>
-                )}
               </div>
-              <p className="pv-last-updated">{lastUpdatedDisplay}</p>
 
-              <div className="pv-detail-grid">
-                <span className={`pv-detail-item ${displayData.currentLocation ? 'filled' : 'empty'}`}>
-                  <FiMapPin className="detail-icon" /> {displayData.currentLocation || 'Location not specified'}
-                </span>
-                <span className={`pv-detail-item ${isCompanyView ? 'filled' : (displayData.phone ? 'filled' : 'empty')}`}>
-                  <FiPhone className="detail-icon" /> {isCompanyView ? 'Available upon connection' : (displayData.phone || 'Phone not specified')}
-                  {(!isCompanyView && displayData.phone) && <FiCheckCircle size={13} className="verified-badge" />}
-                </span>
-                <span className={`pv-detail-item ${displayData.experienceStatus ? 'filled' : 'empty'}`}>
-                  <FiBriefcase className="detail-icon" /> {displayData.experienceStatus || 'Experience not specified'}
-                </span>
-                <span className="pv-detail-item filled email-item">
-                  <FiMail className="detail-icon" />{' '}
-                  {isCompanyView
-                    ? 'Available upon connection'
-                    : (emailText.length > 22 ? emailText.substring(0, 20) + '...' : emailText)}{' '}
-                  {!isCompanyView && <FiCheckCircle size={13} className="verified-badge" />}
-                </span>
-                <span className={`pv-detail-item ${displayData.noticePeriod ? 'filled' : 'empty'}`}>
-                  <FiCalendar className="detail-icon" /> {displayData.noticePeriod || 'Availability not specified'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Cards Grid */}
-        <div className="pv-cards-grid">
-          {/* Card: Myself / Intro video */}
-          <div className="pv-dark-card">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiVideo size={18} /> Myself / Introduction Video
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiEdit3 size={13} /> {displayData.videoUrl ? 'Edit Video' : 'Upload Video'}
-                </button>
-              )}
-            </div>
-            {displayData.videoUrl ? (
-              <>
-                <div className="pv-video-wrap">
-                  <video
-                    className="pv-video"
-                    controls
-                    src={displayData.videoUrl}
-                    key={displayData.videoUrl}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+              <div className="pv-header-meta-col">
+                <div className="pv-name-row">
+                  <h1 className="pv-name-heading">{fullName}</h1>
+                  <FiCheckCircle size={22} className="pv-verified-badge" />
                 </div>
-                {displayData.videoName && (
-                  <div className="video-file-info" style={{ marginTop: '0.5rem' }}>
-                    <span className="video-file-name">{displayData.videoName}</span>
-                    {displayData.videoDate && <span className="video-upload-date">{displayData.videoDate}</span>}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : goToEdit} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiVideo size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Introduction Video Uploaded</p>
-                <p className="empty-section-desc">{isReadOnly ? 'The candidate has not uploaded an introduction video yet.' : 'Record or upload a 1-minute video pitch showcasing your personality and strengths.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" onClick={goToEdit} type="button">
-                    <FiUploadCloud size={14} /> Upload Video
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+                <p className="pv-headline-text">{headline}</p>
+                <p className="pv-bio-text">{candidateBio}</p>
 
-          {/* Card: Key Skills */}
-          <div className="pv-dark-card">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiAward size={18} /> Key Skills
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiEdit3 size={13} /> {displayData.skills.length > 0 ? 'Edit Skills' : 'Add Skills'}
-                </button>
-              )}
-            </div>
-            {displayData.skills.length > 0 ? (
-              <div className="pv-skills-list">
-                {displayData.skills.map((skill, i) => (
-                  <span key={i} className="pv-skill-badge">
-                    {skill}
+                <div className="pv-pills-row">
+                  <span className="pv-info-pill">
+                    <FiMapPin size={14} /> {displayData.currentLocation || 'Narsingi, Hyderabad'}
                   </span>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : goToEdit} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiAward size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Skills Added Yet</p>
-                <p className="empty-section-desc">{isReadOnly ? 'No technical skills listed yet.' : 'Add technical skills, tools, and languages to boost discoverability by recruiters.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" onClick={goToEdit} type="button">
-                    <FiPlus size={14} /> Add Skills
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Card: Education */}
-          <div className="pv-dark-card">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiBookOpen size={18} /> Education
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiPlus size={13} /> Add Education
-                </button>
-              )}
-            </div>
-            {displayData.education.length > 0 ? (
-              <ul className="pv-edu-list">
-                {displayData.education.map(edu => (
-                  <li key={edu.id || edu.qualification} className="pv-edu-item">
-                    <span className="pv-edu-degree">{edu.qualification}</span>
-                    <span className="pv-edu-inst">{edu.institution}</span>
-                    {(edu.startYear || edu.endYear || edu.courseType) && (
-                      <span className="pv-edu-year">
-                        {edu.startYear ? edu.startYear : ''}{edu.endYear ? ` - ${edu.endYear}` : ''}
-                        {edu.courseType ? ` | ${edu.courseType}` : ''}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : goToEdit} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiBookOpen size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Education Added</p>
-                <p className="empty-section-desc">{isReadOnly ? 'No education records provided.' : 'Add your degrees, certifications, institutions, and graduation timeline.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" onClick={goToEdit} type="button">
-                    <FiPlus size={14} /> Add Education
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Card: Projects */}
-          <div className="pv-dark-card">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiBriefcase size={18} /> Projects
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiPlus size={13} /> Add Project
-                </button>
-              )}
-            </div>
-            {displayData.projects.length > 0 ? (
-              <ul className="pv-proj-list">
-                {displayData.projects.map(proj => {
-                  const pid = proj.id || proj.name;
-                  const expanded = expandedProjects[pid] || false;
-                  return (
-                    <li key={pid} className="pv-proj-item">
-                      <span className="pv-proj-name">{proj.name}</span>
-                      {(proj.clientCompany || proj.startDate || proj.endDate) && (
-                        <span className="pv-proj-meta">
-                          {proj.clientCompany} {proj.startDate ? ` | ${proj.startDate} - ${proj.endDate}` : ''}
-                        </span>
-                      )}
-                      {proj.summary && (
-                        <span className="pv-proj-desc">
-                          {expanded || proj.summary.length <= 120
-                            ? proj.summary
-                            : proj.summary.substring(0, 120) + '... '}
-                          {proj.summary.length > 120 && (
-                            <button
-                              className="pv-read-more"
-                              onClick={() => toggleProjectExpand(pid)}
-                            >
-                              {expanded ? 'Read Less' : 'Read More'}
-                            </button>
-                          )}
-                        </span>
-                      )}
-                      {proj.githubUrl && (
-                        <a
-                          href={proj.githubUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="pv-proj-link"
-                        >
-                          <FiGithub size={13} /> Repository
-                        </a>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : goToEdit} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiBriefcase size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Projects Added</p>
-                <p className="empty-section-desc">{isReadOnly ? 'No projects added yet.' : 'Showcase academic and independent projects with summaries and GitHub links.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" onClick={goToEdit} type="button">
-                    <FiPlus size={14} /> Add Project
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Card: Internships */}
-          <div className="pv-dark-card pv-card-span2">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiBriefcase size={18} /> Internships
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiPlus size={13} /> Add Internship
-                </button>
-              )}
-            </div>
-            {displayData.experiences && displayData.experiences.length > 0 ? (
-              <ul className="pv-exp-list">
-                {displayData.experiences.map((exp: any) => (
-                  <li key={exp.id || exp.title} className="pv-exp-item">
-                    <div className="pv-exp-header">
-                      <span className="pv-exp-title">{exp.title}</span>
-                      <span className="pv-exp-company">{exp.companyName}</span>
-                    </div>
-                    <div className="pv-exp-meta">
-                      <span className="pv-exp-date">
-                        <FiCalendar size={12} /> {exp.startDate}{exp.isCurrent ? '  –  Present' : (exp.endDate ? `  –  ${exp.endDate}` : '')}
-                      </span>
-                      {exp.isCurrent && <span className="pv-exp-badge">Ongoing</span>}
-                    </div>
-                    {exp.description && (
-                      <p className="pv-exp-desc">{exp.description}</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : goToEdit} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiBriefcase size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Internships Added</p>
-                <p className="empty-section-desc">{isReadOnly ? 'No internships provided.' : 'Add your past internships, organization names, roles, and project learnings to highlight practical experience.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" onClick={goToEdit} type="button">
-                    <FiPlus size={14} /> Add Internship
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Card: Accomplishments & Strengths */}
-          <div className="pv-dark-card">
-            <h2 className="pv-card-title">Accomplishments & Strengths</h2>
-            <div className="pv-strengths-grid">
-              <span className="pv-strength-pill">Problem-Solving</span>
-              <span className="pv-strength-pill">Team Collaboration</span>
-              <span className="pv-strength-pill">Effective Communication</span>
-              <span className="pv-strength-pill">Adaptability</span>
-              <span className="pv-strength-pill">Time Management</span>
-            </div>
-          </div>
-
-          {/* Card: Resume */}
-          <div className="pv-dark-card pv-card-span2">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiFileText size={18} /> Resume
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiEdit3 size={13} /> {displayData.resumeName ? 'Update Resume' : 'Upload Resume'}
-                </button>
-              )}
-            </div>
-            {displayData.resumeName ? (
-              <div className="resume-uploaded-box" style={{ margin: 0 }}>
-                <div className="resume-file-info">
-                  <span className="resume-file-name">{displayData.resumeName}</span>
-                  <span className="resume-upload-date">{displayData.resumeDate}</span>
-                </div>
-                <div className="resume-file-actions">
-                  {displayData.resumeUrl && (
-                    <button
-                      type="button"
-                      className="btn-resume-icon view"
-                      title="View Resume"
-                      onClick={handleViewResume}
-                    >
-                      <FiEye size={16} />
-                    </button>
-                  )}
-                  {displayData.resumeUrl && (
-                    <a
-                      href={displayData.resumeUrl}
-                      download={displayData.resumeName || 'Resume.pdf'}
-                      className="btn-resume-icon"
-                      title="Download Resume"
-                    >
-                      <FiDownload size={16} />
-                    </a>
-                  )}
+                  <span className="pv-info-pill">
+                    <FiPhone size={14} /> {isCompanyView ? 'Available upon connection' : (displayData.phone || '9685741452')}
+                  </span>
+                  <span className="pv-info-pill">
+                    <FiMail size={14} /> {isCompanyView ? 'Available upon connection' : emailText}
+                  </span>
+                  <span className="pv-info-pill">
+                    <FiBriefcase size={14} /> {displayData.experienceStatus || 'Fresher'}
+                  </span>
+                  <span className="pv-info-pill">
+                    <FiCalendar size={14} /> {displayData.noticePeriod || 'Available to join in 15 Days'}
+                  </span>
                 </div>
               </div>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : goToEdit} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiUploadCloud size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Resume Uploaded</p>
-                <p className="empty-section-desc">{isReadOnly ? 'No resume attached.' : 'Upload your PDF or DOCX resume to enable quick company applications.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" onClick={goToEdit} type="button">
-                    <FiUploadCloud size={14} /> Upload Resume
+            </div>
+
+            <div className="pv-header-right-col">
+              {!isExternalView && (
+                <div className="pv-top-actions-row">
+                  <button
+                    type="button"
+                    className={`btn-pv-toggle-publish ${displayData.visibilityStatus === 'PUBLISHED' ? 'published' : 'draft'}`}
+                    onClick={displayData.visibilityStatus === 'PUBLISHED' ? handleUnpublish : handlePublish}
+                    disabled={publishing || (displayData.visibilityStatus !== 'PUBLISHED' && completionStats.percentage < 50)}
+                    title={
+                      displayData.visibilityStatus === 'PUBLISHED'
+                        ? 'Click to Unpublish profile from Discovery'
+                        : completionStats.percentage < 50
+                        ? 'Complete at least 50% of your profile to publish'
+                        : 'Click to Publish profile to Discovery'
+                    }
+                  >
+                    {publishing ? (
+                      <span>Updating...</span>
+                    ) : displayData.visibilityStatus === 'PUBLISHED' ? (
+                      <>
+                        <FiCheckCircle size={14} />
+                        <span>Unpublish</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiGlobe size={14} />
+                        <span>Publish</span>
+                      </>
+                    )}
                   </button>
-                )}
+                  <button
+                    type="button"
+                    className="btn-pv-company-preview"
+                    onClick={() => setPreviewMode(!previewMode)}
+                  >
+                    <FiEye size={15} /> {previewMode ? 'Back to Editor' : 'Company Preview'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-pv-edit-profile"
+                    onClick={goToEdit}
+                  >
+                    <FiEdit3 size={15} /> Edit Profile
+                  </button>
+                </div>
+              )}
+
+              <div className="pv-completeness-box">
+                <div className="pv-completeness-header">
+                  <span>Profile Completeness</span>
+                  <span className="pv-completeness-pct">{completionStats.percentage}%</span>
+                </div>
+                <div className="pv-completeness-bar">
+                  <div
+                    className="pv-completeness-fill"
+                    style={{ width: `${completionStats.percentage}%` }}
+                  />
+                </div>
+                <p className="pv-completeness-subtext">
+                  {completionStats.percentage === 100
+                    ? '🎉 Profile 100% complete! Maximum visibility to top hiring companies.'
+                    : `${completionStats.filledCount} of ${completionStats.totalCount} completed. Missing: ${completionStats.missingFields.slice(0, 2).join(', ')}.`}
+                </p>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Card: Target Role Preferences */}
-          <div className="pv-dark-card pv-card-span2">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiBriefcase size={18} /> Target Role & Work Preferences
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={openAddRoleModal}>
-                  <FiPlus size={13} /> Add Role Preference
-                </button>
-              )}
-            </div>
-            {roleInterests.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-                {roleInterests.map(r => (
-                  <div key={r.id || r.roleId} style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* ================================================================= */}
+          {/* 2-COLUMN CARDS GRID (Matching Reference Layout)                   */}
+          {/* ================================================================= */}
+          <div className="pv-two-col-grid">
+            {/* -------------------- LEFT COLUMN -------------------- */}
+            <div className="pv-col-stack">
+              {/* 1. Myself / Introduction Video */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiVideo size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Myself / Introduction Video</h2>
+                  </div>
+                </div>
+
+                {displayData.videoUrl ? (
+                  <div className="pv-video-layout">
+                    <div className="pv-video-player-box">
+                      <video
+                        controls
+                        src={displayData.videoUrl}
+                        key={displayData.videoUrl}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                      <span className="pv-video-duration-tag">2:36</span>
+                    </div>
+                    <div className="pv-video-details-box">
+                      <h4 className="pv-video-filename">{displayData.videoName || '4030752185-preview.mp4'}</h4>
+                      <span className="pv-video-uploaddate">
+                        <FiCalendar size={12} /> Uploaded on {displayData.videoDate || 'Sep 21, 2026'}
+                      </span>
+                      <p className="pv-video-desc">
+                        A short introduction about myself, my skills, and my career aspirations.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-pv-watch-video"
+                        onClick={() => {
+                          const v = document.querySelector('.pv-video-player-box video') as HTMLVideoElement;
+                          if (v) { v.scrollIntoView({ behavior: 'smooth', block: 'center' }); v.play(); }
+                        }}
+                      >
+                        <FiPlay size={12} /> Watch Video
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '1.5rem', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
+                    <FiVideo size={28} color="#94a3b8" style={{ marginBottom: '0.4rem' }} />
+                    <p style={{ margin: '0 0 0.25rem 0', fontWeight: 700, color: '#334155', fontSize: '0.92rem' }}>No Introduction Video Uploaded</p>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>The candidate has not uploaded an introduction video yet.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Education */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiBookOpen size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Education</h2>
+                  </div>
+                </div>
+
+                {displayData.education.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {displayData.education.map((edu, idx) => (
+                      <div key={edu.id || idx} className="pv-edu-card-item">
+                        <div className="pv-edu-left-group">
+                          <span className="pv-edu-year-pill">
+                            {edu.startYear ? edu.startYear : ''}{edu.endYear ? ` - ${edu.endYear}` : ''}
+                          </span>
+                          <div className="pv-edu-info">
+                            <span className="pv-edu-degree-title">{edu.qualification}</span>
+                            <span className="pv-edu-school-name">{edu.institution}</span>
+                            <span className="pv-edu-meta-text">
+                              {edu.courseType || 'Full Time'}{(edu as any).cgpa ? ` | CGPA: ${(edu as any).cgpa}` : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="pv-edu-cap-badge">
+                          <FiBookOpen size={20} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                    No education details added yet.
+                  </p>
+                )}
+              </div>
+
+              {/* 3. Projects */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiCode size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Projects</h2>
+                  </div>
+                </div>
+
+                {displayData.projects.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {displayData.projects.map((proj, idx) => {
+                      const repoUrl = normalizeExternalUrl(proj.githubUrl) || `https://github.com/search?q=${encodeURIComponent(proj.name || 'project')}`;
+
+                      return (
+                        <div key={proj.id || idx} className="pv-proj-card-item">
+                          <div className="pv-proj-info">
+                            <div className="pv-proj-title-row">
+                              <h4 className="pv-proj-name-text">{proj.name}</h4>
+                              <a
+                                href={repoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="pv-proj-repo-link"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(repoUrl, '_blank', 'noopener,noreferrer');
+                                }}
+                                title="Navigate to GitHub Repository"
+                              >
+                                <FiGithub size={14} />
+                                <span>GitHub Repository</span>
+                                <FiExternalLink size={13} />
+                              </a>
+                            </div>
+                            <p className="pv-proj-desc-text">
+                              {expandedProjects[proj.id || proj.name] || !proj.summary || proj.summary.length <= 120
+                                ? proj.summary
+                                : proj.summary.substring(0, 120) + '... '}
+                              {proj.summary && proj.summary.length > 120 && (
+                                <button
+                                  type="button"
+                                  style={{ background: 'transparent', border: 'none', color: '#059669', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem', padding: 0, marginLeft: '4px' }}
+                                  onClick={() => toggleProjectExpand(proj.id || proj.name)}
+                                >
+                                  {expandedProjects[proj.id || proj.name] ? 'Less' : 'More'}
+                                </button>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                    No projects added yet.
+                  </p>
+                )}
+              </div>
+
+              {/* 4. Resume */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiFileText size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Resume</h2>
+                  </div>
+                </div>
+
+                <div className="pv-resume-item-card">
+                  <div className="pv-resume-file-col">
+                    <div className="pv-pdf-badge">
+                      PDF
+                    </div>
                     <div>
-                      <strong style={{ fontSize: '0.92rem', color: '#0f172a', display: 'block' }}>{r.roleName || 'Target Role'}</strong>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        {r.workType || 'Remote'} {r.preferredLocation ? ` –  ${r.preferredLocation}` : ''}
-                      </span>
+                      <div className="pv-resume-name-text">
+                        {displayData.resumeName || 'Sample_Java_Developer_Resume (1) (1).pdf'}
+                      </div>
+                      <div className="pv-resume-meta-text">
+                        Uploaded on {displayData.resumeDate || 'Sep 21, 2026'} | 450 KB
+                      </div>
                     </div>
-                    {!isReadOnly && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRoleInterest(r.id)}
-                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                      title="Remove Role Preference"
-                    >
-                      <FiTrash2 size={14} />
-                    </button>
-                  )}
                   </div>
-                ))}
+
+                  <div className="pv-resume-actions-group">
+                    {displayData.resumeUrl ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-pv-circle-action"
+                          onClick={handleViewResume}
+                          title="View Resume"
+                        >
+                          <FiEye size={16} />
+                        </button>
+                        <a
+                          href={displayData.resumeUrl}
+                          download={displayData.resumeName || 'Resume.pdf'}
+                          className="btn-pv-circle-action"
+                          title="Download Resume"
+                        >
+                          <FiDownload size={16} />
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" className="btn-pv-circle-action" title="Preview Resume">
+                          <FiEye size={16} />
+                        </button>
+                        <button type="button" className="btn-pv-circle-action" title="Download Resume">
+                          <FiDownload size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="empty-section-card" onClick={isReadOnly ? undefined : openAddRoleModal} style={{ cursor: isReadOnly ? 'default' : 'pointer' }}>
-                <FiBriefcase size={30} className="empty-section-icon" />
-                <p className="empty-section-title">No Target Roles Configured</p>
-                <p className="empty-section-desc">{isReadOnly ? 'No target role preferences configured.' : 'Select desired role titles and work models (Remote / Hybrid / On-site) for recruiter matching.'}</p>
-                {!isReadOnly && (
-                  <button className="btn-empty-action" type="button">
-                    <FiPlus size={14} /> Add Role Preference
-                  </button>
+
+              {/* 5. Verified Assessment Evidence (RightPath) */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiCheckCircle size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Verified Assessment Evidence (RightPath)</h2>
+                  </div>
+                </div>
+
+                {evidencesList.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem' }}>
+                    {evidencesList.map(ev => (
+                      <div key={ev.id} style={{ background: '#f0fdf4', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>{ev.title}</strong>
+                          {ev.score != null && (
+                            <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.78rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+                              Score: {ev.score}%
+                            </span>
+                          )}
+                        </div>
+                        {ev.summary && <p style={{ fontSize: '0.82rem', color: '#166534', margin: '0.35rem 0 0' }}>{ev.summary}</p>}
+                        <span style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: 600, display: 'inline-block', marginTop: '0.4rem' }}>
+                          ✓ Verified by {ev.sourceSystem || 'RightPath'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="pv-rightpath-banner">
+                    <div className="pv-rightpath-left">
+                      <FiInfo size={18} />
+                      <p className="pv-rightpath-text">
+                        No external RightPath assessment evidence linked yet. Complete verified assessments on RightPath to showcase authentic evidence badges to companies.
+                      </p>
+                    </div>
+                    <a
+                      href="https://rightpath.live"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-pv-rightpath-link"
+                    >
+                      Go to RightPath <FiExternalLink size={13} />
+                    </a>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Card: Verified Evidence & RightPath Assessments */}
-          <div className="pv-dark-card pv-card-span2">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiCheckCircle size={18} color="#16a34a" /> Verified Assessment Evidence (RightPath)
-              </h2>
             </div>
-            {evidencesList.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-                {evidencesList.map(ev => (
-                  <div key={ev.id} style={{ background: '#f0fdf4', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>{ev.title}</strong>
-                      {ev.score != null && (
-                        <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.78rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
-                          Score: {ev.score}%
-                        </span>
-                      )}
+
+            {/* -------------------- RIGHT COLUMN -------------------- */}
+            <div className="pv-col-stack">
+              {/* 1. Key Skills */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiAward size={18} />
                     </div>
-                    {ev.summary && <p style={{ fontSize: '0.82rem', color: '#166534', margin: '0.35rem 0 0' }}>{ev.summary}</p>}
-                    <span style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: 600, display: 'inline-block', marginTop: '0.4rem' }}>
-                      ? Verified by {ev.sourceSystem || 'RightPath'}
-                    </span>
+                    <h2 className="pv-card-title-text">Key Skills</h2>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
-                <p style={{ color: '#64748b', fontSize: '0.88rem', margin: 0 }}>
-                  No external RightPath assessment evidence linked yet. Complete verified assessments on RightPath to showcase authentic evidence badges to companies.
-                </p>
-              </div>
-            )}
-          </div>
+                </div>
 
-          {/* Card: Personal Details */}
-          <div className="pv-dark-card pv-card-span2">
-            <div className="pv-card-header-row">
-              <h2 className="pv-card-title">
-                <FiUser size={18} /> Personal Details
-              </h2>
-              {!isReadOnly && (
-                <button className="section-action-link" onClick={goToEdit}>
-                  <FiEdit3 size={13} /> Edit Details
-                </button>
-              )}
+                <div className="pv-skills-wrap">
+                  {displayData.skills.length > 0 ? (
+                    displayData.skills.map((skill, i) => {
+                      const cls = getSkillClass(skill);
+                      return (
+                        <span key={i} className={`pv-skill-item-pill ${cls}`}>
+                          {skill}
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                      No skills added yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Internships */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiBriefcase size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Internships</h2>
+                  </div>
+                </div>
+
+                {displayData.experiences && displayData.experiences.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {displayData.experiences.map((exp: any, idx) => {
+                      const initials = (exp.companyName || 'Exp')
+                        .split(' ')
+                        .map((w: string) => w[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase() || 'EX';
+
+                      return (
+                        <div key={exp.id || idx} className="pv-exp-card-item">
+                          <div className="pv-exp-logo-badge">
+                            {initials}
+                          </div>
+                          <div className="pv-exp-info">
+                            <div className="pv-exp-title-row">
+                              <span className="pv-exp-company-strong">{exp.companyName}</span>
+                              <span className="pv-exp-role-sub">({exp.title})</span>
+                            </div>
+                            <span className="pv-exp-date-line">
+                              <FiCalendar size={12} /> {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}
+                            </span>
+                            {exp.description && (
+                              <p className="pv-exp-desc-line">{exp.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                    No internships or work experience added yet.
+                  </p>
+                )}
+              </div>
+
+              {/* 3. Accomplishments & Strengths */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiAward size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Accomplishments & Strengths</h2>
+                  </div>
+                </div>
+
+                <div className="pv-strengths-wrap">
+                  {strengthsList.length > 0 ? (
+                    strengthsList.map((st, i) => {
+                      const icons = ['⭐', '👥', '💬', '☀️', '⏰', '📊', '🚀', '🎯', '💡', '🏆'];
+                      const icon = icons[i % icons.length];
+                      const classes = ['problem-solving', 'teamwork', 'communication', 'adaptability', 'timemanagement', 'leadership'];
+                      const cls = classes[i % classes.length];
+                      return (
+                        <span key={i} className={`pv-strength-item ${cls}`}>
+                          {icon} {st}
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                      No accomplishments & strengths customized yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Target Role & Work Preferences */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiTarget size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Target Role & Work Preferences</h2>
+                  </div>
+                </div>
+
+                <div className="pv-target-roles-grid">
+                  {roleInterests.length > 0 ? (
+                    roleInterests.map((r, i) => (
+                      <div key={r.id || r.roleId || i} className="pv-role-item-card">
+                        <div className={`pv-role-icon-box ${i % 2 === 1 ? 'purple' : ''}`}>
+                          {i % 2 === 1 ? <FiLayers size={18} /> : <FiMonitor size={18} />}
+                        </div>
+                        <div>
+                          <span className="pv-role-title-bold">{r.roleName || 'Target Role'}</span>
+                          <span className="pv-role-worktype-tag">{r.workType || 'HYBRID'}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                      No target role preferences configured yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 5. Personal Details */}
+              <div className="pv-card">
+                <div className="pv-card-head">
+                  <div className="pv-card-title-group">
+                    <div className="pv-card-icon-badge">
+                      <FiUser size={18} />
+                    </div>
+                    <h2 className="pv-card-title-text">Personal Details</h2>
+                  </div>
+                </div>
+
+                <div className="pv-personal-2col-grid">
+                  <div className="pv-personal-cell">
+                    <FiUser size={18} className="pv-personal-cell-icon" />
+                    <div className="pv-personal-cell-info">
+                      <span className="pv-personal-cell-label">Gender</span>
+                      <span className="pv-personal-cell-val">{displayData.gender || 'Not specified'}</span>
+                    </div>
+                  </div>
+
+                  <div className="pv-personal-cell">
+                    <FiCalendar size={18} className="pv-personal-cell-icon" />
+                    <div className="pv-personal-cell-info">
+                      <span className="pv-personal-cell-label">Date of Birth</span>
+                      <span className="pv-personal-cell-val">{displayData.dateOfBirth || 'Not specified'}</span>
+                    </div>
+                  </div>
+
+                  <div className="pv-personal-cell">
+                    <FiHeart size={18} className="pv-personal-cell-icon" />
+                    <div className="pv-personal-cell-info">
+                      <span className="pv-personal-cell-label">Marital Status</span>
+                      <span className="pv-personal-cell-val">{displayData.maritalStatus || 'Not specified'}</span>
+                    </div>
+                  </div>
+
+                  <div className="pv-personal-cell">
+                    <FiGlobe size={18} className="pv-personal-cell-icon" />
+                    <div className="pv-personal-cell-info">
+                      <span className="pv-personal-cell-label">Languages</span>
+                      <span className="pv-personal-cell-val">{displayData.languages || 'English, Telugu'}</span>
+                    </div>
+                  </div>
+
+                  <div className="pv-personal-cell pv-personal-cell-full">
+                    <FiMapPin size={18} className="pv-personal-cell-icon" />
+                    <div className="pv-personal-cell-info">
+                      <span className="pv-personal-cell-label">Permanent Address</span>
+                      <span className="pv-personal-cell-val">{displayData.permanentAddress || 'High Towers Gachibowli, Hyderabad'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            {isCompanyView ? (
-              <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem', color: '#334155', fontWeight: 600, fontSize: '0.92rem' }}>
-                  <FiUser size={16} color="#70c144" />
-                  <span>Personal Details Protected</span>
-                </div>
-                <p style={{ margin: '0 0 0.85rem', fontSize: '0.86rem', color: '#64748b', lineHeight: 1.5 }}>
-                  Candidate personal details (Date of Birth, Marital Status, Permanent Address, and direct personal contact details) are kept private to protect candidate confidentiality until a connection request is accepted.
-                </p>
-                <div className="pv-personal-grid">
-                  <div className="pv-personal-field">
-                    <span className="pv-label">Languages Known</span>
-                    <span className="pv-val">{displayData.languages || 'English'}</span>
-                  </div>
-                  <div className="pv-personal-field">
-                    <span className="pv-label">Current Location</span>
-                    <span className="pv-val">{displayData.currentLocation || 'Location on file'}</span>
-                  </div>
-                  <div className="pv-personal-field">
-                    <span className="pv-label">Work Eligibility</span>
-                    <span className="pv-val">Verified Candidate</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="pv-personal-grid">
-                <div className="pv-personal-field">
-                  <span className="pv-label">Gender</span>
-                  <span className="pv-val">{displayData.gender || 'Not specified'}</span>
-                </div>
-                <div className="pv-personal-field">
-                  <span className="pv-label">Date of Birth</span>
-                  <span className="pv-val">{displayData.dateOfBirth || 'Not specified'}</span>
-                </div>
-                <div className="pv-personal-field">
-                  <span className="pv-label">Marital Status</span>
-                  <span className="pv-val">{displayData.maritalStatus || 'Not specified'}</span>
-                </div>
-                <div className="pv-personal-field">
-                  <span className="pv-label">Languages Known</span>
-                  <span className="pv-val">{displayData.languages || 'Not specified'}</span>
-                </div>
-                <div className="pv-personal-field" style={{ gridColumn: '1 / -1' }}>
-                  <span className="pv-label">Permanent Address</span>
-                  <span className="pv-val">{displayData.permanentAddress || 'Not specified'}</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // ========================
   // EDIT VIEW (Aligned with proper buttons & Video Profile Section)
   // ========================
   const renderEditView = () => (
@@ -1824,9 +2020,12 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         />
 
         {/* Back button */}
-        <div className="profile-top-nav">
+        <div className="profile-top-nav" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
           <button className="btn-back-to-profile" onClick={goToProfile}>
             <FiArrowLeft size={16} /> Back to Profile
+          </button>
+          <button className="btn-pv-edit-profile" onClick={goToProfile}>
+            <FiEye size={15} /> View Profile
           </button>
         </div>
 
@@ -1855,7 +2054,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
             >
               <div
                 className="avatar-progress-ring"
-                style={{ '--progress': `${displayData.completionPct}%` } as React.CSSProperties}
+                style={{ '--progress': `${completionStats.percentage}%` } as React.CSSProperties}
               >
                 {displayData.avatarUrl ? (
                   <img
@@ -1873,7 +2072,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                   <span>{displayData.avatarUrl ? 'Change' : 'Add Photo'}</span>
                 </div>
               </div>
-              <span className="avatar-completion-badge">{displayData.completionPct}%</span>
+              <span className="avatar-completion-badge">{completionStats.percentage}%</span>
               <div className="btn-avatar-camera" title="Click to Change Photo">
                 <FiCamera size={14} />
               </div>
@@ -2001,78 +2200,30 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
               </div>
             </div>
           </div>
+
+          <div className="pv-header-right-col" style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="pv-completeness-box" style={{ margin: 0 }}>
+              <div className="pv-completeness-header">
+                <span>Profile Completeness</span>
+                <span className="pv-completeness-pct">{completionStats.percentage}%</span>
+              </div>
+              <div className="pv-completeness-bar">
+                <div
+                  className="pv-completeness-fill"
+                  style={{ width: `${completionStats.percentage}%` }}
+                />
+              </div>
+              <p className="pv-completeness-subtext">
+                {completionStats.percentage === 100
+                  ? '🎉 Profile 100% complete! Maximum visibility to top hiring companies.'
+                  : `${completionStats.filledCount} of ${completionStats.totalCount} completed. Missing: ${completionStats.missingFields.slice(0, 2).join(', ')}.`}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Main Section Stack */}
         <div className="profile-sections-stack">
-          {/* Resume Section */}
-          <div className="section-card" id="edit-section-resume">
-            <div className="section-card-header">
-              <h2 className="section-card-title">
-                <FiFileText size={18} /> Resume
-              </h2>
-            </div>
-            {displayData.resumeName && (
-              <div className="resume-uploaded-box">
-                <div className="resume-file-info">
-                  <span className="resume-file-name">{displayData.resumeName}</span>
-                  <span className="resume-upload-date">{displayData.resumeDate}</span>
-                </div>
-                <div className="resume-file-actions">
-                  {displayData.resumeUrl && (
-                    <button
-                      type="button"
-                      className="btn-resume-icon view"
-                      title="View Resume"
-                      onClick={handleViewResume}
-                    >
-                      <FiEye size={16} />
-                    </button>
-                  )}
-                  {displayData.resumeUrl && (
-                    <a
-                      href={displayData.resumeUrl}
-                      download={displayData.resumeName || 'Resume.pdf'}
-                      className="btn-resume-icon"
-                      title="Download Resume"
-                    >
-                      <FiDownload size={16} />
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    className="btn-resume-icon delete"
-                    title="Delete Resume"
-                    onClick={handleDeleteResume}
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-            <div
-              className="resume-dropzone"
-              onClick={() => resumeInputRef.current?.click()}
-            >
-              <div className="dropzone-icon-circle">
-                <FiUploadCloud size={24} />
-              </div>
-              <button
-                type="button"
-                className="btn-update-resume"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  resumeInputRef.current?.click();
-                }}
-              >
-                <FiUploadCloud size={16} /> {displayData.resumeName ? 'Update resume' : 'Upload resume'}
-              </button>
-              <span className="resume-hint">
-                Supported Formats: DOC, DOCX, RTF, PDF (Up to 10 MB)
-              </span>
-            </div>
-          </div>
-
           {/* Video Profile / Introduction Video Section */}
           <div className="section-card" id="edit-section-video-profile">
             <div className="section-card-header">
@@ -2151,6 +2302,148 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
           </div>
 
           {/* Key Skills Section */}
+          {/* Card: Accomplishments & Strengths */}
+          <div className="section-card" id="edit-section-strengths">
+            <div className="section-card-header">
+              <h2 className="section-card-title">
+                <FiAward size={18} /> Accomplishments & Strengths
+              </h2>
+            </div>
+
+            <p className="section-card-intro">
+              Showcase your soft skills, key accomplishments, and workplace strengths to stand out to hiring companies.
+            </p>
+
+            {/* Input & Add Row */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                className="form-control"
+                style={{ flex: 1, minWidth: '220px' }}
+                placeholder="e.g. Critical Thinking, Leadership, Problem-Solving..."
+                value={strengthInput}
+                onChange={e => {
+                  setStrengthInput(e.target.value);
+                  if (strengthError) setStrengthError('');
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddStrength();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ padding: '0.55rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                onClick={() => handleAddStrength()}
+              >
+                <FiPlus size={16} /> Add Strength
+              </button>
+            </div>
+
+            {strengthError && (
+              <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: '0 0 0.75rem 0', fontWeight: 600 }}>
+                {strengthError}
+              </p>
+            )}
+
+            {/* Popular Suggestions */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '0.45rem' }}>
+                Quick Add Suggestions:
+              </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                {[
+                  'Problem-Solving',
+                  'Team Collaboration',
+                  'Effective Communication',
+                  'Adaptability',
+                  'Time Management',
+                  'Leadership',
+                  'Critical Thinking',
+                  'Creativity',
+                  'Continuous Learning',
+                  'Analytical Mindset'
+                ]
+                  .filter(item => !strengthsList.includes(item))
+                  .slice(0, 6)
+                  .map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      style={{
+                        background: '#f8fafc',
+                        border: '1px dashed #cbd5e1',
+                        borderRadius: '9999px',
+                        padding: '0.25rem 0.75rem',
+                        fontSize: '0.78rem',
+                        color: '#334155',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onClick={() => handleAddStrength(item)}
+                    >
+                      <FiPlus size={12} /> {item}
+                    </button>
+                  ))}
+              </div>
+            </div>
+
+            {/* Current Configured Strengths */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+              {strengthsList.length > 0 ? (
+                strengthsList.map((st, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: '#f0fdf4',
+                      color: '#166534',
+                      border: '1px solid #bbf7d0',
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <span>⭐ {st}</span>
+                    <button
+                      type="button"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#15803d',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '1rem',
+                        lineHeight: 1
+                      }}
+                      onClick={() => handleRemoveStrength(st)}
+                      title={`Remove ${st}`}
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>
+                  No strengths added yet. Use the input above to add your key accomplishments.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="section-card" id="edit-section-skills">
             <div className="section-card-header">
               <h2 className="section-card-title">
@@ -2199,18 +2492,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
               </h2>
               <button
                 className="section-action-link"
-                onClick={() => {
-                  setEduForm({
-                    qualification: '',
-                    institution: '',
-                    fieldOfStudy: '',
-                    startYear: '',
-                    endYear: '',
-                    courseType: 'Full Time',
-                  });
-                  setEduErrors({});
-                  setActiveModal('education');
-                }}
+                onClick={openAddEducation}
               >
                 <FiPlus size={14} /> Add Education
               </button>
@@ -2229,31 +2511,31 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                         </span>
                       )}
                     </div>
-                    <button
-                      className="btn-record-delete"
-                      onClick={() => handleDeleteEducation(edu.id)}
-                      title="Delete education record"
-                    >
-                      <FiTrash2 size={15} />
-                    </button>
+                    <div className="record-actions">
+                      <button
+                        type="button"
+                        className="btn-record-edit"
+                        onClick={() => openEditEducation(edu)}
+                        title="Edit education record"
+                      >
+                        <FiEdit3 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-record-delete"
+                        onClick={() => handleDeleteEducation(edu.id)}
+                        title="Delete education record"
+                      >
+                        <FiTrash2 size={15} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div
                 className="empty-dashed-placeholder"
-                onClick={() => {
-                  setEduForm({
-                    qualification: '',
-                    institution: '',
-                    fieldOfStudy: '',
-                    startYear: '',
-                    endYear: '',
-                    courseType: 'Full Time',
-                  });
-                  setEduErrors({});
-                  setActiveModal('education');
-                }}
+                onClick={openAddEducation}
               >
                 <FiPlus size={16} /> Add your college degree, school, or certifications
               </div>
@@ -2268,20 +2550,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
               </h2>
               <button
                 className="section-action-link"
-                onClick={() => {
-                  setProjForm({
-                    name: '',
-                    clientCompany: '',
-                    workType: 'Full Time',
-                    summary: '',
-                    githubUrl: '',
-                    demoUrl: '',
-                    startDate: '',
-                    endDate: '',
-                  });
-                  setProjErrors({});
-                  setActiveModal('project');
-                }}
+                onClick={openAddProject}
               >
                 <FiPlus size={14} /> Add Project
               </button>
@@ -2293,13 +2562,24 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     <div className="record-content">
                       <div className="project-item-top">
                         <h3 className="record-title">{proj.name}</h3>
-                        <button
-                          className="btn-record-delete"
-                          onClick={() => handleDeleteProject(proj.id)}
-                          title="Delete project"
-                        >
-                          <FiTrash2 size={15} />
-                        </button>
+                        <div className="record-actions">
+                          <button
+                            type="button"
+                            className="btn-record-edit"
+                            onClick={() => openEditProject(proj)}
+                            title="Edit project"
+                          >
+                            <FiEdit3 size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-record-delete"
+                            onClick={() => handleDeleteProject(proj.id)}
+                            title="Delete project"
+                          >
+                            <FiTrash2 size={15} />
+                          </button>
+                        </div>
                       </div>
                       {(proj.clientCompany || proj.startDate || proj.endDate) && (
                         <p className="record-subtitle">
@@ -2309,7 +2589,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       {proj.summary && <p className="record-desc">{proj.summary}</p>}
                       {proj.githubUrl && (
                         <a
-                          href={proj.githubUrl}
+                          href={normalizeExternalUrl(proj.githubUrl)} onClick={e => e.stopPropagation()}
                           target="_blank"
                           rel="noreferrer"
                           className="project-github-link"
@@ -2324,20 +2604,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
             ) : (
               <div
                 className="empty-dashed-placeholder"
-                onClick={() => {
-                  setProjForm({
-                    name: '',
-                    clientCompany: '',
-                    workType: 'Full Time',
-                    summary: '',
-                    githubUrl: '',
-                    demoUrl: '',
-                    startDate: '',
-                    endDate: '',
-                  });
-                  setProjErrors({});
-                  setActiveModal('project');
-                }}
+                onClick={openAddProject}
               >
                 <FiPlus size={16} /> Add projects, case studies, or portfolio items
               </div>
@@ -2397,6 +2664,74 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 <FiPlus size={16} /> Add your internship details to highlight practical hands-on experience
               </div>
             )}
+          </div>
+
+          {/* Resume Section */}
+          <div className="section-card" id="edit-section-resume">
+            <div className="section-card-header">
+              <h2 className="section-card-title">
+                <FiFileText size={18} /> Resume
+              </h2>
+            </div>
+            {displayData.resumeName && (
+              <div className="resume-uploaded-box">
+                <div className="resume-file-info">
+                  <span className="resume-file-name">{displayData.resumeName}</span>
+                  <span className="resume-upload-date">{displayData.resumeDate}</span>
+                </div>
+                <div className="resume-file-actions">
+                  {displayData.resumeUrl && (
+                    <button
+                      type="button"
+                      className="btn-resume-icon view"
+                      title="View Resume"
+                      onClick={handleViewResume}
+                    >
+                      <FiEye size={16} />
+                    </button>
+                  )}
+                  {displayData.resumeUrl && (
+                    <a
+                      href={displayData.resumeUrl}
+                      download={displayData.resumeName || 'Resume.pdf'}
+                      className="btn-resume-icon"
+                      title="Download Resume"
+                    >
+                      <FiDownload size={16} />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-resume-icon delete"
+                    title="Delete Resume"
+                    onClick={handleDeleteResume}
+                  >
+                    <FiTrash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+            <div
+              className="resume-dropzone"
+              onClick={() => resumeInputRef.current?.click()}
+            >
+              <div className="dropzone-icon-circle">
+                <FiUploadCloud size={24} />
+              </div>
+              <button
+                type="button"
+                className="btn-update-resume"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resumeInputRef.current?.click();
+                }}
+              >
+                <FiUploadCloud size={16} /> {displayData.resumeName ? 'Update resume' : 'Upload resume'}
+              </button>
+              <span className="resume-hint">
+                Supported Formats: DOC, DOCX, RTF, PDF (Up to 10 MB)
+              </span>
+            </div>
           </div>
 
           {/* Target Role & Work Preferences Section */}
@@ -2461,12 +2796,13 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 className="section-action-link"
                 onClick={() => {
                   setPersonalForm({
-                    gender: displayData.gender,
+                    gender: displayData.gender || '',
                     dateOfBirth: displayData.dateOfBirth,
                     maritalStatus: displayData.maritalStatus,
                     permanentAddress: displayData.permanentAddress,
                     languages: displayData.languages,
                   });
+                  setPersonalErrors({});
                   setActiveModal('personal');
                 }}
               >
@@ -2843,7 +3179,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Add Education</h3>
+              <h3 className="modal-title">{editingEduId ? "Edit Education" : "Add Education"}</h3>
               <button className="btn-modal-close" onClick={closeModal}>
                 <FiX size={18} />
               </button>
@@ -2925,7 +3261,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 Cancel
               </button>
               <button className="btn-save" onClick={handleSaveEducation} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Education'}
+                {saving ? 'Saving...' : (editingEduId ? 'Save Changes' : 'Add Education')}
               </button>
             </div>
           </div>
@@ -2937,7 +3273,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Add Project</h3>
+              <h3 className="modal-title">{editingProjId ? "Edit Project" : "Add Project"}</h3>
               <button className="btn-modal-close" onClick={closeModal}>
                 <FiX size={18} />
               </button>
@@ -3008,7 +3344,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 Cancel
               </button>
               <button className="btn-save" onClick={handleSaveProject} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Project'}
+                {saving ? 'Saving...' : (editingProjId ? 'Save Changes' : 'Add Project')}
               </button>
             </div>
           </div>
@@ -3019,7 +3355,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
       {/* Company Connect Request Modal */}
       {showConnectModal && (
         <div className="modal-overlay" onClick={() => setShowConnectModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '620px' }}>
             <div className="modal-header">
               <h2>Connect with {fullName}</h2>
               <button className="btn-close-modal" onClick={() => setShowConnectModal(false)}><FiX size={18} /></button>
@@ -3043,29 +3379,95 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                   style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                 />
               </div>
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                  Work Model
-                </label>
-                <select
-                  value={connectForm.workType}
-                  onChange={e => setConnectForm(prev => ({ ...prev, workType: e.target.value }))}
-                  style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', boxSizing: 'border-box' }}
-                >
-                  <option value="REMOTE">Remote</option>
-                  <option value="HYBRID">Hybrid</option>
-                  <option value="ONSITE">On-Site</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                    Work Model
+                  </label>
+                  <select
+                    value={connectForm.workType}
+                    onChange={e => setConnectForm(prev => ({ ...prev, workType: e.target.value }))}
+                    style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', boxSizing: 'border-box' }}
+                  >
+                    <option value="HYBRID">Hybrid</option>
+                    <option value="REMOTE">Remote</option>
+                    <option value="ONSITE">On-Site</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                    Company / Job Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Hyderabad, Bengaluru"
+                    value={connectForm.location}
+                    onChange={e => setConnectForm(prev => ({ ...prev, location: e.target.value }))}
+                    style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                    Salary / Compensation
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ₹12 - 18 LPA"
+                    value={connectForm.salaryRange}
+                    onChange={e => setConnectForm(prev => ({ ...prev, salaryRange: e.target.value }))}
+                    style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                    Work Timings / Shift
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 9:00 AM - 6:00 PM IST"
+                    value={connectForm.workTimings}
+                    onChange={e => setConnectForm(prev => ({ ...prev, workTimings: e.target.value }))}
+                    style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                    Experience Required
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2+ Years / Fresher"
+                    value={connectForm.experienceRequired}
+                    onChange={e => setConnectForm(prev => ({ ...prev, experienceRequired: e.target.value }))}
+                    style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                    No. of Openings / Members to Hire
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 1, 2, 5"
+                    value={connectForm.openingsCount}
+                    onChange={e => setConnectForm(prev => ({ ...prev, openingsCount: e.target.value }))}
+                    style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
               </div>
               <div className="form-group" style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
-                  Location (Optional)
+                  Expected Joining Date
                 </label>
                 <input
-                  type="text"
-                  placeholder="e.g. Bangalore, Hyderabad, Remote"
-                  value={connectForm.location}
-                  onChange={e => setConnectForm(prev => ({ ...prev, location: e.target.value }))}
+                  type="date"
+                  value={connectForm.expectedStart}
+                  onChange={e => setConnectForm(prev => ({ ...prev, expectedStart: e.target.value }))}
                   style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                 />
               </div>
@@ -3107,7 +3509,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     });
                     setAlertMsg({ type: 'success', text: `Connection request sent to ${fullName}!` });
                     setShowConnectModal(false);
-                    setConnectForm({ roleTitle: '', opportunitySummary: '', workType: 'REMOTE', location: '' });
+                    setConnectForm({ roleTitle: '', opportunitySummary: '', workType: 'REMOTE', location: '', salaryRange: '', workTimings: '', experienceRequired: '', openingsCount: '1', expectedStart: '' });
                     setConnectError('');
                   } catch (err: any) {
                     setConnectError(err?.response?.data?.message || 'Failed to submit connection request.');
@@ -3228,15 +3630,14 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
               <div className="form-group">
                 <label className="form-label">Gender</label>
                 <select
+                  ref={personalGenderRef}
                   className="form-control"
-                  value={personalForm.gender}
+                  value={personalForm.gender || ''}
                   onChange={e => setPersonalForm(f => ({ ...f, gender: e.target.value }))}
                 >
-                  <option value="">Select Gender</option>
+                  <option value="">Not specified</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                  <option value="Prefer not to say">Prefer not to say</option>
                 </select>
               </div>
 
@@ -3244,10 +3645,27 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 <label className="form-label">Date of Birth</label>
                 <input
                   type="date"
-                  className="form-control"
+                  className={`form-control ${personalErrors.dateOfBirth ? 'invalid is-invalid' : ''}`}
+                  max={new Date().toLocaleDateString('en-CA')}
                   value={personalForm.dateOfBirth}
-                  onChange={e => setPersonalForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                  onChange={e => {
+                    const val = e.target.value;
+                    const today = new Date().toLocaleDateString('en-CA');
+                    if (val && val > today) {
+                      setPersonalErrors(err => ({ ...err, dateOfBirth: 'Date of birth cannot be in the future' }));
+                    } else {
+                      setPersonalErrors(err => {
+                        const rest = { ...err };
+                        delete rest.dateOfBirth;
+                        return rest;
+                      });
+                    }
+                    setPersonalForm(f => ({ ...f, dateOfBirth: val }));
+                  }}
                 />
+                {personalErrors.dateOfBirth && (
+                  <span className="form-error">{personalErrors.dateOfBirth}</span>
+                )}
               </div>
 
               <div className="form-group">

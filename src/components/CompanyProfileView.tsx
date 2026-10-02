@@ -24,6 +24,12 @@ import {
   FiExternalLink,
   FiUserCheck,
   FiCalendar,
+  FiRotateCcw,
+  FiImage,
+  FiShield,
+  FiCheck,
+  FiCamera,
+  FiLink,
 } from "react-icons/fi";
 import "./CompanyProfileView.css";
 
@@ -98,20 +104,20 @@ const CompanyProfileView: React.FC = () => {
       const res = await companiesApi.getMyProfile();
       setProfile(res.data.data);
       setForm(res.data.data);
-    } catch {
-      // Fallback draft based on authenticated user info or routeCompanyId
+    } catch (err) {
+      console.warn("Could not load company profile from DB, initializing with user info", err);
       const fallback: CompanyProfile = {
-        id: routeCompanyId || "draft",
-        legalName: user?.fullName || "company1",
-        displayName: user?.fullName || "company1",
-        email: user?.email || "company1@gmail.com",
-        industry: "Information Technology & Services",
-        companySize: "1-10 Employees",
-        website: "https://www.isigntech.com/",
-        linkedinUrl: "https://linkedin.com/isigntech",
-        description: "A structured group of people who work together in a coordinated way to reach shared goals and objectives. We are an Information Technology & Services company focused on building innovative solutions and connecting with top talent.",
-        country: "India",
-        city: "Hyderabad, Chennai",
+        id: routeCompanyId || "",
+        legalName: user?.fullName || "",
+        displayName: user?.fullName || "",
+        email: user?.email || "",
+        industry: "",
+        companySize: "",
+        website: "",
+        linkedinUrl: "",
+        description: "",
+        country: "",
+        city: "",
         status: "ACTIVE",
         contacts: []
       };
@@ -334,7 +340,7 @@ const CompanyProfileView: React.FC = () => {
                 <div className="company-header-details">
                   <div className="company-title-edit-row">
                     <h1 className="company-name-title">
-                      {profile?.displayName || profile?.legalName || "company1"}
+                      {profile?.displayName || profile?.legalName || user?.fullName || "Company"}
                     </h1>
                     {!isReadOnly && (
                       <button
@@ -349,18 +355,18 @@ const CompanyProfileView: React.FC = () => {
                   </div>
 
                   <p className="company-legal-subtitle">
-                    Legal Name: <strong>{profile?.legalName || "company1"}</strong>
+                    Legal Name: <strong>{profile?.legalName || "Not specified"}</strong>
                   </p>
 
                   <div className="hero-meta-pills-row">
                     <span className="hero-meta-pill">
-                      <FiBriefcase size={13} /> {profile?.industry || "Information Technology & Services"}
+                      <FiBriefcase size={13} /> {profile?.industry || "Not specified"}
                     </span>
                     <span className="hero-meta-pill">
                       <FiUsers size={13} /> {profile?.companySize || "1-10 Employees"}
                     </span>
                     <span className="hero-meta-pill">
-                      <FiMapPin size={13} /> {profile?.city ? `${profile.city}, ${profile.country || "India"}` : "Hyderabad, Chennai, India"}
+                      <FiMapPin size={13} /> {profile?.city ? `${profile.city}${profile.country ? `, ${profile.country}` : ""}` : (profile?.country || "Not specified")}
                     </span>
                   </div>
 
@@ -419,8 +425,7 @@ const CompanyProfileView: React.FC = () => {
 
               <div className="about-org-content">
                 <p className="org-bio-text">
-                  {profile?.description ||
-                    "A structured group of people who work together in a coordinated way to reach shared goals and objectives. We are an Information Technology & Services company focused on building innovative solutions and connecting with top talent."}
+                  {profile?.description || "No description or company overview provided yet."}
                 </p>
               </div>
             </div>
@@ -463,7 +468,7 @@ const CompanyProfileView: React.FC = () => {
                         {profile.website} <FiExternalLink size={12} />
                       </a>
                     ) : (
-                      <span className="metric-txt muted">https://www.isigntech.com/</span>
+                      <span className="metric-txt muted">Not specified</span>
                     )}
                   </div>
                 </div>
@@ -485,7 +490,7 @@ const CompanyProfileView: React.FC = () => {
                         {profile.linkedinUrl} <FiExternalLink size={12} />
                       </a>
                     ) : (
-                      <span className="metric-txt muted">https://linkedin.com/isigntech</span>
+                      <span className="metric-txt muted">Not specified</span>
                     )}
                   </div>
                 </div>
@@ -497,7 +502,7 @@ const CompanyProfileView: React.FC = () => {
                   </div>
                   <div className="metric-details">
                     <span className="metric-lbl">Industry & Domain</span>
-                    <strong className="metric-val">{profile?.industry || "Information Technology & Services"}</strong>
+                    <strong className="metric-val">{profile?.industry || "Not specified"}</strong>
                   </div>
                 </div>
 
@@ -508,7 +513,7 @@ const CompanyProfileView: React.FC = () => {
                   </div>
                   <div className="metric-details">
                     <span className="metric-lbl">Employee Strength</span>
-                    <strong className="metric-val">{profile?.companySize || "1-10 Employees"}</strong>
+                    <strong className="metric-val">{profile?.companySize || "Not specified"}</strong>
                   </div>
                 </div>
 
@@ -520,7 +525,7 @@ const CompanyProfileView: React.FC = () => {
                   <div className="metric-details">
                     <span className="metric-lbl">Location</span>
                     <strong className="metric-val">
-                      {profile?.city ? `${profile.city}, ${profile.country || "India"}` : "Hyderabad, Chennai, India"}
+                      {profile?.city ? `${profile.city}${profile.country ? `, ${profile.country}` : ""}` : (profile?.country || "Not specified")}
                     </strong>
                   </div>
                 </div>
@@ -532,7 +537,7 @@ const CompanyProfileView: React.FC = () => {
                   </div>
                   <div className="metric-details">
                     <span className="metric-lbl">Contact Information</span>
-                    <strong className="metric-val">{profile?.email || user?.email || "company1@gmail.com"}</strong>
+                    <strong className="metric-val">{profile?.email || user?.email || "Not specified"}</strong>
                   </div>
                 </div>
 
@@ -543,7 +548,7 @@ const CompanyProfileView: React.FC = () => {
                   </div>
                   <div className="metric-details">
                     <span className="metric-lbl">Joined On</span>
-                    <strong className="metric-val">22 September 2026</strong>
+                    <strong className="metric-val">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "Recently"}</strong>
                   </div>
                 </div>
               </div>
@@ -679,64 +684,193 @@ const CompanyProfileView: React.FC = () => {
           </>
         ) : (
           /* EDIT MODE FORM */
-          <div className="company-edit-form-card">
-            <div className="edit-form-header">
-              <h2>Edit Company Profile & Organization Settings</h2>
-              <button
-                type="button"
-                className="btn-cancel-edit-top"
-                onClick={() => setEditing(false)}
-              >
-                <FiX size={18} /> Cancel
-              </button>
+          <div className="company-edit-redesign-root">
+            {/* Top Hero Gradient Banner */}
+            <div className="comp-edit-banner">
+              <div className="comp-edit-banner-left">
+                <div className="comp-banner-badge-icon">
+                  <FiEdit3 size={22} />
+                </div>
+                <div className="comp-banner-headings">
+                  <h1 className="comp-banner-title">Edit Company Profile &amp; Organization Settings</h1>
+                  <p className="comp-banner-sub">
+                    Update your company information, online presence, and organizational details to attract the right talent.
+                  </p>
+                </div>
+              </div>
+              <div className="comp-edit-banner-right">
+                {/* Decorative Building Graphic with Gear */}
+                <div className="comp-banner-art" aria-hidden="true">
+                  <svg viewBox="0 0 140 70" fill="none" xmlns="http://www.w3.org/2000/svg" className="comp-art-svg">
+                    <rect x="15" y="24" width="22" height="46" rx="4" fill="#A7F3D0" />
+                    <rect x="20" y="32" width="4" height="6" rx="1" fill="#FFFFFF" />
+                    <rect x="28" y="32" width="4" height="6" rx="1" fill="#FFFFFF" />
+                    <rect x="20" y="44" width="4" height="6" rx="1" fill="#FFFFFF" />
+                    <rect x="28" y="44" width="4" height="6" rx="1" fill="#FFFFFF" />
+                    <rect x="20" y="56" width="4" height="6" rx="1" fill="#FFFFFF" />
+                    <rect x="28" y="56" width="4" height="6" rx="1" fill="#FFFFFF" />
+
+                    <rect x="42" y="10" width="30" height="60" rx="4" fill="#6EE7B7" />
+                    <rect x="48" y="18" width="5" height="7" rx="1" fill="#047857" />
+                    <rect x="61" y="18" width="5" height="7" rx="1" fill="#047857" />
+                    <rect x="48" y="30" width="5" height="7" rx="1" fill="#047857" />
+                    <rect x="61" y="30" width="5" height="7" rx="1" fill="#047857" />
+                    <rect x="48" y="42" width="5" height="7" rx="1" fill="#047857" />
+                    <rect x="61" y="42" width="5" height="7" rx="1" fill="#047857" />
+
+                    <rect x="76" y="20" width="24" height="50" rx="4" fill="#D1FAE5" />
+                    <rect x="82" y="28" width="4" height="6" rx="1" fill="#059669" />
+                    <rect x="90" y="28" width="4" height="6" rx="1" fill="#059669" />
+                    <rect x="82" y="40" width="4" height="6" rx="1" fill="#059669" />
+                    <rect x="90" y="40" width="4" height="6" rx="1" fill="#059669" />
+
+                    <circle cx="72" cy="54" r="14" fill="#059669" />
+                    <path d="M72 45v3m0 12v3m9-9h-3m-12 0h-3m15.5-6.5l-2.1 2.1m-8.8 8.8l-2.1 2.1m13-2.1l-2.1-2.1m-8.8-8.8l-2.1-2.1" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+                    <circle cx="72" cy="54" r="5" fill="#047857" />
+                  </svg>
+                </div>
+                <button
+                  type="button"
+                  className="comp-banner-cancel-btn"
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                >
+                  <FiX size={15} /> Cancel
+                </button>
+              </div>
             </div>
 
-            <form className="edit-company-form" onSubmit={e => { e.preventDefault(); handleSave(); }}>
-              <div className="form-sections-body">
-                {/* Group 1: Basic Information */}
-                <div className="form-sub-block">
-                  <h3 className="block-title">Basic Information</h3>
-                  <div className="form-row-2col">
-                    <div className="form-group">
-                      <label>Display Name (Brand Name) *</label>
-                      <input
-                        type="text"
-                        value={form.displayName || ""}
-                        onChange={e => {
-                          setForm(p => ({ ...p, displayName: e.target.value }));
-                          if (formErrors.displayName) setFormErrors(p => ({ ...p, displayName: "" }));
-                        }}
-                        className={formErrors.displayName ? "is-invalid" : ""}
-                        placeholder="e.g. Acme Corporation"
-                      />
-                      {formErrors.displayName && <span className="field-error-txt">{formErrors.displayName}</span>}
-                    </div>
+            {/* Error / Success Banners */}
+            {error && <div className="profile-alert alert-error" style={{ margin: '14px 0' }}>{error}</div>}
+            {success && <div className="profile-alert alert-success" style={{ margin: '14px 0' }}>{success}</div>}
 
-                    <div className="form-group">
-                      <label>Legal Company Name *</label>
-                      <input
-                        ref={legalNameInputRef}
-                        type="text"
-                        value={form.legalName || ""}
-                        onChange={e => {
-                          setForm(p => ({ ...p, legalName: e.target.value }));
-                          if (formErrors.legalName) setFormErrors(p => ({ ...p, legalName: "" }));
-                        }}
-                        className={formErrors.legalName ? "is-invalid" : ""}
-                        placeholder="e.g. Acme Innovations Pvt Ltd"
-                      />
-                      {formErrors.legalName && <span className="field-error-txt">{formErrors.legalName}</span>}
+            <form className="comp-edit-form" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+              {/* Row 1: Basic Information (Left) + Company Logo (Right) */}
+              <div className="comp-edit-top-grid">
+                {/* Left Card: Basic Information */}
+                <div className="comp-card-section">
+                  <div className="comp-card-header">
+                    <div className="comp-card-icon-badge">
+                      <FiShield size={18} />
+                    </div>
+                    <div className="comp-card-title-wrap">
+                      <h2 className="comp-card-title">Basic Information</h2>
+                      <p className="comp-card-subtitle">Provide your company's official name and brand details.</p>
+                    </div>
+                  </div>
+                  <div className="comp-card-body">
+                    <div className="comp-card-2col">
+                      <div className="comp-field-group">
+                        <label className="comp-field-label">
+                          <FiBriefcase size={14} className="comp-label-icon" />
+                          Display Name (Brand Name) <span className="req-star">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={form.displayName || ""}
+                          onChange={e => {
+                            setForm(p => ({ ...p, displayName: e.target.value }));
+                            if (formErrors.displayName) setFormErrors(p => ({ ...p, displayName: "" }));
+                          }}
+                          className={"comp-input" + (formErrors.displayName ? " comp-input-error" : "")}
+                          placeholder="e.g. Acme Technologies"
+                        />
+                        <span className="comp-field-hint">This name will be visible to candidates.</span>
+                        {formErrors.displayName && <span className="comp-error-msg">{formErrors.displayName}</span>}
+                      </div>
+
+                      <div className="comp-field-group">
+                        <label className="comp-field-label">
+                          <FiShield size={14} className="comp-label-icon" />
+                          Legal Company Name <span className="req-star">*</span>
+                        </label>
+                        <input
+                          ref={legalNameInputRef}
+                          type="text"
+                          value={form.legalName || ""}
+                          onChange={e => {
+                            setForm(p => ({ ...p, legalName: e.target.value }));
+                            if (formErrors.legalName) setFormErrors(p => ({ ...p, legalName: "" }));
+                          }}
+                          className={"comp-input" + (formErrors.legalName ? " comp-input-error" : "")}
+                          placeholder="e.g. Acme Technologies Inc."
+                        />
+                        <span className="comp-field-hint">Enter your registered legal company name.</span>
+                        {formErrors.legalName && <span className="comp-error-msg">{formErrors.legalName}</span>}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Group 2: Online Presence */}
-                <div className="form-sub-block">
-                  <h3 className="block-title">Web & Online Presence</h3>
-                  <div className="form-row-2col">
-                    <div className="form-group">
-                      <label>
-                        <FiGlobe size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
+                {/* Right Card: Company Logo */}
+                <div className="comp-card-section comp-logo-card">
+                  <div className="comp-card-header">
+                    <div className="comp-card-icon-badge">
+                      <FiImage size={18} />
+                    </div>
+                    <div className="comp-card-title-wrap">
+                      <h2 className="comp-card-title">Company Logo</h2>
+                    </div>
+                  </div>
+                  <div className="comp-card-body">
+                    <label className="comp-logo-dropzone">
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              alert("Logo image must be smaller than 2MB");
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setForm(p => ({ ...p, logoUrl: reader.result as string }));
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      {form.logoUrl ? (
+                        <div className="comp-logo-preview-wrap">
+                          <img src={form.logoUrl} alt="Company Logo" className="comp-logo-preview-img" />
+                          <div className="comp-logo-preview-hover">
+                            <FiCamera size={18} />
+                            <span>Change Logo</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="comp-logo-placeholder">
+                          <div className="comp-logo-camera-icon">
+                            <FiCamera size={18} />
+                          </div>
+                          <span className="comp-logo-upload-title">Upload Company Logo</span>
+                          <span className="comp-logo-upload-types">JPG, PNG (Max 2 MB)</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Web & Online Presence */}
+              <div className="comp-card-section">
+                <div className="comp-card-header">
+                  <div className="comp-card-icon-badge">
+                    <FiGlobe size={18} />
+                  </div>
+                  <div className="comp-card-title-wrap">
+                    <h2 className="comp-card-title">Web &amp; Online Presence</h2>
+                    <p className="comp-card-subtitle">Add your company's website and social media links.</p>
+                  </div>
+                </div>
+                <div className="comp-card-body">
+                  <div className="comp-card-2col">
+                    <div className="comp-field-group">
+                      <label className="comp-field-label">
+                        <FiLink size={14} className="comp-label-icon" />
                         Company Website URL
                       </label>
                       <input
@@ -746,15 +880,16 @@ const CompanyProfileView: React.FC = () => {
                           setForm(p => ({ ...p, website: e.target.value }));
                           if (formErrors.website) setFormErrors(p => ({ ...p, website: "" }));
                         }}
-                        className={formErrors.website ? "is-invalid" : ""}
-                        placeholder="https://example.com"
+                        className={"comp-input" + (formErrors.website ? " comp-input-error" : "")}
+                        placeholder="https://www.isigntech.com/"
                       />
-                      {formErrors.website && <span className="field-error-txt">{formErrors.website}</span>}
+                      <span className="comp-field-hint">Enter your official company website.</span>
+                      {formErrors.website && <span className="comp-error-msg">{formErrors.website}</span>}
                     </div>
 
-                    <div className="form-group">
-                      <label>
-                        <FiLinkedin size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#0a66c2' }} />
+                    <div className="comp-field-group">
+                      <label className="comp-field-label">
+                        <FiLinkedin size={14} className="comp-label-icon comp-icon-linkedin" />
                         LinkedIn Company Page
                       </label>
                       <input
@@ -764,122 +899,181 @@ const CompanyProfileView: React.FC = () => {
                           setForm(p => ({ ...p, linkedinUrl: e.target.value }));
                           if (formErrors.linkedinUrl) setFormErrors(p => ({ ...p, linkedinUrl: "" }));
                         }}
-                        className={formErrors.linkedinUrl ? "is-invalid" : ""}
-                        placeholder="https://linkedin.com/company/acme"
+                        className={"comp-input" + (formErrors.linkedinUrl ? " comp-input-error" : "")}
+                        placeholder="https://linkedin.com/isigntech"
                       />
-                      {formErrors.linkedinUrl && <span className="field-error-txt">{formErrors.linkedinUrl}</span>}
+                      <span className="comp-field-hint">Add your LinkedIn company page URL.</span>
+                      {formErrors.linkedinUrl && <span className="comp-error-msg">{formErrors.linkedinUrl}</span>}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Group 3: Industry & Size */}
-                <div className="form-sub-block">
-                  <h3 className="block-title">Organization Details</h3>
-                  <div className="form-row-2col">
-                    <div className="form-group">
-                      <label>
-                        <FiLayers size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
+              {/* Card 3: Organization Details */}
+              <div className="comp-card-section">
+                <div className="comp-card-header">
+                  <div className="comp-card-icon-badge">
+                    <FiBriefcase size={18} />
+                  </div>
+                  <div className="comp-card-title-wrap">
+                    <h2 className="comp-card-title">Organization Details</h2>
+                    <p className="comp-card-subtitle">Help candidates understand your industry and company size.</p>
+                  </div>
+                </div>
+                <div className="comp-card-body">
+                  <div className="comp-card-2col">
+                    <div className="comp-field-group">
+                      <label className="comp-field-label">
+                        <FiLayers size={14} className="comp-label-icon" />
                         Industry / Domain
                       </label>
-                      <select
-                        value={form.industry || "Information Technology & Services"}
-                        onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
-                      >
-                        <option value="Information Technology & Services">Information Technology & Services</option>
-                        <option value="Software Development & SaaS">Software Development & SaaS</option>
-                        <option value="Financial Services & Fintech">Financial Services & Fintech</option>
-                        <option value="Healthcare & Life Sciences">Healthcare & Life Sciences</option>
-                        <option value="E-Commerce & Retail">E-Commerce & Retail</option>
-                        <option value="Telecommunications">Telecommunications</option>
-                        <option value="Consulting & Professional Services">Consulting & Professional Services</option>
-                        <option value="Other">Other</option>
-                      </select>
+                      <div className="comp-select-wrap">
+                        <select
+                          value={form.industry || "Information Technology & Services"}
+                          onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
+                          className="comp-select"
+                        >
+                          <option value="Information Technology & Services">Information Technology & Services</option>
+                          <option value="Software Development & SaaS">Software Development & SaaS</option>
+                          <option value="Financial Services & Fintech">Financial Services & Fintech</option>
+                          <option value="Healthcare & Life Sciences">Healthcare & Life Sciences</option>
+                          <option value="E-Commerce & Retail">E-Commerce & Retail</option>
+                          <option value="Telecommunications">Telecommunications</option>
+                          <option value="Consulting & Professional Services">Consulting & Professional Services</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <span className="comp-field-hint">Select your primary industry.</span>
                     </div>
 
-                    <div className="form-group">
-                      <label>
-                        <FiUsers size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
+                    <div className="comp-field-group">
+                      <label className="comp-field-label">
+                        <FiUsers size={14} className="comp-label-icon" />
                         Employee Strength
                       </label>
-                      <select
-                        value={form.companySize || "1-10 Employees"}
-                        onChange={e => setForm(p => ({ ...p, companySize: e.target.value }))}
-                      >
-                        <option value="1-10 Employees">1-10 Employees (Seed / Early)</option>
-                        <option value="11-50 Employees">11-50 Employees (Startup / Growth)</option>
-                        <option value="51-200 Employees">51-200 Employees (Mid-size)</option>
-                        <option value="201-500 Employees">201-500 Employees (Scale-up)</option>
-                        <option value="500+ Employees">500+ Employees (Enterprise)</option>
-                      </select>
+                      <div className="comp-select-wrap">
+                        <select
+                          value={form.companySize || "1-10 Employees"}
+                          onChange={e => setForm(p => ({ ...p, companySize: e.target.value }))}
+                          className="comp-select"
+                        >
+                          <option value="1-10 Employees">1-10 Employees (Seed / Early)</option>
+                          <option value="11-50 Employees">11-50 Employees (Startup / Growth)</option>
+                          <option value="51-200 Employees">51-200 Employees (Mid-size)</option>
+                          <option value="201-500 Employees">201-500 Employees (Scale-up)</option>
+                          <option value="500+ Employees">500+ Employees (Enterprise)</option>
+                        </select>
+                      </div>
+                      <span className="comp-field-hint">Select total number of employees.</span>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Group 4: Location */}
-                <div className="form-sub-block">
-                  <h3 className="block-title">Headquarters</h3>
-                  <div className="form-row-2col">
-                    <div className="form-group">
-                      <label>
-                        <FiMapPin size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: '#047857' }} />
+              {/* Card 4: Headquarters */}
+              <div className="comp-card-section">
+                <div className="comp-card-header">
+                  <div className="comp-card-icon-badge">
+                    <FiMapPin size={18} />
+                  </div>
+                  <div className="comp-card-title-wrap">
+                    <h2 className="comp-card-title">Headquarters</h2>
+                    <p className="comp-card-subtitle">Specify your main office location.</p>
+                  </div>
+                </div>
+                <div className="comp-card-body">
+                  <div className="comp-card-2col">
+                    <div className="comp-field-group">
+                      <label className="comp-field-label">
+                        <FiMapPin size={14} className="comp-label-icon" />
                         City / Headquarters
                       </label>
                       <input
                         type="text"
                         value={form.city || ""}
                         onChange={e => setForm(p => ({ ...p, city: e.target.value }))}
-                        placeholder="e.g. Hyderabad"
+                        className="comp-input"
+                        placeholder="e.g. Hyderabad, Chennai"
                       />
+                      <span className="comp-field-hint">Enter your primary office location.</span>
                     </div>
 
-                    <div className="form-group">
-                      <label>Country</label>
-                      <input
-                        type="text"
-                        value={form.country || "India"}
-                        onChange={e => setForm(p => ({ ...p, country: e.target.value }))}
-                        placeholder="e.g. India"
-                      />
+                    <div className="comp-field-group">
+                      <label className="comp-field-label">
+                        <FiGlobe size={14} className="comp-label-icon" />
+                        Country
+                      </label>
+                      <div className="comp-select-wrap">
+                        <select
+                          value={form.country || "India"}
+                          onChange={e => setForm(p => ({ ...p, country: e.target.value }))}
+                          className="comp-select"
+                        >
+                          <option value="India">India</option>
+                          <option value="United States">United States</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Canada">Canada</option>
+                          <option value="Australia">Australia</option>
+                          <option value="Singapore">Singapore</option>
+                          <option value="Germany">Germany</option>
+                          <option value="United Arab Emirates">United Arab Emirates</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <span className="comp-field-hint">Select your country.</span>
                     </div>
-                  </div>
-                </div>
-
-                {/* Group 5: Description */}
-                <div className="form-sub-block">
-                  <h3 className="block-title">About Organization</h3>
-                  <div className="form-group">
-                    <label>Company Overview & Culture</label>
-                    <textarea
-                      rows={4}
-                      value={form.description || ""}
-                      onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                      placeholder="Describe what your organization builds, work culture, team values, and hiring missions..."
-                    />
                   </div>
                 </div>
               </div>
 
-              {/* Form Action Buttons */}
-              <div className="edit-form-action-footer">
+              {/* Card 5: About Organization */}
+              <div className="comp-card-section">
+                <div className="comp-card-header">
+                  <div className="comp-card-icon-badge">
+                    <FiFileText size={18} />
+                  </div>
+                  <div className="comp-card-title-wrap">
+                    <h2 className="comp-card-title">About Organization</h2>
+                    <p className="comp-card-subtitle">Tell candidates about your company, mission, and what makes you unique.</p>
+                  </div>
+                </div>
+                <div className="comp-card-body">
+                  <div className="comp-field-group" style={{ position: 'relative' }}>
+                    <textarea
+                      rows={3}
+                      maxLength={500}
+                      value={form.description || ""}
+                      onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                      className="comp-textarea"
+                      placeholder="Write a short description about your company, culture, vision, and opportunities..."
+                    />
+                    <div className="comp-char-counter">
+                      {(form.description || "").length}/500
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="comp-edit-footer">
                 <button
                   type="button"
-                  className="btn-cancel-edit"
+                  className="comp-btn-discard"
                   onClick={() => setEditing(false)}
                   disabled={saving}
                 >
-                  Cancel
+                  <FiRotateCcw size={15} /> Discard Changes
                 </button>
                 <button
-                  type="button"
-                  className="btn-save-profile-changes"
-                  onClick={handleSave}
+                  type="submit"
+                  className="comp-btn-save"
                   disabled={saving}
                 >
                   {saving ? (
                     <span className="spinner" />
                   ) : (
                     <>
-                      <FiCheckCircle size={16} /> Save Profile Changes
+                      <FiCheck size={16} /> Save Changes
                     </>
                   )}
                 </button>

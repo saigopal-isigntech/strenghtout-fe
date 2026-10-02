@@ -17,8 +17,15 @@ import {
   FiGrid,
   FiList,
   FiMoreVertical,
-  FiArrowRight,
+  FiChevronDown,
+  FiChevronUp,
+  FiEye,
+  FiEyeOff,
   FiInbox,
+  FiFileText,
+  FiAward,
+  FiInfo,
+  FiActivity,
 } from "react-icons/fi";
 import "./MyRequests.css";
 
@@ -84,11 +91,11 @@ const getAvatarStyle = (name?: string) => {
 };
 
 const STAGES = [
-  { key: "SUBMITTED",            label: "Submitted" },
-  { key: "UNDER_REVIEW",         label: "Under Review" },
-  { key: "COMPANY_CONTACTED",    label: "Company Contacted" },
-  { key: "CANDIDATE_DISCUSSION", label: "Candidate Discussion" },
-  { key: "SELECTED",             label: "Selected" },
+  { key: "SUBMITTED",            step: 1, label: "Submitted",            sub: "Request Created",   desc: "Connection request received and queued for talent review.", Icon: FiFileText },
+  { key: "UNDER_REVIEW",         step: 2, label: "Under Review",         sub: "Profile Screen",    desc: "iSignTech talent advisors are verifying candidate availability and requirements.", Icon: FiSearch },
+  { key: "COMPANY_CONTACTED",    step: 3, label: "Company Contacted",    sub: "Intro Alignment",   desc: "Company hiring team is contacted to align on role expectations & timeline.", Icon: FiSend },
+  { key: "CANDIDATE_DISCUSSION", step: 4, label: "Candidate Discussion", sub: "Interview Stage",   desc: "Candidate discussion and interview coordination in active progress.", Icon: FiUsers },
+  { key: "SELECTED",             step: 5, label: "Selected / Hired",     sub: "Hiring Confirmed",  desc: "Candidate successfully selected / hired for this opportunity! 🎉", Icon: FiAward },
 ];
 
 const getStageIndex = (status: string) => {
@@ -102,45 +109,93 @@ const getStageIndex = (status: string) => {
   return map[status] ?? (status === "NOT_PROCEEDING" || status === "RETURNED" || status === "CLOSED" ? 5 : 0);
 };
 
-const RequestLifecycleStepper: React.FC<{ status: string }> = ({ status }) => {
+const RequestLifecycleStepper: React.FC<{ status: string; submittedAt?: string }> = ({ status }) => {
   const currentIndex = getStageIndex(status);
   const isTerminalOther = status === "NOT_PROCEEDING" || status === "RETURNED" || status === "CLOSED";
+  const currentStageMeta = STAGES[Math.min(currentIndex, STAGES.length - 1)];
+
+  // Calculate percentage for progress fill track line
+  const progressPercent = status === "SELECTED"
+    ? 100
+    : isTerminalOther
+      ? Math.min(100, Math.max(0, ((currentIndex - 1) / (STAGES.length - 1)) * 100))
+      : Math.min(100, Math.max(0, (currentIndex / (STAGES.length - 1)) * 100));
 
   return (
     <div className="mr-stepper-wrap">
+      {/* Header with Title and Current Status Chip */}
       <div className="mr-stepper-header">
-        <span className="mr-stepper-title">Request Progress Lifecycle</span>
-        {isTerminalOther && (
-          <span className={`mr-terminal-badge mr-terminal-${status.toLowerCase()}`}>
-            {sm(status).label}
-          </span>
-        )}
+        <div className="mr-stepper-header-left">
+          <FiActivity size={16} className="mr-stepper-header-icon" />
+          <span className="mr-stepper-title">Request Progress Lifecycle</span>
+        </div>
+        <div className="mr-stepper-header-right">
+          {isTerminalOther ? (
+            <span className={`mr-terminal-badge mr-terminal-${status.toLowerCase()}`}>
+              {sm(status).label}
+            </span>
+          ) : (
+            <span className="mr-current-stage-pill">
+              <span className="stage-pulse-dot" />
+              Stage {Math.min(currentIndex + 1, 5)} of 5: <strong>{sm(status).label}</strong>
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="mr-stepper">
-        {STAGES.map((st, idx) => {
-          const isCompleted = idx < currentIndex || status === "SELECTED";
-          const isCurrent = idx === currentIndex && !isTerminalOther && status !== "SELECTED";
+      {/* Stepper Timeline with Connecting Progress Bar */}
+      <div className="mr-stepper-container">
+        {/* Background Grey Track */}
+        <div className="mr-stepper-track-bg" />
+        {/* Active Animated Green Progress Line */}
+        <div
+          className="mr-stepper-track-fill"
+          style={{ width: `${progressPercent}%` }}
+        />
 
-          return (
-            <div
-              key={st.key}
-              className={`mr-step-node ${isCompleted ? "completed" : isCurrent ? "current" : "upcoming"}`}
-            >
-              <div className="mr-step-icon">
-                {isCompleted ? (
-                  <FiCheckCircle size={16} />
-                ) : isCurrent ? (
-                  <span className="mr-step-pulse" />
-                ) : (
-                  <span>{idx + 1}</span>
-                )}
+        <div className="mr-stepper">
+          {STAGES.map((st, idx) => {
+            const isCompleted = idx < currentIndex || status === "SELECTED";
+            const isCurrent = idx === currentIndex && !isTerminalOther && status !== "SELECTED";
+            const isUpcoming = idx > currentIndex && !isTerminalOther;
+            const StepIcon = st.Icon;
+
+            return (
+              <div
+                key={st.key}
+                className={`mr-step-node ${isCompleted ? "completed" : isCurrent ? "current" : isUpcoming ? "upcoming" : "terminal"}`}
+              >
+                <div className="mr-step-icon-box">
+                  {isCompleted ? (
+                    <FiCheckCircle size={18} className="icon-check" />
+                  ) : isCurrent ? (
+                    <>
+                      <span className="mr-step-pulse-ring" />
+                      <StepIcon size={16} className="icon-current" />
+                    </>
+                  ) : (
+                    <span className="step-num">{st.step}</span>
+                  )}
+                </div>
+                <div className="mr-step-text-group">
+                  <span className="mr-step-label">{st.label}</span>
+                  <span className="mr-step-sub">{st.sub}</span>
+                </div>
               </div>
-              <span className="mr-step-label">{st.label}</span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+
+      {/* Status Stage Description Callout */}
+      {!isTerminalOther && currentStageMeta && (
+        <div className="mr-stepper-status-callout">
+          <FiInfo size={15} className="callout-icon" />
+          <span className="callout-text">
+            <strong>Current Stage:</strong> {currentStageMeta.desc}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
@@ -522,9 +577,25 @@ export const MyRequestsPage: React.FC = () => {
                       {/* CANDIDATE */}
                       <td>
                         <div className="mr-cand-flex">
+                          {(r.candidateAvatarUrl || (r as any).avatarUrl) ? (
+                            <img
+                              src={r.candidateAvatarUrl || (r as any).avatarUrl}
+                              alt={r.candidateFullName || "Candidate"}
+                              className="mr-cand-photo"
+                              onError={e => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                                const sibling = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
+                                if (sibling) sibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
                           <div
                             className="mr-cand-avatar"
-                            style={{ background: avatarStyle.bg, color: avatarStyle.color }}
+                            style={{
+                              background: avatarStyle.bg,
+                              color: avatarStyle.color,
+                              display: (r.candidateAvatarUrl || (r as any).avatarUrl) ? 'none' : 'flex'
+                            }}
                           >
                             {(r.candidateFullName || "?")[0].toUpperCase()}
                           </div>
@@ -593,11 +664,14 @@ export const MyRequestsPage: React.FC = () => {
                         <div className="mr-actions-cell">
                           <button
                             type="button"
-                            className="btn-view-details-action"
+                            className={`btn-view-details-action ${isExp ? "is-expanded" : ""}`}
                             onClick={() => setExpanded(isExp ? null : r.id!)}
+                            title={isExp ? "Click to hide / collapse details" : "Click to view full opportunity details"}
+                            aria-expanded={isExp}
                           >
-                            <span>View Details</span>
-                            <FiArrowRight size={14} />
+                            {isExp ? <FiEyeOff size={13} /> : <FiEye size={13} />}
+                            <span>{isExp ? "Hide Details" : "View Details"}</span>
+                            {isExp ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
                           </button>
                           <button type="button" className="btn-options-action" title="Options">
                             <FiMoreVertical size={16} />
@@ -614,6 +688,29 @@ export const MyRequestsPage: React.FC = () => {
                             <RequestLifecycleStepper status={r.status} />
 
                             <div className="mr-detail-section">
+                              <h5 className="mr-detail-label">Job & Opportunity Details</h5>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px", margin: "8px 0 12px 0", background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                                <div>
+                                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Work Model & Location</span>
+                                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>{r.workType || "HYBRID"} • {r.location || "N/A"}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Salary / Compensation</span>
+                                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#059669", marginTop: "2px" }}>{r.salaryRange || "Not specified"}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Work Timings / Shift</span>
+                                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>{r.workTimings || "Standard Hours"}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Experience Required</span>
+                                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>{r.experienceRequired || "Not specified"}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Members Needed</span>
+                                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>{r.openingsCount ? `${r.openingsCount} opening${Number(r.openingsCount) > 1 ? "s" : ""}` : "1 opening"}</div>
+                                </div>
+                              </div>
                               <h5 className="mr-detail-label">Opportunity Summary</h5>
                               <p className="mr-detail-text">{r.opportunitySummary || "—"}</p>
                             </div>
