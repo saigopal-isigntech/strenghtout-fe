@@ -3,23 +3,23 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import logoImg from "../../assets/logo.png";
 import authBg from "../../assets/auth-bg.jpg";
-import { FiAward, FiBriefcase, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { FiAward, FiBriefcase, FiTrendingUp, FiEye, FiEyeOff, FiArrowRight, FiAlertCircle } from "react-icons/fi";
 import { validateEmail, validatePassword } from "../../utils/validators";
 import "./Auth.css";
 
 const FEATURES = [
   {
-    icon: <FiAward size={20} color="#70c144" />,
+    icon: <FiAward size={20} color="#00b852" />,
     title: "Prove your strength, not just your resume",
     desc: "Complete real-world skill challenges that let companies see exactly what you can build.",
   },
   {
-    icon: <FiBriefcase size={20} color="#70c144" />,
+    icon: <FiBriefcase size={20} color="#00b852" />,
     title: "Companies that match your ambitions",
     desc: "Connect directly with hiring managers who value authentic engineering talent.",
   },
   {
-    icon: <FiTrendingUp size={20} color="#70c144" />,
+    icon: <FiTrendingUp size={20} color="#00b852" />,
     title: "Accelerate your hiring journey",
     desc: "Skip initial phone screens and move straight to meaningful conversations.",
   },
@@ -31,13 +31,13 @@ const LoginPage: React.FC = () => {
   const location  = useLocation();
 
   const registeredEmail = (location.state as any)?.registeredEmail || "";
-  const initialSuccess  = (location.state as any)?.successMsg || "";
+  
 
   const [email, setEmail]         = useState(registeredEmail);
   const [password, setPassword]   = useState("");
   const [showPwd, setShowPwd]     = useState(false);
   const [error, setError]         = useState("");
-  const [success]                 = useState(initialSuccess);
+  
   const [loading, setLoading]     = useState(false);
 
   // Field errors & touched states
@@ -79,6 +79,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(email.trim(), password);
+      sessionStorage.setItem("show_login_success_toast", "true");
       navigate("/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Login failed. Please check your credentials.");
@@ -140,11 +141,7 @@ const LoginPage: React.FC = () => {
               Sign in to continue growing your career on StrengthOut.
             </p>
 
-            {success && (
-              <div className="auth-success">
-                <span><FiCheck size={14} /></span>&nbsp;{success}
-              </div>
-            )}
+            
             {error && <div className="auth-error">{error}</div>}
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
@@ -180,7 +177,7 @@ const LoginPage: React.FC = () => {
                   <label htmlFor="login-password" style={{ margin: 0 }}>
                     Password <span className="required-star">*</span>
                   </label>
-                  <Link to="/forgot-password" className="forgot-password-link" style={{ fontSize: '0.85rem', color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}>
+                  <Link to="/forgot-password" className="forgot-password-link" style={{ fontSize: "0.85rem", color: "#00b852", textDecoration: "none", fontWeight: 700 }}>
                     Forgot password?
                   </Link>
                 </div>
@@ -235,7 +232,6 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
-
     </div>
   );
 };

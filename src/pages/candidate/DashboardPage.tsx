@@ -216,7 +216,7 @@ const DashboardPage: React.FC = () => {
         <div className="hero-left-content">
           <span className="hero-greeting-tag">{greeting()}</span>
           <h1 className="hero-user-name">
-            {user?.fullName || (isCompany ? "company1" : "User")} <span className="wave-hand">👋</span>
+            {user?.fullName ? (user.fullName.trim().split(/\s+/).length === 2 && user.fullName.trim().split(/\s+/)[0].toLowerCase() === user.fullName.trim().split(/\s+/)[1].toLowerCase() ? user.fullName.trim().split(/\s+/)[0] : user.fullName) : (isCompany ? "company1" : "User")} <span className="wave-hand">👋</span>
           </h1>
           <p className="hero-subtext">
             {isCompany

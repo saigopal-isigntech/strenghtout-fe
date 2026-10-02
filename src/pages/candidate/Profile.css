@@ -2565,3 +2565,181 @@ select option {
   background: #1e293b !important;
   border-color: #334155 !important;
 }
+
+
+/* ============================================================
+   PHOTO VIEW LIGHTBOX & ACTION MODAL
+   ============================================================ */
+.photo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.photo-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .photo-modal-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+}
+
+.photo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="dark"] .photo-modal-header {
+  border-bottom-color: #1e293b;
+}
+
+.photo-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .photo-modal-header h3 {
+  color: #f8fafc;
+}
+
+.photo-modal-close {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.photo-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .photo-modal-close:hover {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.photo-modal-body {
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+[data-theme="dark"] .photo-modal-body {
+  background: #0b0f19;
+}
+
+.photo-modal-img {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  border: 4px solid #ffffff;
+}
+
+[data-theme="dark"] .photo-modal-img {
+  border-color: #1e293b;
+}
+
+.photo-modal-placeholder {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00b852, #008a3c);
+  color: #ffffff;
+  font-size: 4rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.photo-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 1.25rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+[data-theme="dark"] .photo-modal-footer {
+  background: #0f172a;
+  border-top-color: #1e293b;
+}
+
+.photo-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  flex: 1;
+}
+
+.photo-btn-change {
+  background: #00b852;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 184, 82, 0.25);
+}
+
+.photo-btn-change:hover {
+  background: #009e45;
+  box-shadow: 0 4px 12px rgba(0, 184, 82, 0.35);
+}
+
+.photo-btn-remove {
+  background: #fff1f2;
+  color: #dc2626;
+  border: 1px solid #fecdd3;
+}
+
+.photo-btn-remove:hover {
+  background: #ffe4e6;
+  color: #b91c1c;
+}
+
+[data-theme="dark"] .photo-btn-remove {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #f87171;
+}

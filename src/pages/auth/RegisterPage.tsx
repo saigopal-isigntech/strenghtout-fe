@@ -86,6 +86,7 @@ const RegisterPage: React.FC = () => {
   const [contactPhone, setContactPhone]       = useState('');
 
   const [loading, setLoading]                 = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [error, setError]                     = useState('');
 
   const [fieldErrors, setFieldErrors]         = useState<{
@@ -103,15 +104,6 @@ const RegisterPage: React.FC = () => {
   }>({});
 
   const isCompany = role === 'COMPANY';
-
-  // Check if Step 1 has all required fields properly filled to enable the Next button
-  const isStep1Complete = Boolean(
-    companyName.trim().length >= 2 &&
-    email.trim().length > 0 &&
-    !validateEmail(email, 'Work email') &&
-    password.length >= 8 &&
-    confirmPassword === password
-  );
 
   const handleRoleChange = (newRole: 'CANDIDATE' | 'COMPANY') => {
     setRole(newRole);
@@ -145,28 +137,7 @@ const RegisterPage: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleBlur = (field: keyof typeof touched) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-    if (field === 'name') {
-      const nameToValidate = isCompany ? companyName : fullName;
-      const nameLabel = isCompany ? 'Company name' : 'Full name';
-      const err = validateRequired(nameToValidate, nameLabel, 2);
-      setFieldErrors(prev => ({ ...prev, name: err || undefined }));
-    } else if (field === 'email') {
-      const err = validateEmail(email, isCompany ? 'Work email' : 'Email');
-      setFieldErrors(prev => ({ ...prev, email: err || undefined }));
-    } else if (field === 'password') {
-      const err = validatePassword(password, 8);
-      setFieldErrors(prev => ({ ...prev, password: err || undefined }));
-    } else if (field === 'confirmPassword') {
-      let err: string | undefined;
-      if (!confirmPassword) err = 'Please confirm your password.';
-      else if (password !== confirmPassword) err = 'Passwords do not match.';
-      setFieldErrors(prev => ({ ...prev, confirmPassword: err }));
-    }
-  };
-
-  const handleNextStep = () => {
+    const handleNextStep = () => {
     setTouched({
       name: true,
       email: true,
@@ -187,6 +158,13 @@ const RegisterPage: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
 
     if (!validateStep1()) {
       setCompanyStep(1);
@@ -233,12 +211,15 @@ const RegisterPage: React.FC = () => {
         });
       }
 
-      navigate('/login', {
-        state: {
-          registeredEmail: email.trim(),
-          successMsg: 'Account created successfully! Please sign in with your credentials.',
-        },
-      });
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        navigate('/login', {
+          state: {
+            registeredEmail: email.trim(),
+            successMsg: 'Account created successfully! Please sign in with your credentials.',
+          },
+        });
+      }, 2000);
     } catch (err: any) {
       let msg = err?.response?.data?.message || err?.message || 'Registration failed. Please try again.';
       if (err?.code === 'ERR_NETWORK' || !err?.response) {
@@ -370,6 +351,7 @@ const RegisterPage: React.FC = () => {
                       </label>
                       <input
                         id="reg-company"
+                        className={touched.name && fieldErrors.name ? "is-invalid" : ""}
                         type="text"
                         value={companyName}
                         onChange={(e) => {
@@ -379,7 +361,6 @@ const RegisterPage: React.FC = () => {
                             setFieldErrors(prev => ({ ...prev, name: err || undefined }));
                           }
                         }}
-                        onBlur={() => handleBlur('name')}
                         placeholder="e.g. Acme Innovations"
                         autoComplete="organization"
                       />
@@ -394,6 +375,7 @@ const RegisterPage: React.FC = () => {
                       </label>
                       <input
                         id="reg-fullname"
+                        className={touched.name && fieldErrors.name ? "is-invalid" : ""}
                         type="text"
                         value={fullName}
                         onChange={(e) => {
@@ -403,7 +385,6 @@ const RegisterPage: React.FC = () => {
                             setFieldErrors(prev => ({ ...prev, name: err || undefined }));
                           }
                         }}
-                        onBlur={() => handleBlur('name')}
                         placeholder="e.g. Alex Johnson"
                         autoComplete="name"
                       />
@@ -419,6 +400,7 @@ const RegisterPage: React.FC = () => {
                     </label>
                     <input
                       id="reg-email"
+                      className={touched.email && fieldErrors.email ? "is-invalid" : ""}
                       type="email"
                       value={email}
                       onChange={(e) => {
@@ -428,7 +410,6 @@ const RegisterPage: React.FC = () => {
                           setFieldErrors(prev => ({ ...prev, email: err || undefined }));
                         }
                       }}
-                      onBlur={() => handleBlur('email')}
                       placeholder={isCompany ? 'hr@company.com' : 'alex@example.com'}
                       autoComplete="email"
                     />
@@ -441,9 +422,10 @@ const RegisterPage: React.FC = () => {
                     <label htmlFor="reg-password">
                       Password <span className="required-star">*</span>
                     </label>
-                    <div className="password-wrapper">
+                    <div className={`password-wrapper ${touched.password && fieldErrors.password ? "is-invalid-wrap" : ""}`}>
                       <input
                         id="reg-password"
+                        className={touched.password && fieldErrors.password ? "is-invalid" : ""}
                         type={showPwd ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => {
@@ -453,7 +435,6 @@ const RegisterPage: React.FC = () => {
                             setFieldErrors(prev => ({ ...prev, password: err || undefined }));
                           }
                         }}
-                        onBlur={() => handleBlur('password')}
                         placeholder="Minimum 8 characters"
                         autoComplete="new-password"
                       />
@@ -475,9 +456,10 @@ const RegisterPage: React.FC = () => {
                     <label htmlFor="reg-confirm-password">
                       Confirm Password <span className="required-star">*</span>
                     </label>
-                    <div className="password-wrapper">
+                    <div className={`password-wrapper ${touched.confirmPassword && fieldErrors.confirmPassword ? "is-invalid-wrap" : ""}`}>
                       <input
                         id="reg-confirm-password"
+                        className={touched.confirmPassword && fieldErrors.confirmPassword ? "is-invalid" : ""}
                         type={showConfirmPwd ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => {
@@ -489,7 +471,6 @@ const RegisterPage: React.FC = () => {
                             setFieldErrors(prev => ({ ...prev, confirmPassword: err }));
                           }
                         }}
-                        onBlur={() => handleBlur('confirmPassword')}
                         placeholder="Re-enter password"
                         autoComplete="new-password"
                       />
@@ -519,7 +500,7 @@ const RegisterPage: React.FC = () => {
                       type="button"
                       className="auth-submit-btn"
                       onClick={handleNextStep}
-                      disabled={!isStep1Complete}
+                      disabled={loading}
                     >
                       <span>Next: Company Details</span> <FiArrowRight size={16} />
                     </button>
@@ -725,6 +706,24 @@ const RegisterPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {showSuccessModal && (
+        <div className="auth-modal-overlay">
+          <div className="auth-modal-card">
+            <div className="auth-modal-icon">
+              <FiCheck size={20} />
+            </div>
+            <div className="auth-modal-content">
+              <h3 className="auth-modal-title">Account Created Successfully!</h3>
+              <p className="auth-modal-desc">
+                Redirecting to sign in...
+              </p>
+            </div>
+            <div className="auth-modal-progress">
+              <div className="auth-modal-progress-bar" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

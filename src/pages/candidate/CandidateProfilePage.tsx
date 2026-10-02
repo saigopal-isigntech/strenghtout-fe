@@ -56,6 +56,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
 
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [connectForm, setConnectForm] = useState({
     roleTitle: '',
     opportunitySummary: '',
@@ -546,6 +547,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         try {
           await candidatesApi.updateMyProfile({ avatarUrl: base64 });
           setAlertMsg({ type: 'success', text: 'Profile photo updated and saved successfully!' });
+          setShowPhotoModal(false);
         } catch {
           setAlertMsg({ type: 'error', text: 'Failed to save photo to server.' });
         }
@@ -554,13 +556,23 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     }
   };
 
-  const triggerPhotoInput = () => {
-    if (isReadOnly) return;
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  
+
+  const handleRemovePhoto = async () => {
+    if (!window.confirm('Are you sure you want to remove your profile photo?')) return;
+    setDisplayData(prev => ({ ...prev, avatarUrl: '' }));
+    updateUserAvatar('');
+    window.dispatchEvent(new CustomEvent('profilePhotoUpdated', { detail: { avatarUrl: '' } }));
+    try {
+      await candidatesApi.updateMyProfile({ avatarUrl: '' });
+      setAlertMsg({ type: 'success', text: 'Profile photo removed successfully!' });
+      setShowPhotoModal(false);
+    } catch {
+      setAlertMsg({ type: 'error', text: 'Failed to remove photo on server.' });
     }
   };
 
+  
   // ---- Resume Upload & Delete Handler ----
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -1258,7 +1270,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
           <div className="profile-header-left">
             <div
               className="avatar-progress-container"
-              onClick={isReadOnly ? undefined : triggerPhotoInput}
+              onClick={() => setShowPhotoModal(true)}
               style={{ cursor: isReadOnly ? 'default' : 'pointer' }}
               title={isReadOnly ? fullName : 'Click to Change Photo'}
             >
@@ -1838,7 +1850,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
           <div className="profile-header-left">
             <div
               className="avatar-progress-container"
-              onClick={triggerPhotoInput}
+              onClick={() => setShowPhotoModal(true)}
               title="Click to Change Photo"
             >
               <div
@@ -3288,7 +3300,67 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     </div>
   );
 
-  return (view === 'profile' || isReadOnly) ? renderProfileView() : renderEditView();
+  return (
+    <>
+      {(view === 'profile' || isReadOnly) ? renderProfileView() : renderEditView()}
+      {showPhotoModal && (
+        <div className="photo-modal-overlay" onClick={() => setShowPhotoModal(false)}>
+          <div className="photo-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="photo-modal-header">
+              <h3>Profile Photo</h3>
+              <button
+                type="button"
+                className="photo-modal-close"
+                onClick={() => setShowPhotoModal(false)}
+                title="Close"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="photo-modal-body">
+              {displayData.avatarUrl ? (
+                <img
+                  src={displayData.avatarUrl}
+                  alt={fullName}
+                  className="photo-modal-img"
+                />
+              ) : (
+                <div className="photo-modal-placeholder">
+                  <span>{candidateInitials}</span>
+                </div>
+              )}
+            </div>
+
+            {!isReadOnly && (
+              <div className="photo-modal-footer">
+                <button
+                  type="button"
+                  className="photo-action-btn photo-btn-change"
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.click();
+                    }
+                  }}
+                >
+                  <FiCamera size={16} /> Change Photo
+                </button>
+                {displayData.avatarUrl ? (
+                  <button
+                    type="button"
+                    className="photo-action-btn photo-btn-remove"
+                    onClick={handleRemovePhoto}
+                  >
+                    <FiTrash2 size={16} /> Remove Photo
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default CandidateProfilePage;

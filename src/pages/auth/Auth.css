@@ -12,9 +12,10 @@
 .auth-root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   width: 100%;
   background: #ffffff;
+  overflow: hidden;
 }
 
 /* ============================================================
@@ -24,7 +25,8 @@
   flex: 1 1 54%;
   position: relative;
   background: linear-gradient(160deg, #0b0f14 0%, #111a10 60%, #0a1209 100%);
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -224,7 +226,7 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
   box-shadow: -8px 0 35px rgba(0, 0, 0, 0.08);
   overflow-y: auto;
@@ -236,7 +238,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 3.5rem 3rem 2.5rem;
-  min-height: 100%;
+  min-height: min-content;
 }
 
 .auth-form-wrapper {
@@ -329,10 +331,10 @@
 }
 
 .role-toggle-btn.active {
-  background: #70c144;
+  background: linear-gradient(135deg, #00b852 0%, #008a3c 100%);
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(112, 193, 68, 0.35);
+  box-shadow: 0 3px 10px rgba(0, 184, 82, 0.35);
 }
 
 /* ============================================================
@@ -559,30 +561,30 @@
 
 /* Action Buttons */
 .auth-submit-btn {
-  background: linear-gradient(135deg, #70c144 0%, #5ea836 100%);
+  background: linear-gradient(135deg, #00b852 0%, #008a3c 100%);
   color: #ffffff;
   border: none;
-  border-radius: 9px;
-  padding: 0.82rem 1.25rem;
-  font-size: 0.96rem;
+  border-radius: 10px;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.98rem;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 0.4rem;
-  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 184, 82, 0.35);
   font-family: inherit;
   letter-spacing: 0.01em;
   width: 100%;
 }
 
 .auth-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5ea836 0%, #4d8f2d 100%);
+  background: linear-gradient(135deg, #009e45 0%, #007533 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(112, 193, 68, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 184, 82, 0.45);
 }
 
 .auth-submit-btn:active:not(:disabled) {
@@ -1021,4 +1023,286 @@
     max-width: 100% !important;
     padding: 1.5rem 1.15rem !important;
   }
+}
+
+
+/* ============================================================
+   MATCHED BRAND GREEN PALETTE (#00b852)
+   Button, Forgot Password Link & Join Free Link
+   ============================================================ */
+.auth-submit-btn {
+  width: 100%;
+  background: #00b852 !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 10px;
+  padding: 0.85rem 1.5rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(0, 184, 82, 0.35);
+  transition: all 0.2s ease;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: #009e45 !important;
+  box-shadow: 0 6px 18px rgba(0, 184, 82, 0.45);
+  transform: translateY(-1px);
+}
+
+.forgot-password-link {
+  color: #00b852 !important;
+  font-size: 0.85rem;
+  font-weight: 700 !important;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.forgot-password-link:hover {
+  color: #008a3c !important;
+  text-decoration: underline;
+}
+
+.auth-divider a,
+.auth-bottom-link a {
+  color: #00b852 !important;
+  font-weight: 700 !important;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.auth-divider a:hover,
+.auth-bottom-link a:hover {
+  color: #008a3c !important;
+  text-decoration: underline;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-select:focus,
+.form-textarea:focus {
+  background: #ffffff;
+  border-color: #00b852 !important;
+  box-shadow: 0 0 0 3.5px rgba(0, 184, 82, 0.16) !important;
+}
+
+
+/* ============================================================
+   COMPANY STEPPER - MATCHED BRAND GREEN (#00b852)
+   ============================================================ */
+.company-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.25rem 0 1.25rem;
+  padding: 0.6rem 0.95rem;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  gap: 0.75rem;
+}
+
+.company-step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.company-step-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.company-step-item.active {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.company-step-item.active .company-step-badge {
+  background: #00b852 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 184, 82, 0.35) !important;
+}
+
+.company-step-item.completed {
+  color: #00b852 !important;
+}
+
+.company-step-item.completed .company-step-badge {
+  background: #e6f4ea !important;
+  color: #008a3c !important;
+}
+
+.company-step-divider {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  border-radius: 2px;
+}
+
+
+/* ============================================================
+   LEFT PANEL MATCHED BRAND GREEN (#00b852)
+   ============================================================ */
+.auth-panel-headline span {
+  color: #00b852 !important;
+  background: linear-gradient(90deg, #00b852 0%, #34d399 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.auth-feature-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(0, 184, 82, 0.15) !important;
+  border: 1.5px solid rgba(0, 184, 82, 0.4) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #00b852 !important;
+  margin-top: 1px;
+}
+
+
+/* Validation Error Input Styles */
+input.is-invalid,
+select.is-invalid,
+textarea.is-invalid {
+  border-color: #ef4444 !important;
+  background: #fff5f5 !important;
+}
+
+.input-with-icon-wrapper.is-invalid-wrap input,
+.password-wrapper.is-invalid-wrap input {
+  border-color: #ef4444 !important;
+  background: #fff5f5 !important;
+}
+
+.field-hint.error {
+  color: #ef4444 !important;
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+
+/* ============================================================
+   REGISTRATION SUCCESS TOAST (Top-Right Corner - 2 Seconds)
+   ============================================================ */
+.auth-modal-overlay {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  inset: 1.5rem 1.5rem auto auto;
+  z-index: 9999;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.auth-modal-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  max-width: 360px;
+  width: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 184, 82, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  border-left: 4px solid #00b852;
+}
+
+.auth-modal-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e6f4ea;
+  color: #00b852;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.auth-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.auth-modal-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.auth-modal-desc {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.auth-modal-progress {
+  width: 100%;
+  height: 3px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.auth-modal-progress-bar {
+  height: 100%;
+  background: #00b852;
+  width: 100%;
+  animation: modalCountdown 2s linear forwards;
+}
+
+@keyframes modalCountdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
 }

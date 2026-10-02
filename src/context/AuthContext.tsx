@@ -17,6 +17,17 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+
+function cleanDisplayName(name?: string): string {
+  if (!name) return "";
+  const trimmed = name.trim();
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 2 && parts[0].toLowerCase() === parts[1].toLowerCase()) {
+    return parts[0];
+  }
+  return trimmed;
+}
+
 function mapAuthDataToUser(data: any): AuthUser {
   if (data.user) return data.user;
 
@@ -30,7 +41,7 @@ function mapAuthDataToUser(data: any): AuthUser {
   return {
     userId: data.userId || "",
     email: data.email || "",
-    fullName: data.displayName || data.fullName || (data.email ? data.email.split("@")[0] : "User"),
+    fullName: cleanDisplayName(data.displayName || data.fullName || (data.email ? data.email.split("@")[0] : "User")),
     accountType: data.accountType || "",
     role: primaryRole,
     roles: roles.length > 0 ? roles : [primaryRole],
@@ -48,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token && storedUser && storedUser !== "undefined") {
       try {
         const parsed = JSON.parse(storedUser);
+        if (parsed && parsed.fullName) parsed.fullName = cleanDisplayName(parsed.fullName);
         if (parsed && !isValidUserAvatar(parsed.avatarUrl)) {
           parsed.avatarUrl = "";
           localStorage.setItem("authUser", JSON.stringify(parsed));

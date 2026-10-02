@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import LoginSuccessToast from "./components/LoginSuccessToast";
 
 // Lazy-loaded pages for bundle splitting
 const LoginPage            = lazy(() => import("./pages/auth/LoginPage"));
@@ -90,6 +91,7 @@ const PersistentAppLayout: React.FC = () => {
         </Suspense>
       </main>
       {showFooter && <Footer />}
+      <LoginSuccessToast />
       <CommandPalette />
     </div>
   );

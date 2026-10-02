@@ -163,8 +163,9 @@ const Navbar: React.FC = () => {
   };
   const isSuperAdmin =
     user?.role === "ROLE_SUPER_ADMIN" || user?.accountType === "SUPER_ADMIN";
-  const userInitial = user?.fullName
-    ? user.fullName
+  const displayUserFullName = user?.fullName ? (user.fullName.trim().split(/\s+/).length === 2 && user.fullName.trim().split(/\s+/)[0].toLowerCase() === user.fullName.trim().split(/\s+/)[1].toLowerCase() ? user.fullName.trim().split(/\s+/)[0] : user.fullName) : "";
+  const userInitial = displayUserFullName
+    ? displayUserFullName
         .split(" ")
         .filter(Boolean)
         .map((n: string) => n.charAt(0).toUpperCase())
