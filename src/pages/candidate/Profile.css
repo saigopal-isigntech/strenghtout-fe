@@ -4219,3 +4219,432 @@ select option {
   cursor: not-allowed !important;
   box-shadow: none !important;
 }
+
+
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE FIXES (Candidate Profile Page)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .profile-page-wrapper {
+    padding: 0.75rem 0.5rem !important;
+    overflow-x: hidden !important;
+  }
+
+  .profile-container {
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 1. Header Card */
+  .pv-header-card {
+    padding: 1.25rem 1rem !important;
+    gap: 1.25rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .pv-header-left-col {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-width: 0 !important;
+    gap: 1rem !important;
+    width: 100% !important;
+  }
+
+  .pv-avatar-ring {
+    width: 84px !important;
+    height: 84px !important;
+  }
+
+  .pv-avatar-img-inner,
+  .pv-avatar-placeholder-inner {
+    width: 76px !important;
+    height: 76px !important;
+    font-size: 1.6rem !important;
+  }
+
+  .pv-header-meta-col {
+    align-items: center !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+
+  .pv-name-row {
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 0.4rem !important;
+  }
+
+  .pv-name-heading {
+    font-size: 1.5rem !important;
+    text-align: center !important;
+  }
+
+  .pv-headline-text {
+    font-size: 0.92rem !important;
+    text-align: center !important;
+  }
+
+  .pv-bio-text {
+    font-size: 0.84rem !important;
+    text-align: center !important;
+    padding: 0 0.25rem !important;
+  }
+
+  .pv-pills-row {
+    justify-content: center !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+  }
+
+  .pv-info-pill {
+    font-size: 0.76rem !important;
+    padding: 0.25rem 0.65rem !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+  }
+
+  .pv-header-right-col {
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+  }
+
+  .pv-top-actions-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    justify-content: stretch !important;
+  }
+
+  .pv-top-actions-row button,
+  .pv-top-actions-row a {
+    flex: 1 1 calc(50% - 0.5rem) !important;
+    min-width: 120px !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 0.5rem 0.65rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .pv-completeness-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* 2. Section Grid */
+  .pv-two-col-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    width: 100% !important;
+  }
+
+  .pv-col-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    width: 100% !important;
+  }
+
+  .pv-card {
+    padding: 1.15rem 1rem !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    gap: 0.85rem !important;
+  }
+
+  .pv-card-head {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+
+  .pv-card-title-group {
+    gap: 0.5rem !important;
+  }
+
+  .pv-card-icon-badge {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 7px !important;
+  }
+
+  .pv-card-title-text {
+    font-size: 1rem !important;
+    word-break: break-word !important;
+  }
+
+  /* 3. Video Section */
+  .pv-video-layout {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem !important;
+    width: 100% !important;
+  }
+
+  .pv-video-player-box {
+    width: 100% !important;
+    border-radius: 8px !important;
+  }
+
+  .pv-video-details-box {
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .pv-video-filename {
+    font-size: 0.9rem !important;
+    word-break: break-all !important;
+  }
+
+  /* 4. Education & Internships */
+  .pv-edu-card-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .pv-edu-left-group {
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  .pv-exp-card-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .pv-exp-info {
+    width: 100% !important;
+  }
+
+  .pv-exp-desc-line {
+    word-break: break-word !important;
+  }
+
+  /* 5. Projects */
+  .pv-proj-card-item {
+    padding: 0.85rem 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .pv-proj-title-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+  }
+
+  .pv-proj-repo-link {
+    align-self: flex-start !important;
+    font-size: 0.78rem !important;
+    padding: 0.25rem 0.6rem !important;
+  }
+
+  .pv-proj-desc-text {
+    word-break: break-word !important;
+  }
+
+  /* 6. Resume */
+  .pv-resume-item-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .pv-resume-file-col {
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .pv-resume-name-text {
+    font-size: 0.85rem !important;
+    word-break: break-all !important;
+  }
+
+  .pv-resume-actions-group {
+    align-self: flex-end !important;
+  }
+
+  /* 7. RightPath Evidence Banner */
+  .pv-rightpath-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding: 0.75rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .btn-pv-rightpath-link {
+    align-self: flex-start !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* 8. Personal Details */
+  .pv-personal-2col-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+    width: 100% !important;
+  }
+
+  .pv-personal-cell {
+    padding: 0.65rem 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .pv-personal-cell-info {
+    width: calc(100% - 30px) !important;
+    overflow: hidden !important;
+  }
+
+  .pv-personal-cell-val {
+    font-size: 0.85rem !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  /* 9. Skills & Strengths */
+  .pv-skills-wrap,
+  .pv-strengths-wrap {
+    gap: 0.4rem !important;
+  }
+
+  .pv-skill-item-pill,
+  .pv-strength-item {
+    font-size: 0.78rem !important;
+    padding: 0.25rem 0.65rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pv-top-actions-row button,
+  .pv-top-actions-row a {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+}
+
+
+
+/* ==========================================================================
+   TOP BREADCRUMB BAR (Candidate Profile)
+   ========================================================================== */
+
+.pv-breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1.15rem;
+  padding: 0.35rem 0.15rem;
+}
+
+.pv-breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #059669;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.pv-breadcrumb-link:hover {
+  color: #047857;
+  text-decoration: underline;
+}
+
+.pv-breadcrumb-btn-link {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pv-breadcrumb-sep {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pv-breadcrumb-current {
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .pv-breadcrumb-bar {
+    margin-bottom: 0.85rem;
+    font-size: 0.8rem;
+  }
+  .pv-breadcrumb-link,
+  .pv-breadcrumb-current {
+    font-size: 0.8rem;
+  }
+}
+
+/* Print Styles for Clean Profile PDF Export */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  nav,
+  header,
+  footer,
+  .navbar,
+  .footer,
+  .pv-breadcrumb-bar,
+  .profile-alert,
+  .btn-pv-company-preview,
+  .btn-pv-edit-profile,
+  .btn-pv-toggle-publish,
+  .pv-header-right-col,
+  .pv-pdf-actions {
+    display: none !important;
+  }
+
+  .pv-page-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .pv-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+}

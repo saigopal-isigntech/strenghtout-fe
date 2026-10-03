@@ -87,51 +87,6 @@ const STEPS = [
   { step: 5, label: "Selected" },
 ];
 
-const DEFAULT_OPPORTUNITIES: ConnectionRequest[] = [
-  {
-    id: "mock-1",
-    candidateId: "c-1",
-    candidateName: "John Doe",
-    companyDisplayName: "Company3",
-    companyIndustry: "Information Technology & Services",
-    companyCity: "Chennai",
-    roleTitle: "Data Analyst",
-    workType: "HYBRID",
-    location: "Chennai",
-    status: "SUBMITTED",
-    submittedAt: "2026-09-25T10:00:00Z",
-    opportunitySummary: "Looking for an analytical Data Analyst proficient in SQL, Python, and BI reporting tools.",
-  },
-  {
-    id: "mock-2",
-    candidateId: "c-1",
-    candidateName: "John Doe",
-    companyDisplayName: "Company2",
-    companyIndustry: "Information Technology & Services",
-    companyCity: "Hyderabad",
-    roleTitle: "Java Developer",
-    workType: "ONSITE",
-    location: "Hyderabad",
-    status: "SUBMITTED",
-    submittedAt: "2026-09-20T14:30:00Z",
-    opportunitySummary: "Seeking a Java Developer with strong Spring Boot, REST APIs, and database fundamentals.",
-  },
-  {
-    id: "mock-3",
-    candidateId: "c-1",
-    candidateName: "John Doe",
-    companyDisplayName: "Company1",
-    companyIndustry: "Information Technology & Services",
-    companyCity: "Hyderabad, Chennai",
-    roleTitle: "Data Analyst",
-    workType: "HYBRID",
-    location: "Hyderabad, Chennai",
-    status: "SELECTED",
-    submittedAt: "2026-09-15T09:15:00Z",
-    opportunitySummary: "Selected for data modeling and enterprise visualization projects.",
-  },
-];
-
 const cleanText = (val: string | null | undefined): string => {
   if (!val) return "";
   return val
@@ -158,7 +113,7 @@ const fmtDate = (iso?: string | null): string => {
 };
 
 const CandidateOpportunitiesPage: React.FC = () => {
-  const [requests, setRequests] = useState<ConnectionRequest[]>(DEFAULT_OPPORTUNITIES);
+  const [requests, setRequests] = useState<ConnectionRequest[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -171,15 +126,9 @@ const CandidateOpportunitiesPage: React.FC = () => {
     try {
       const res = await connectionsApi.getCandidateRequests();
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      if (list.length > 0) {
-        setRequests(list);
-      } else {
-        // Fallback to default demo opportunities so UI matches the reference mockup
-        setRequests(DEFAULT_OPPORTUNITIES);
-      }
+      setRequests(list);
     } catch {
-      // Fallback on network or API error
-      setRequests(DEFAULT_OPPORTUNITIES);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -442,6 +391,14 @@ const CandidateOpportunitiesPage: React.FC = () => {
             Try Again
           </button>
         </div>
+      ) : requests.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "3.5rem 1.5rem", background: "#ffffff", borderRadius: "14px", border: "1px dashed #cbd5e1" }}>
+          <FiInbox size={46} color="#94a3b8" style={{ marginBottom: "0.75rem" }} />
+          <h3 style={{ margin: "0 0 0.35rem 0", color: "#0f172a", fontSize: "1.1rem" }}>No opportunities yet</h3>
+          <p style={{ margin: "0 0 0.5rem 0", color: "#64748b", fontSize: "0.88rem", maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
+            When companies review your profile and send connection requests or invite you to opportunities, they will appear here.
+          </p>
+        </div>
       ) : filteredRequests.length === 0 ? (
         <div style={{ textAlign: "center", padding: "3rem", background: "#ffffff", borderRadius: "14px", border: "1px dashed #cbd5e1" }}>
           <FiInbox size={42} color="#94a3b8" style={{ marginBottom: "0.5rem" }} />
@@ -458,7 +415,7 @@ const CandidateOpportunitiesPage: React.FC = () => {
           {filteredRequests.map((r, index) => {
             const meta = sm(r.status);
             const isExp = expandedId === r.id;
-            const compName = cleanText(r.companyDisplayName || r.companyName || "Company3");
+            const compName = cleanText(r.companyDisplayName || r.companyName || "Company");
             const initial = (compName[0] || "C").toUpperCase();
             const industryText = cleanText(r.companyIndustry) || "Information Technology & Services";
             const locationText = cleanText(r.location || r.companyCity) || "Chennai";
@@ -490,7 +447,7 @@ const CandidateOpportunitiesPage: React.FC = () => {
                     <div className="opp-card-meta-wrap">
                       <div className="opp-role-title-row">
                         <h3 className="opp-role-title-heading">
-                          {cleanText(r.roleTitle) || "Data Analyst"}
+                          {cleanText(r.roleTitle) || "Opportunity"}
                         </h3>
                         <span className={"opp-worktype-badge " + workType.toLowerCase()}>
                           {workType}

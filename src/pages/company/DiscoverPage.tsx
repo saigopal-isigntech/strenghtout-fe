@@ -25,6 +25,8 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiStar,
+  FiShare2,
+  FiPrinter,
   FiRotateCcw,
   FiSearch,
   FiGrid,
@@ -237,6 +239,34 @@ export const DiscoverPage: React.FC = () => {
     if (newPage < 0 || newPage >= Math.ceil(total / PAGE_SIZE)) return;
     search(newPage, query);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  
+  const handleCopyShareLink = (cId?: string) => {
+    if (!cId) {
+      setToastMsg("Candidate profile link is not available");
+      setTimeout(() => setToastMsg(""), 3000);
+      return;
+    }
+    const shareUrl = `${window.location.origin}/candidate/${cId}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => {
+          setToastMsg("✓ Candidate profile link copied to clipboard!");
+          setTimeout(() => setToastMsg(""), 3500);
+        })
+        .catch(() => {
+          setToastMsg("✓ Profile URL: " + shareUrl);
+          setTimeout(() => setToastMsg(""), 5000);
+        });
+    } else {
+      setToastMsg("✓ Profile URL: " + shareUrl);
+      setTimeout(() => setToastMsg(""), 5000);
+    }
+  };
+
+  const handleExportPDF = () => {
+    window.print();
   };
 
   const handleOpenProfile = async (c: CandidateProfile) => {
@@ -963,9 +993,27 @@ export const DiscoverPage: React.FC = () => {
                   <FiShield size={13} /> Verified Talent
                 </span>
               </div>
-              <button type="button" className="btn-close-modal" onClick={() => setSelectedCandidate(null)}>
-                <FiX size={18} />
-              </button>
+              <div className="modal-header-actions">
+                <button
+                  type="button"
+                  className="btn-modal-action-header"
+                  onClick={() => handleCopyShareLink(selectedCandidate.id || (selectedCandidate as any).candidateId)}
+                  title="Share candidate profile link"
+                >
+                  <FiShare2 size={14} /> <span>Share Profile</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-modal-action-header"
+                  onClick={handleExportPDF}
+                  title="Export candidate profile as PDF"
+                >
+                  <FiPrinter size={14} /> <span>Export as PDF</span>
+                </button>
+                <button type="button" className="btn-close-modal" onClick={() => setSelectedCandidate(null)}>
+                  <FiX size={18} />
+                </button>
+              </div>
             </div>
 
             <div className="modal-body-content candidate-profile-scroll-body">
@@ -1197,24 +1245,44 @@ export const DiscoverPage: React.FC = () => {
             </div>
 
             <div className="modal-footer-bar">
-              <button
-                type="button"
-                className="btn-close-secondary"
-                onClick={() => setSelectedCandidate(null)}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn-connect-modal"
-                onClick={e => {
-                  const c = selectedCandidate;
-                  setSelectedCandidate(null);
-                  handleOpenConnectSingle(e, c);
-                }}
-              >
-                <FiUserPlus size={16} /> Connect with Candidate
-              </button>
+              <div className="modal-footer-left">
+                <button
+                  type="button"
+                  className="btn-modal-action-secondary"
+                  onClick={() => handleCopyShareLink(selectedCandidate.id || (selectedCandidate as any).candidateId)}
+                  title="Share Candidate Profile link"
+                >
+                  <FiShare2 size={15} /> Share Profile
+                </button>
+                <button
+                  type="button"
+                  className="btn-modal-action-secondary"
+                  onClick={handleExportPDF}
+                  title="Export Candidate Profile as PDF"
+                >
+                  <FiPrinter size={15} /> Export as PDF
+                </button>
+              </div>
+              <div className="modal-footer-right">
+                <button
+                  type="button"
+                  className="btn-close-secondary"
+                  onClick={() => setSelectedCandidate(null)}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn-connect-modal"
+                  onClick={e => {
+                    const c = selectedCandidate;
+                    setSelectedCandidate(null);
+                    handleOpenConnectSingle(e, c);
+                  }}
+                >
+                  <FiUserPlus size={16} /> Connect with Candidate
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -45,6 +45,7 @@ export interface AuthUser {
   role: UserRole;
   roles?: UserRole[];
   avatarUrl?: string;
+  phone?: string;
 }
 
 export interface AuthResponseData {
@@ -84,6 +85,8 @@ export interface AdminUserItem {
   status: string;
   emailVerified: boolean;
   roles: string[];
+  avatarUrl?: string;
+  fullName?: string;
   createdAt: string;
   lastLoginAt?: string;
 }

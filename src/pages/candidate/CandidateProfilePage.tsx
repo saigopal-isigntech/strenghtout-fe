@@ -10,7 +10,7 @@ const normalizeExternalUrl = (url?: string | null): string => {
 };
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 import { adminApi } from '../../api/admin';
 import { connectionsApi } from '../../api/connections';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +24,8 @@ import {
 } from '../../utils/validators';
 import './Profile.css';
 import {
+  FiHome,
+  FiChevronRight,
   FiEdit3,
   FiMapPin,
   FiBriefcase,
@@ -56,6 +58,8 @@ import {
   FiPlay,
   FiCode,
   FiTarget,
+  FiShare2,
+  FiPrinter,
 } from 'react-icons/fi';
 import type { CandidateProfile, CandidateEducation, CandidateProject, CandidateRoleInterest, Evidence, RoleCatalogItem, CandidateExperience } from '../../types';
 
@@ -856,11 +860,11 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
       noticePeriod: displayData.noticePeriod,
     });
     setPersonalForm({
-      gender: displayData.gender,
-      dateOfBirth: displayData.dateOfBirth,
-      maritalStatus: displayData.maritalStatus,
-      permanentAddress: displayData.permanentAddress,
-      languages: displayData.languages,
+      gender: displayData.gender || '',
+      dateOfBirth: displayData.dateOfBirth || '',
+      maritalStatus: displayData.maritalStatus || '',
+      permanentAddress: displayData.permanentAddress || '',
+      languages: displayData.languages || '',
     });
     const targetId = typeof sectionId === 'string' ? sectionId : '';
     navigate('/profile/edit' + (targetId ? `#${targetId}` : ''));
@@ -876,12 +880,16 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
   const closeModal = () => {
     setActiveModal(null);
+    setEditingEduId(null);
+    setEditingProjId(null);
+    setEditingInternshipId(null);
     setBasicErrors({});
-    
-    
     setSkillError('');
     setEduErrors({});
     setProjErrors({});
+    setInternshipErrors({});
+    setPersonalErrors({});
+    setRoleError('');
   };
 
   // Automatically focus input when modal opens
@@ -1138,17 +1146,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
     setSaving(true);
     try {
-      const res = await candidatesApi.addEducation({
-        qualification: eduForm.qualification.trim(),
-        institution: eduForm.institution.trim(),
-        fieldOfStudy: eduForm.fieldOfStudy.trim(),
-        startYear: Number(eduForm.startYear) || undefined,
-        endYear: Number(eduForm.endYear) || undefined,
-        courseType: eduForm.courseType,
-      });
-
-      const newEdu: CandidateEducation = {
-        id: res.data?.data?.id ? String(res.data.data.id) : `edu-${Date.now()}`,
+      const payload = {
         qualification: eduForm.qualification.trim(),
         institution: eduForm.institution.trim(),
         fieldOfStudy: eduForm.fieldOfStudy.trim(),
@@ -1157,8 +1155,27 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         courseType: eduForm.courseType,
       };
 
-      setDisplayData(prev => ({ ...prev, education: [...prev.education, newEdu] }));
-      setAlertMsg({ type: 'success', text: 'Education record added and saved successfully!' });
+      if (editingEduId) {
+        const res = await candidatesApi.updateEducation(editingEduId, payload);
+        const updated = res.data?.data;
+        const updatedItem: CandidateEducation = {
+          id: updated?.id ? String(updated.id) : editingEduId,
+          ...payload,
+        };
+        setDisplayData(prev => ({
+          ...prev,
+          education: prev.education.map(e => (e.id === editingEduId ? updatedItem : e)),
+        }));
+        setAlertMsg({ type: 'success', text: 'Education record updated successfully!' });
+      } else {
+        const res = await candidatesApi.addEducation(payload);
+        const newEdu: CandidateEducation = {
+          id: res.data?.data?.id ? String(res.data.data.id) : `edu-${Date.now()}`,
+          ...payload,
+        };
+        setDisplayData(prev => ({ ...prev, education: [...prev.education, newEdu] }));
+        setAlertMsg({ type: 'success', text: 'Education record added and saved successfully!' });
+      }
       closeModal();
     } catch {
       setAlertMsg({ type: 'error', text: 'Failed to save education record.' });
@@ -1169,12 +1186,16 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
   const handleDeleteEducation = async (id?: string) => {
     if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this education record?')) return;
+    setSaving(true);
     try {
       await candidatesApi.deleteEducation(id);
       setDisplayData(prev => ({ ...prev, education: prev.education.filter(e => e.id !== id) }));
       setAlertMsg({ type: 'success', text: 'Education record deleted.' });
     } catch {
       setAlertMsg({ type: 'error', text: 'Failed to delete education record.' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1199,7 +1220,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
     setSaving(true);
     try {
-      const res = await candidatesApi.addProject({
+      const payload = {
         name: projForm.name.trim(),
         summary: projForm.summary.trim(),
         githubUrl: normalizeExternalUrl(projForm.githubUrl),
@@ -1208,22 +1229,29 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
         endDate: projForm.endDate || '',
         clientCompany: projForm.clientCompany.trim(),
         workType: projForm.workType,
-      });
-
-      const newProj: CandidateProject = {
-        id: res.data?.data?.id ? String(res.data.data.id) : `proj-${Date.now()}`,
-        name: projForm.name.trim(),
-        clientCompany: projForm.clientCompany.trim(),
-        workType: projForm.workType,
-        summary: projForm.summary.trim(),
-        githubUrl: projForm.githubUrl.trim(),
-        demoUrl: projForm.demoUrl.trim(),
-        startDate: projForm.startDate || '',
-        endDate: projForm.endDate || '',
       };
 
-      setDisplayData(prev => ({ ...prev, projects: [...prev.projects, newProj] }));
-      setAlertMsg({ type: 'success', text: 'Project record added and saved successfully!' });
+      if (editingProjId) {
+        const res = await candidatesApi.updateProject(editingProjId, payload);
+        const updated = res.data?.data;
+        const updatedItem: CandidateProject = {
+          id: updated?.id ? String(updated.id) : editingProjId,
+          ...payload,
+        };
+        setDisplayData(prev => ({
+          ...prev,
+          projects: prev.projects.map(p => (p.id === editingProjId ? updatedItem : p)),
+        }));
+        setAlertMsg({ type: 'success', text: 'Project updated successfully!' });
+      } else {
+        const res = await candidatesApi.addProject(payload);
+        const newProj: CandidateProject = {
+          id: res.data?.data?.id ? String(res.data.data.id) : `proj-${Date.now()}`,
+          ...payload,
+        };
+        setDisplayData(prev => ({ ...prev, projects: [...prev.projects, newProj] }));
+        setAlertMsg({ type: 'success', text: 'Project record added and saved successfully!' });
+      }
       closeModal();
     } catch {
       setAlertMsg({ type: 'error', text: 'Failed to save project record.' });
@@ -1234,12 +1262,16 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
   const handleDeleteProject = async (id?: string) => {
     if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    setSaving(true);
     try {
       await candidatesApi.deleteProject(id);
       setDisplayData(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) }));
       setAlertMsg({ type: 'success', text: 'Project deleted.' });
     } catch {
       setAlertMsg({ type: 'error', text: 'Failed to delete project.' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1254,28 +1286,33 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
     try {
       const langStr = Array.isArray(personalForm.languages)
         ? personalForm.languages.join(', ')
-        : personalForm.languages.trim();
+        : (personalForm.languages || '').trim();
+      const addrStr = (personalForm.permanentAddress || '').trim();
+      const dobStr = (personalForm.dateOfBirth || '').trim();
+      const genderStr = (personalForm.gender || '').trim();
+      const maritalStr = (personalForm.maritalStatus || '').trim();
 
       await candidatesApi.updateMyProfile({
-        gender: personalForm.gender,
-        dateOfBirth: personalForm.dateOfBirth,
-        maritalStatus: personalForm.maritalStatus,
-        permanentAddress: personalForm.permanentAddress.trim(),
+        gender: genderStr,
+        dateOfBirth: dobStr,
+        maritalStatus: maritalStr,
+        permanentAddress: addrStr,
         languages: langStr,
       });
 
       setDisplayData(prev => ({
         ...prev,
-        gender: personalForm.gender,
-        dateOfBirth: personalForm.dateOfBirth,
-        maritalStatus: personalForm.maritalStatus,
-        permanentAddress: personalForm.permanentAddress.trim(),
+        gender: genderStr,
+        dateOfBirth: dobStr,
+        maritalStatus: maritalStr,
+        permanentAddress: addrStr,
         languages: langStr,
       }));
       setAlertMsg({ type: 'success', text: 'Personal details updated and saved successfully!' });
       closeModal();
-    } catch {
-      setAlertMsg({ type: 'error', text: 'Failed to save personal details.' });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to save personal details.';
+      setAlertMsg({ type: 'error', text: msg });
     } finally {
       setSaving(false);
     }
@@ -1313,8 +1350,8 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   // ========================
   const renderProfileView = () => {
     // Determine candidate headline & bio
-    const headline = (roleInterests.length > 0 ? roleInterests[0].roleName : '') || displayData.experienceStatus || 'Aspiring Full Stack Developer';
-    const candidateBio = 'Motivated and enthusiastic computer science graduate with a strong interest in full stack development.';
+    const headline = displayData.headline || (roleInterests.length > 0 ? roleInterests[0].roleName : '') || displayData.experienceStatus || '';
+    const candidateBio = displayData.summary || '';
 
     // Helper to get class name for tech skill badge
     const getSkillClass = (skillName: string) => {
@@ -1365,16 +1402,49 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 {user?.role === 'ROLE_COMPANY' ? 'Back to Discover' : 'Back to Candidates'}
               </button>
 
-              {user?.role === 'ROLE_COMPANY' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
                 <button
                   type="button"
-                  className="btn-pv-edit-profile"
-                  onClick={() => setShowConnectModal(true)}
+                  className="btn-pv-company-preview"
+                  onClick={() => {
+                    const shareUrl = window.location.href;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(shareUrl).then(() => {
+                        setAlertMsg({ type: 'success', text: 'Candidate profile link copied to clipboard!' });
+                      }).catch(() => {
+                        setAlertMsg({ type: 'info', text: 'Profile link: ' + shareUrl });
+                      });
+                    } else {
+                      setAlertMsg({ type: 'info', text: 'Profile link: ' + shareUrl });
+                    }
+                  }}
+                  title="Copy direct shareable candidate profile link"
                 >
-                  <FiUserPlus size={16} />
-                  Connect with Candidate
+                  <FiShare2 size={15} />
+                  Share Profile
                 </button>
-              )}
+
+                <button
+                  type="button"
+                  className="btn-pv-company-preview"
+                  onClick={() => window.print()}
+                  title="Export candidate profile as PDF"
+                >
+                  <FiPrinter size={15} />
+                  Export as PDF
+                </button>
+
+                {user?.role === 'ROLE_COMPANY' && (
+                  <button
+                    type="button"
+                    className="btn-pv-edit-profile"
+                    onClick={() => setShowConnectModal(true)}
+                  >
+                    <FiUserPlus size={16} />
+                    Connect with Candidate
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -1392,6 +1462,32 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
               <div className="profile-alert-progress" />
             </div>
           )}
+
+          {/* TOP BREADCRUMB NAVIGATION */}
+          <nav className="pv-breadcrumb-bar" aria-label="Breadcrumb">
+            <Link
+              to={user?.role === 'ROLE_CANDIDATE' ? '/candidate/dashboard' : user?.role === 'ROLE_COMPANY' ? '/discover' : '/admin/users'}
+              className="pv-breadcrumb-link"
+            >
+              <FiHome size={14} />
+              <span>Home</span>
+            </Link>
+            <FiChevronRight size={13} className="pv-breadcrumb-sep" />
+            {isExternalView ? (
+              <>
+                <Link
+                  to={user?.role === 'ROLE_COMPANY' ? '/discover' : '/admin/users?tab=candidates'}
+                  className="pv-breadcrumb-link"
+                >
+                  <span>{user?.role === 'ROLE_COMPANY' ? 'Discover' : 'Candidates'}</span>
+                </Link>
+                <FiChevronRight size={13} className="pv-breadcrumb-sep" />
+                <span className="pv-breadcrumb-current">{fullName || 'Candidate Profile'}</span>
+              </>
+            ) : (
+              <span className="pv-breadcrumb-current">Profile</span>
+            )}
+          </nav>
 
           {/* ================================================================= */}
           {/* HEADER CARD (Matching Reference Design)                           */}
@@ -1425,25 +1521,35 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                   <h1 className="pv-name-heading">{fullName}</h1>
                   <FiCheckCircle size={22} className="pv-verified-badge" />
                 </div>
-                <p className="pv-headline-text">{headline}</p>
-                <p className="pv-bio-text">{candidateBio}</p>
+                {headline ? <p className="pv-headline-text">{headline}</p> : null}
+                {candidateBio ? <p className="pv-bio-text">{candidateBio}</p> : null}
 
                 <div className="pv-pills-row">
-                  <span className="pv-info-pill">
-                    <FiMapPin size={14} /> {displayData.currentLocation || 'Narsingi, Hyderabad'}
-                  </span>
-                  <span className="pv-info-pill">
-                    <FiPhone size={14} /> {isCompanyView ? 'Available upon connection' : (displayData.phone || '9685741452')}
-                  </span>
-                  <span className="pv-info-pill">
-                    <FiMail size={14} /> {isCompanyView ? 'Available upon connection' : emailText}
-                  </span>
-                  <span className="pv-info-pill">
-                    <FiBriefcase size={14} /> {displayData.experienceStatus || 'Fresher'}
-                  </span>
-                  <span className="pv-info-pill">
-                    <FiCalendar size={14} /> {displayData.noticePeriod || 'Available to join in 15 Days'}
-                  </span>
+                  {displayData.currentLocation && (
+                    <span className="pv-info-pill">
+                      <FiMapPin size={14} /> {displayData.currentLocation}
+                    </span>
+                  )}
+                  {(displayData.phone || (!isExternalView && user?.phone)) && (
+                    <span className="pv-info-pill">
+                      <FiPhone size={14} /> {isCompanyView ? 'Available upon connection' : (displayData.phone || user?.phone)}
+                    </span>
+                  )}
+                  {emailText && (
+                    <span className="pv-info-pill">
+                      <FiMail size={14} /> {isCompanyView ? 'Available upon connection' : emailText}
+                    </span>
+                  )}
+                  {displayData.experienceStatus && (
+                    <span className="pv-info-pill">
+                      <FiBriefcase size={14} /> {displayData.experienceStatus}
+                    </span>
+                  )}
+                  {displayData.noticePeriod && (
+                    <span className="pv-info-pill">
+                      <FiCalendar size={14} /> {displayData.noticePeriod}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1545,10 +1651,12 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       <span className="pv-video-duration-tag">2:36</span>
                     </div>
                     <div className="pv-video-details-box">
-                      <h4 className="pv-video-filename">{displayData.videoName || '4030752185-preview.mp4'}</h4>
-                      <span className="pv-video-uploaddate">
-                        <FiCalendar size={12} /> Uploaded on {displayData.videoDate || 'Sep 21, 2026'}
-                      </span>
+                      <h4 className="pv-video-filename">{displayData.videoName || 'Introduction_Video.mp4'}</h4>
+                      {displayData.videoDate && (
+                        <span className="pv-video-uploaddate">
+                          <FiCalendar size={12} /> Uploaded on {displayData.videoDate}
+                        </span>
+                      )}
                       <p className="pv-video-desc">
                         A short introduction about myself, my skills, and my career aspirations.
                       </p>
@@ -1687,53 +1795,54 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                   </div>
                 </div>
 
-                <div className="pv-resume-item-card">
-                  <div className="pv-resume-file-col">
-                    <div className="pv-pdf-badge">
-                      PDF
-                    </div>
-                    <div>
-                      <div className="pv-resume-name-text">
-                        {displayData.resumeName || 'Sample_Java_Developer_Resume (1) (1).pdf'}
+                {displayData.resumeName || displayData.resumeUrl ? (
+                  <div className="pv-resume-item-card">
+                    <div className="pv-resume-file-col">
+                      <div className="pv-pdf-badge">
+                        {displayData.resumeName?.includes('.')
+                          ? (displayData.resumeName.split('.').pop()?.toUpperCase() || 'PDF')
+                          : 'PDF'}
                       </div>
-                      <div className="pv-resume-meta-text">
-                        Uploaded on {displayData.resumeDate || 'Sep 21, 2026'} | 450 KB
+                      <div>
+                        <div className="pv-resume-name-text">
+                          {displayData.resumeName || 'Resume.pdf'}
+                        </div>
+                        {displayData.resumeDate && (
+                          <div className="pv-resume-meta-text">
+                            Uploaded on {displayData.resumeDate}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  <div className="pv-resume-actions-group">
-                    {displayData.resumeUrl ? (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-pv-circle-action"
-                          onClick={handleViewResume}
-                          title="View Resume"
-                        >
-                          <FiEye size={16} />
-                        </button>
-                        <a
-                          href={displayData.resumeUrl}
-                          download={displayData.resumeName || 'Resume.pdf'}
-                          className="btn-pv-circle-action"
-                          title="Download Resume"
-                        >
-                          <FiDownload size={16} />
-                        </a>
-                      </>
-                    ) : (
-                      <>
-                        <button type="button" className="btn-pv-circle-action" title="Preview Resume">
-                          <FiEye size={16} />
-                        </button>
-                        <button type="button" className="btn-pv-circle-action" title="Download Resume">
-                          <FiDownload size={16} />
-                        </button>
-                      </>
-                    )}
+                    <div className="pv-resume-actions-group">
+                      {displayData.resumeUrl && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-pv-circle-action"
+                            onClick={handleViewResume}
+                            title="View Resume"
+                          >
+                            <FiEye size={16} />
+                          </button>
+                          <a
+                            href={displayData.resumeUrl}
+                            download={displayData.resumeName || 'Resume.pdf'}
+                            className="btn-pv-circle-action"
+                            title="Download Resume"
+                          >
+                            <FiDownload size={16} />
+                          </a>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                    No resume uploaded yet.
+                  </p>
+                )}
               </div>
 
               {/* 5. Verified Assessment Evidence (RightPath) */}
@@ -1942,47 +2051,63 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                   </div>
                 </div>
 
-                <div className="pv-personal-2col-grid">
-                  <div className="pv-personal-cell">
-                    <FiUser size={18} className="pv-personal-cell-icon" />
-                    <div className="pv-personal-cell-info">
-                      <span className="pv-personal-cell-label">Gender</span>
-                      <span className="pv-personal-cell-val">{displayData.gender || 'Not specified'}</span>
-                    </div>
-                  </div>
+                {displayData.gender || displayData.dateOfBirth || displayData.maritalStatus || displayData.languages || displayData.permanentAddress ? (
+                  <div className="pv-personal-2col-grid">
+                    {displayData.gender && (
+                      <div className="pv-personal-cell">
+                        <FiUser size={18} className="pv-personal-cell-icon" />
+                        <div className="pv-personal-cell-info">
+                          <span className="pv-personal-cell-label">Gender</span>
+                          <span className="pv-personal-cell-val">{displayData.gender}</span>
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="pv-personal-cell">
-                    <FiCalendar size={18} className="pv-personal-cell-icon" />
-                    <div className="pv-personal-cell-info">
-                      <span className="pv-personal-cell-label">Date of Birth</span>
-                      <span className="pv-personal-cell-val">{displayData.dateOfBirth || 'Not specified'}</span>
-                    </div>
-                  </div>
+                    {displayData.dateOfBirth && (
+                      <div className="pv-personal-cell">
+                        <FiCalendar size={18} className="pv-personal-cell-icon" />
+                        <div className="pv-personal-cell-info">
+                          <span className="pv-personal-cell-label">Date of Birth</span>
+                          <span className="pv-personal-cell-val">{displayData.dateOfBirth}</span>
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="pv-personal-cell">
-                    <FiHeart size={18} className="pv-personal-cell-icon" />
-                    <div className="pv-personal-cell-info">
-                      <span className="pv-personal-cell-label">Marital Status</span>
-                      <span className="pv-personal-cell-val">{displayData.maritalStatus || 'Not specified'}</span>
-                    </div>
-                  </div>
+                    {displayData.maritalStatus && (
+                      <div className="pv-personal-cell">
+                        <FiHeart size={18} className="pv-personal-cell-icon" />
+                        <div className="pv-personal-cell-info">
+                          <span className="pv-personal-cell-label">Marital Status</span>
+                          <span className="pv-personal-cell-val">{displayData.maritalStatus}</span>
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="pv-personal-cell">
-                    <FiGlobe size={18} className="pv-personal-cell-icon" />
-                    <div className="pv-personal-cell-info">
-                      <span className="pv-personal-cell-label">Languages</span>
-                      <span className="pv-personal-cell-val">{displayData.languages || 'English, Telugu'}</span>
-                    </div>
-                  </div>
+                    {displayData.languages && (
+                      <div className="pv-personal-cell">
+                        <FiGlobe size={18} className="pv-personal-cell-icon" />
+                        <div className="pv-personal-cell-info">
+                          <span className="pv-personal-cell-label">Languages</span>
+                          <span className="pv-personal-cell-val">{displayData.languages}</span>
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="pv-personal-cell pv-personal-cell-full">
-                    <FiMapPin size={18} className="pv-personal-cell-icon" />
-                    <div className="pv-personal-cell-info">
-                      <span className="pv-personal-cell-label">Permanent Address</span>
-                      <span className="pv-personal-cell-val">{displayData.permanentAddress || 'High Towers Gachibowli, Hyderabad'}</span>
-                    </div>
+                    {displayData.permanentAddress && (
+                      <div className="pv-personal-cell pv-personal-cell-full">
+                        <FiMapPin size={18} className="pv-personal-cell-icon" />
+                        <div className="pv-personal-cell-info">
+                          <span className="pv-personal-cell-label">Permanent Address</span>
+                          <span className="pv-personal-cell-val">{displayData.permanentAddress}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                    No personal details provided yet.
+                  </p>
+                )}
               </div>
             </div>
           </div>

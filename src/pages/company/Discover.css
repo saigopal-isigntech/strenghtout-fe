@@ -15,7 +15,7 @@
 .toast-notification {
   position: fixed;
   top: 80px; right: 24px;
-  z-index: 1000;
+  z-index: 10000;
   display: flex; align-items: center; gap: 8px;
   background: #047857; color: #ffffff;
   padding: 10px 18px; border-radius: 10px;
@@ -1507,5 +1507,297 @@
 @media (max-width: 640px) {
   .form-row-2col {
     grid-template-columns: 1fr;
+  }
+}
+
+
+/* ==========================================================================
+   Discover Page Pagination Bar
+   ========================================================================== */
+.discover-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+  margin-bottom: 2.5rem;
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  flex-wrap: wrap;
+}
+
+.discover-pagination-bar .pagination-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.discover-pagination-bar .pagination-nav-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.discover-pagination-bar .pagination-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  box-shadow: none;
+  transform: none;
+}
+
+.discover-pagination-bar .pagination-page-nums {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.discover-pagination-bar .page-num-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.discover-pagination-bar .page-num-btn:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.discover-pagination-bar .page-num-btn.active {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.28);
+}
+
+.pagination-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pagination-nav-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.pagination-nav-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+.pagination-page-nums {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.page-num-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-num-btn:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.page-num-btn.active {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #059669 !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.28);
+}
+
+
+/* Modal Header Action Buttons (Share & Export PDF) */
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-modal-action-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-modal-action-header:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #047857;
+}
+
+/* Modal Footer Buttons Layout */
+.candidate-detail-modal .modal-footer-bar {
+  padding: 1.15rem 1.75rem;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.modal-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-modal-action-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.6rem 1.15rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-modal-action-secondary:hover {
+  background: #f8fafc;
+  border-color: #047857;
+  color: #047857;
+}
+
+/* Print Styles for Clean Profile Export */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  nav,
+  header,
+  footer,
+  .navbar,
+  .footer,
+  .discover-page-container > *:not(.modal-backdrop),
+  .toast-notification,
+  .modal-header-actions,
+  .btn-close-modal,
+  .modal-footer-bar,
+  .btn-connect-modal,
+  .btn-modal-action-secondary,
+  .btn-modal-cancel,
+  .candidate-grid,
+  .discover-pagination-bar {
+    display: none !important;
+  }
+
+  .modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  .modal-dialog-large.candidate-detail-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .candidate-profile-scroll-body {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .modal-profile-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }

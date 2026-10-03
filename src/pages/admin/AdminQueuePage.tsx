@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, Fragment } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { connectionsApi } from "../../api/connections";
 import type { ConnectionRequest } from "../../types";
+import { isValidUserAvatar } from "../../utils/validators";
 import { AdminHeroBanner } from "../../components/admin/AdminHeroBanner";
 import {
   FiRefreshCw,
@@ -120,6 +121,38 @@ const getAvatarStyle = (name?: string) => {
   }
   const idx = Math.abs(hash) % AVATAR_BG_COLORS.length;
   return AVATAR_BG_COLORS[idx];
+};
+
+const QueueAvatar: React.FC<{
+  src?: string | null;
+  name: string;
+  avatarStyle: { bg: string; text: string };
+  initials: string;
+  large?: boolean;
+}> = ({ src, name, avatarStyle, initials, large }) => {
+  const [imgError, setImgError] = useState(false);
+  const showImg = Boolean(src && isValidUserAvatar(src) && !imgError);
+
+  return (
+    <div
+      className={`aq-avatar-circle ${large ? "large" : ""}`}
+      style={{
+        background: showImg ? "#f1f5f9" : avatarStyle.bg,
+        color: avatarStyle.text,
+      }}
+    >
+      {showImg ? (
+        <img
+          src={src!}
+          alt={name}
+          className="aq-avatar-img"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span>{initials}</span>
+      )}
+    </div>
+  );
 };
 
 type ViewMode = "TABLE" | "BY_CANDIDATE" | "BY_COMPANY";
@@ -608,12 +641,12 @@ const AdminQueuePage: React.FC = () => {
                           {/* Candidate Column */}
                           <td>
                             <div className="aq-candidate-cell">
-                              <div
-                                className="aq-avatar-circle"
-                                style={{ background: avatarStyle.bg, color: avatarStyle.text }}
-                              >
-                                {initials}
-                              </div>
+                              <QueueAvatar
+                                src={r.candidateAvatarUrl}
+                                name={candName}
+                                avatarStyle={avatarStyle}
+                                initials={initials}
+                              />
                               <div className="aq-candidate-info">
                                 <strong
                                   className="aq-candidate-name"
@@ -932,12 +965,13 @@ const AdminQueuePage: React.FC = () => {
                   <div key={group.candidateId || group.candidateName} className="aq-group-card">
                     <div className="aq-group-header">
                       <div className="aq-group-header-left">
-                        <div
-                          className="aq-avatar-circle large"
-                          style={{ background: avatarStyle.bg, color: avatarStyle.text }}
-                        >
-                          {initials}
-                        </div>
+                        <QueueAvatar
+                          src={group.requests?.[0]?.candidateAvatarUrl}
+                          name={group.candidateName}
+                          avatarStyle={avatarStyle}
+                          initials={initials}
+                          large
+                        />
                         <div>
                           <div className="aq-cand-title-row">
                             <h3>{group.candidateName}</h3>

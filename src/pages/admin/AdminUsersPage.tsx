@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import React, { useEffect, useState, useMemo } from "react";
 import { adminApi } from "../../api/admin";
+import { isValidUserAvatar } from "../../utils/validators";
 import type { AdminUserItem, CompanyProfile, CandidateProfile } from "../../types";
 import { AdminHeroBanner } from "../../components/admin/AdminHeroBanner";
 import {
@@ -51,6 +52,39 @@ const getAvatarStyle = (str?: string) => {
   }
   const idx = Math.abs(hash) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
+};
+
+interface AdminAvatarProps {
+  src?: string | null;
+  name: string;
+  avatarStyle: { bg: string; text: string };
+  initials: string;
+}
+
+const AdminAvatar: React.FC<AdminAvatarProps> = ({ src, name, avatarStyle, initials }) => {
+  const [imgError, setImgError] = useState(false);
+  const showImg = Boolean(src && isValidUserAvatar(src) && !imgError);
+
+  return (
+    <div
+      className="au-avatar"
+      style={{
+        background: showImg ? "#f1f5f9" : avatarStyle.bg,
+        color: avatarStyle.text,
+      }}
+    >
+      {showImg ? (
+        <img
+          src={src!}
+          alt={name}
+          className="au-avatar-img"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span>{initials}</span>
+      )}
+    </div>
+  );
 };
 
 const AdminUsersPage: React.FC = () => {
@@ -672,8 +706,6 @@ const AdminUsersPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {paginatedUsers.map((u) => {
-                    const avatarStyle = getAvatarStyle(u.email);
-                    const initials = getInitials(u.email);
                     const isCandidate = u.accountType === "CANDIDATE" || u.roles?.includes("ROLE_CANDIDATE");
                     const isCompany = u.accountType === "COMPANY" || u.roles?.includes("ROLE_COMPANY");
                     const isSuper = u.roles?.includes("ROLE_SUPER_ADMIN");
@@ -685,6 +717,25 @@ const AdminUsersPage: React.FC = () => {
                       ? "Company Admin"
                       : "Candidate User";
 
+                    const matchedCand = isCandidate
+                      ? candidates.find((c) => c.email?.toLowerCase() === u.email.toLowerCase() || (c as any).userId === u.id)
+                      : undefined;
+                    const matchedComp = isCompany
+                      ? companies.find((c) => c.email?.toLowerCase() === u.email.toLowerCase() || (c as any).userId === u.id)
+                      : undefined;
+
+                    const candFullName = matchedCand
+                      ? (matchedCand.fullName || (matchedCand.firstName ? `${matchedCand.firstName} ${matchedCand.lastName || ""}`.trim() : ""))
+                      : "";
+                    const compName = matchedComp
+                      ? (matchedComp.displayName || matchedComp.legalName || matchedComp.companyName || "")
+                      : "";
+
+                    const resolvedName = u.fullName || candFullName || compName || u.email;
+                    const resolvedAvatar = u.avatarUrl || matchedCand?.avatarUrl || matchedComp?.logoUrl;
+                    const avatarStyle = getAvatarStyle(resolvedName || u.email);
+                    const initials = getInitials(resolvedName || u.email);
+
                     return (
                       <tr key={u.id} className="au-table-row">
                         <td><input type="checkbox" /></td>
@@ -692,15 +743,17 @@ const AdminUsersPage: React.FC = () => {
                         {/* USER EMAIL */}
                         <td>
                           <div className="au-user-cell">
-                            <div
-                              className="au-avatar"
-                              style={{ background: avatarStyle.bg, color: avatarStyle.text }}
-                            >
-                              {initials}
-                            </div>
+                            <AdminAvatar
+                              src={resolvedAvatar}
+                              name={resolvedName}
+                              avatarStyle={avatarStyle}
+                              initials={initials}
+                            />
                             <div className="au-user-info">
                               <strong className="au-user-email">{u.email}</strong>
-                              <span className="au-user-sublabel">{accountLabel}</span>
+                              <span className="au-user-sublabel">
+                                {(candFullName || compName) ? `${candFullName || compName} • ${accountLabel}` : accountLabel}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -822,9 +875,12 @@ const AdminUsersPage: React.FC = () => {
                       <tr key={c.id} className="au-table-row">
                         <td>
                           <div className="au-user-cell">
-                            <div className="au-avatar" style={{ background: avatarStyle.bg, color: avatarStyle.text }}>
-                              {initials}
-                            </div>
+                            <AdminAvatar
+                              src={c.logoUrl}
+                              name={cName}
+                              avatarStyle={avatarStyle}
+                              initials={initials}
+                            />
                             <div className="au-user-info">
                               <strong className="au-user-email">{cName}</strong>
                               <span className="au-user-sublabel">{c.website || "Company Profile"}</span>
