@@ -229,19 +229,19 @@ export const AdminHeroBanner: React.FC<AdminHeroBannerProps> = ({
     <div className="admin-hero-banner-container">
       {/* Background Organic Wave SVG */}
       <svg
-        className="hero-bg-waves"
-        viewBox="0 0 1000 200"
+        className="admin-hero-waves"
+        viewBox="0 0 500 200"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         preserveAspectRatio="none"
       >
         <path
-          d="M380,200 C380,110 480,30 1000,45 L1000,200 Z"
+          d="M0,200 C120,110 240,30 500,45 L500,200 Z"
           fill="#a7f3d0"
           opacity="0.45"
         />
         <path
-          d="M440,200 C440,130 580,55 1000,75 L1000,200 Z"
+          d="M70,200 C180,130 300,55 500,75 L500,200 Z"
           fill="#6ee7b7"
           opacity="0.2"
         />

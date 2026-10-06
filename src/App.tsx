@@ -1,5 +1,5 @@
 import CommandPalette from "./components/CommandPalette";
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -24,6 +24,22 @@ const MyRequestsPage       = lazy(() => import("./pages/company/MyRequestsPage")
 const CompanyProfileView   = lazy(() => import("./components/CompanyProfileView"));
 const AboutPage            = lazy(() => import("./pages/AboutPage"));
 const ServicesPage         = lazy(() => import("./pages/ServicesPage"));
+
+// Instant Scroll Reset on route change to ensure all pages open cleanly from top (0,0)
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Reset any lingering overflow locks from previous page modals
+    document.body.style.overflow = "";
+    // Instantly snap to top without smooth-scroll lag
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
+
+  return null;
+};
 
 const PageLoader = () => (
   <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -99,6 +115,7 @@ const PersistentAppLayout: React.FC = () => {
 
 const App: React.FC = () => (
   <BrowserRouter>
+    <ScrollToTop />
     <AuthProvider>
       <Routes>
         {/* Auth routes */}

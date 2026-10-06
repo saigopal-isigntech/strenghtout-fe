@@ -312,17 +312,17 @@ export const MyRequestsPage: React.FC = () => {
       {/* 1. Hero Header Banner matching reference mockup */}
       <div className="mr-hero-banner">
         <svg
-          className="hero-bg-waves"
-          viewBox="0 0 1000 220"
+          className="mr-hero-waves"
+          viewBox="0 0 500 220"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
         >
-          <path d="M380,220 C380,120 480,30 1000,45 L1000,220 Z" fill="#a7f3d0" opacity="0.45" />
-          <path d="M440,220 C440,140 580,55 1000,75 L1000,220 Z" fill="#6ee7b7" opacity="0.2" />
+          <path d="M0,220 C120,120 240,30 500,45 L500,220 Z" fill="#a7f3d0" opacity="0.45" />
+          <path d="M70,220 C180,140 300,55 500,75 L500,220 Z" fill="#6ee7b7" opacity="0.2" />
         </svg>
 
-        <div className="hero-left-col">
+        <div className="mr-hero-left">
           <div className="mr-hero-badge">MY REQUEST HISTORY</div>
           <h1 className="mr-hero-title">My Connection Requests</h1>
           <p className="mr-hero-sub">
@@ -330,7 +330,7 @@ export const MyRequestsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="hero-right-col">
+        <div className="mr-hero-right">
           <button
             type="button"
             className="mr-refresh-btn"

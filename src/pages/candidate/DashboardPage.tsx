@@ -191,22 +191,22 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* 1. Hero Welcome Banner */}
-      <div className="company-hero-banner">
+      <div className="cand-dash-hero-banner">
         {/* Background Organic Wave SVG */}
         <svg
-          className="hero-bg-waves"
-          viewBox="0 0 1000 220"
+          className="cand-dash-hero-waves"
+          viewBox="0 0 500 220"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
         >
           <path
-            d="M380,220 C380,120 480,30 1000,45 L1000,220 Z"
+            d="M0,220 C120,120 240,30 500,45 L500,220 Z"
             fill="#a7f3d0"
             opacity="0.45"
           />
           <path
-            d="M440,220 C440,140 580,55 1000,75 L1000,220 Z"
+            d="M70,220 C180,140 300,55 500,75 L500,220 Z"
             fill="#6ee7b7"
             opacity="0.2"
           />

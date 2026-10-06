@@ -6,6 +6,7 @@ import type { AdminUserItem, CompanyProfile, CandidateProfile } from "../../type
 import { AdminHeroBanner } from "../../components/admin/AdminHeroBanner";
 import {
   FiRefreshCw,
+  FiCheckCircle,
   FiSearch,
   FiMapPin,
   FiExternalLink,
@@ -367,9 +368,6 @@ const AdminUsersPage: React.FC = () => {
       return;
     }
     const nextStatus = u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-    if (!window.confirm(`Are you sure you want to mark ${u.email} as ${nextStatus === "SUSPENDED" ? "Inactive" : "Active"}?`)) {
-      return;
-    }
     setUpdatingId(u.id);
     try {
       await adminApi.updateUserStatus(u.id, nextStatus as any);
@@ -535,7 +533,12 @@ const AdminUsersPage: React.FC = () => {
 
   return (
     <div className="admin-users-page">
-      {toast && <div className="admin-toast">{toast}</div>}
+      {toast && (
+        <div className="au-toast">
+          <FiCheckCircle size={18} className="toast-icon" />
+          <span>{toast}</span>
+        </div>
+      )}
 
       {/* Hero Banner matching exact reference design */}
       <AdminHeroBanner

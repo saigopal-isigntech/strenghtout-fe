@@ -13,8 +13,8 @@
 /* Toast Notification */
 .aq-toast {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: 88px;
+  right: 28px;
   z-index: 1000;
   display: flex;
   align-items: center;

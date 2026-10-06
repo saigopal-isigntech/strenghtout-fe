@@ -75,14 +75,13 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    setError("");
     setLoading(true);
     try {
       await login(email.trim(), password);
       sessionStorage.setItem("show_login_success_toast", "true");
       navigate("/dashboard");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Login failed. Please check your credentials.");
+      setError(err?.response?.data?.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -142,7 +141,12 @@ const LoginPage: React.FC = () => {
             </p>
 
             
-            {error && <div className="auth-error">{error}</div>}
+            {error && (
+              <div className="auth-error">
+                <FiAlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="auth-form" noValidate>
               <div className="form-group">
@@ -155,6 +159,7 @@ const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
+                    if (error) setError("");
                     if (touched.email) {
                       const err = validateEmail(e.target.value);
                       setFieldErrors(prev => ({ ...prev, email: err || undefined }));
@@ -188,6 +193,7 @@ const LoginPage: React.FC = () => {
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
+                      if (error) setError("");
                       if (touched.password) {
                         const err = validatePassword(e.target.value, 1);
                         setFieldErrors(prev => ({ ...prev, password: err || undefined }));

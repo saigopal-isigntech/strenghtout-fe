@@ -1032,6 +1032,8 @@
    ============================================================ */
 .auth-submit-btn {
   width: 100%;
+  min-height: 48px;
+  height: 48px;
   background: #00b852 !important;
   color: #ffffff !important;
   border: none;

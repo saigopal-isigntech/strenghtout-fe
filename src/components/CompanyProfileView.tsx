@@ -22,7 +22,6 @@ import {
   FiX,
   FiArrowLeft,
   FiExternalLink,
-  FiUserCheck,
   FiCalendar,
   FiRotateCcw,
   FiImage,
@@ -300,24 +299,30 @@ const CompanyProfileView: React.FC = () => {
            ===================================================================== */}
         {!editing ? (
           <>
-            {/* 1. Header Profile Banner matching reference mockup */}
-            <div className="company-header-hero-banner">
+            {/* 1. Header Hero Banner matching Discover and MyRequests pages */}
+            <div className="comp-profile-hero-banner">
               <svg
-                className="hero-bg-waves"
-                viewBox="0 0 1000 220"
+                className="comp-profile-waves"
+                viewBox="0 0 500 220"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 preserveAspectRatio="none"
               >
-                <path d="M380,220 C380,120 480,30 1000,45 L1000,220 Z" fill="#a7f3d0" opacity="0.45" />
-                <path d="M440,220 C440,140 580,55 1000,75 L1000,220 Z" fill="#6ee7b7" opacity="0.2" />
+                <path d="M0,220 C120,120 240,30 500,45 L500,220 Z" fill="#a7f3d0" opacity="0.45" />
+                <path d="M70,220 C180,140 300,55 500,75 L500,220 Z" fill="#6ee7b7" opacity="0.2" />
               </svg>
 
-              <div className="hero-top-bar">
-                <div className="hero-badge-pill">
-                  <FiUserCheck size={13} /> COMPANY ACCOUNT
-                </div>
+              <div className="comp-profile-hero-left">
+                <div className="company-hero-badge">COMPANY PROFILE</div>
+                <h1 className="company-hero-title">
+                  {profile?.displayName || profile?.legalName || user?.fullName || "Company Profile"}
+                </h1>
+                <p className="company-hero-sub">
+                  Manage your company branding, verified organization details, and talent discovery preferences.
+                </p>
+              </div>
 
+              <div className="comp-profile-hero-right">
                 {!isReadOnly && (
                   <button
                     type="button"
@@ -328,8 +333,11 @@ const CompanyProfileView: React.FC = () => {
                   </button>
                 )}
               </div>
+            </div>
 
-              <div className="hero-main-content">
+            {/* 2. Company Identity & Quick Profile Card */}
+            <div className="company-identity-card">
+              <div className="company-identity-main">
                 <div className="company-logo-avatar-box">
                   <span className="logo-initials-txt">{companyInitials}</span>
                   <span className="logo-active-tag">
@@ -337,11 +345,11 @@ const CompanyProfileView: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="company-header-details">
+                <div className="company-identity-details">
                   <div className="company-title-edit-row">
-                    <h1 className="company-name-title">
+                    <h2 className="company-identity-name">
                       {profile?.displayName || profile?.legalName || user?.fullName || "Company"}
-                    </h1>
+                    </h2>
                     {!isReadOnly && (
                       <button
                         type="button"
@@ -358,21 +366,21 @@ const CompanyProfileView: React.FC = () => {
                     Legal Name: <strong>{profile?.legalName || "Not specified"}</strong>
                   </p>
 
-                  <div className="hero-meta-pills-row">
-                    <span className="hero-meta-pill">
+                  <div className="identity-meta-pills-row">
+                    <span className="identity-meta-pill">
                       <FiBriefcase size={13} /> {profile?.industry || "Not specified"}
                     </span>
-                    <span className="hero-meta-pill">
+                    <span className="identity-meta-pill">
                       <FiUsers size={13} /> {profile?.companySize || "1-10 Employees"}
                     </span>
-                    <span className="hero-meta-pill">
+                    <span className="identity-meta-pill">
                       <FiMapPin size={13} /> {profile?.city ? `${profile.city}${profile.country ? `, ${profile.country}` : ""}` : (profile?.country || "Not specified")}
                     </span>
                   </div>
 
-                  <div className="hero-meta-pills-row links-row">
+                  <div className="identity-meta-pills-row links-row">
                     {(profile?.email || user?.email) && (
-                      <span className="hero-meta-pill link-pill">
+                      <span className="identity-meta-pill link-pill">
                         <FiMail size={13} /> {profile?.email || user?.email}
                       </span>
                     )}
@@ -381,7 +389,7 @@ const CompanyProfileView: React.FC = () => {
                         href={profile.website.startsWith("http") ? profile.website : `https://${profile.website}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="hero-meta-pill link-pill clickable"
+                        className="identity-meta-pill link-pill clickable"
                       >
                         <FiGlobe size={13} /> {profile.website.replace("https://", "").replace("http://", "").replace(/\/$/, "")} <FiExternalLink size={11} />
                       </a>
@@ -391,7 +399,7 @@ const CompanyProfileView: React.FC = () => {
                         href={profile.linkedinUrl.startsWith("http") ? profile.linkedinUrl : `https://${profile.linkedinUrl}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="hero-meta-pill link-pill linkedin"
+                        className="identity-meta-pill link-pill linkedin"
                       >
                         <FiLinkedin size={13} /> LinkedIn Page <FiExternalLink size={11} />
                       </a>

@@ -217,27 +217,26 @@ const Navbar: React.FC = () => {
   const navLinks = () => {
     if (!user)
       return [
-        { to: "/", label: "Home" },
         { to: "/about", label: "About" },
         { to: "/services", label: "Services" },
       ];
     if (isAdmin())
       return [
-        { to: "/admin/dashboard", label: "Home" },
+        { to: "/admin/dashboard", label: "Dashboard" },
         { to: "/admin/requests", label: "Requests" },
         { to: "/admin/users", label: "Users" },
         { to: "/admin/audit", label: "Audit" },
       ];
     if (user.role === "ROLE_COMPANY")
       return [
-        { to: "/company/dashboard", label: "Home" },
+        { to: "/company/dashboard", label: "Dashboard" },
         { to: "/company/discover", label: "Discover" },
         { to: "/company/requests", label: "Requests" },
         { to: "/company/profile", label: "Profile" },
         { to: "/about", label: "About" },
       ];
     return [
-      { to: "/candidate/dashboard", label: "Home" },
+      { to: "/candidate/dashboard", label: "Dashboard" },
       { to: "/candidate/profile", label: "Profile" },
       { to: "/candidate/opportunities", label: "Opportunities" },
       { to: "/services", label: "Services" },

@@ -449,16 +449,16 @@ export const AdminAuditPage: React.FC = () => {
     const authCount = logs.filter(l => {
       const t = (l.eventType || "").toUpperCase();
       return t.includes("LOGIN") || t.includes("AUTH") || t.includes("PASSWORD");
-    }).length || 86;
+    }).length;
 
     const updatesCount = logs.filter(l => {
       const t = (l.eventType || "").toUpperCase();
       const entity = (l.entityType || "").toUpperCase();
       return t.includes("UPDATE") || t.includes("STATUS") || t.includes("PROFILE") || entity.includes("PROFILE");
-    }).length || 13;
+    }).length;
 
     return {
-      totalEvents: total > 0 ? total : 443,
+      totalEvents: total,
       authCount,
       updatesCount,
       alertsCount: 0,

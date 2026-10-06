@@ -44,6 +44,7 @@ import {
   FiAward,
   FiUserCheck,
   FiGithub,
+  FiArrowLeft,
 } from "react-icons/fi";
 
 import "./Discover.css";
@@ -481,6 +482,25 @@ export const DiscoverPage: React.FC = () => {
     }
   };
 
+  // Prevent body scrolling when full-screen candidate profile is active and enable Esc key close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedCandidate) {
+        setSelectedCandidate(null);
+      }
+    };
+    if (selectedCandidate) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedCandidate]);
+
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
   return (
@@ -495,25 +515,25 @@ export const DiscoverPage: React.FC = () => {
       {/* 1. Hero Header Banner matching reference mockup */}
       <div className="discover-hero-banner">
         <svg
-          className="hero-bg-waves"
-          viewBox="0 0 1000 220"
+          className="discover-hero-waves"
+          viewBox="0 0 500 220"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
         >
           <path
-            d="M380,220 C380,120 480,30 1000,45 L1000,220 Z"
+            d="M0,220 C120,120 240,30 500,45 L500,220 Z"
             fill="#a7f3d0"
             opacity="0.45"
           />
           <path
-            d="M440,220 C440,140 580,55 1000,75 L1000,220 Z"
+            d="M70,220 C180,140 300,55 500,75 L500,220 Z"
             fill="#6ee7b7"
             opacity="0.2"
           />
         </svg>
 
-        <div className="hero-left-col">
+        <div className="discover-hero-left">
           <h1 className="discover-hero-title">Discover Candidates</h1>
           <p className="discover-hero-sub">
             Explore pre-screened talent, verified skills, and background assessments to build stronger teams.
@@ -522,7 +542,7 @@ export const DiscoverPage: React.FC = () => {
 
         </div>
 
-        <div className="hero-right-col">
+        <div className="discover-hero-right">
           <div className="hero-feature-card">
             <div className="feature-item">
               <FiCheckCircle size={15} className="check-icon" />
@@ -982,18 +1002,47 @@ export const DiscoverPage: React.FC = () => {
         </div>
       )}
 
-      {/* Comprehensive Candidate Public Profile Modal */}
-      {selectedCandidate && (
-        <div className="modal-backdrop" onClick={() => setSelectedCandidate(null)}>
-          <div className="modal-dialog-large candidate-detail-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-bar">
-              <div className="modal-header-title-group">
-                <h2>Candidate Profile Details</h2>
+      {/* Comprehensive Candidate Full-Screen Public Profile View */}
+      {selectedCandidate && (() => {
+        const isStarred = selectedCandidate.id && shortlist.includes(selectedCandidate.id);
+        const avatarStyle = getAvatarStyle(selectedCandidate.fullName || "");
+        const initials = getInitials(selectedCandidate.fullName);
+
+        return (
+          <div className="fullscreen-candidate-view" role="dialog" aria-modal="true">
+            {/* Top Navigation Header Bar */}
+            <div className="fullscreen-profile-header">
+              <div className="fullscreen-header-left">
+                <button
+                  type="button"
+                  className="btn-fullscreen-back"
+                  onClick={() => setSelectedCandidate(null)}
+                  title="Back to Discovery (Esc)"
+                >
+                  <FiArrowLeft size={18} />
+                  <span>Back to Candidates</span>
+                </button>
+                <div className="fullscreen-header-divider" />
+                <div className="fullscreen-header-candidate-info">
+                  <h3 className="fullscreen-header-name">{selectedCandidate.fullName}</h3>
+                  <span className="fullscreen-header-headline">{selectedCandidate.headline || "Professional Candidate Profile"}</span>
+                </div>
                 <span className="profile-verified-badge">
                   <FiShield size={13} /> Verified Talent
                 </span>
               </div>
-              <div className="modal-header-actions">
+
+              <div className="fullscreen-header-actions">
+                <button
+                  type="button"
+                  className={`btn-header-shortlist ${isStarred ? "starred" : ""}`}
+                  onClick={(e) => toggleShortlist(e, selectedCandidate.id || (selectedCandidate as any).candidateId)}
+                  title={isStarred ? "Remove candidate from shortlist" : "Add candidate to shortlist"}
+                >
+                  <FiStar size={15} fill={isStarred ? "#f59e0b" : "none"} color={isStarred ? "#f59e0b" : "#64748b"} />
+                  <span>{isStarred ? "Shortlisted" : "Shortlist"}</span>
+                </button>
+
                 <button
                   type="button"
                   className="btn-modal-action-header"
@@ -1002,6 +1051,7 @@ export const DiscoverPage: React.FC = () => {
                 >
                   <FiShare2 size={14} /> <span>Share Profile</span>
                 </button>
+
                 <button
                   type="button"
                   className="btn-modal-action-header"
@@ -1010,283 +1060,321 @@ export const DiscoverPage: React.FC = () => {
                 >
                   <FiPrinter size={14} /> <span>Export as PDF</span>
                 </button>
-                <button type="button" className="btn-close-modal" onClick={() => setSelectedCandidate(null)}>
-                  <FiX size={18} />
-                </button>
-              </div>
-            </div>
 
-            <div className="modal-body-content candidate-profile-scroll-body">
-              {/* Top Profile Card */}
-              <div className="profile-modal-top-card">
-                {(selectedCandidate.avatarUrl || (selectedCandidate as any).avatarUrl) ? (
-                  <img
-                    src={selectedCandidate.avatarUrl || (selectedCandidate as any).avatarUrl}
-                    alt={selectedCandidate.fullName || "Candidate"}
-                    className="avatar-photo-large"
-                    onError={e => {
-                      (e.currentTarget as HTMLElement).style.display = 'none';
-                      const sibling = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
-                      if (sibling) sibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div
-                  className="avatar-initials-large"
-                  style={{
-                    background: getAvatarStyle(selectedCandidate.fullName).bg,
-                    color: getAvatarStyle(selectedCandidate.fullName).color,
-                    display: (selectedCandidate.avatarUrl || (selectedCandidate as any).avatarUrl) ? 'none' : 'flex'
-                  }}
-                >
-                  {getInitials(selectedCandidate.fullName)}
-                </div>
-                <div className="profile-top-main-info">
-                  <h3 className="modal-candidate-name">{selectedCandidate.fullName}</h3>
-                  <p className="modal-candidate-headline">{selectedCandidate.headline || "Professional Candidate Profile"}</p>
-                  <div className="modal-meta-pills-row">
-                    <span className="modal-meta-pill">
-                      <FiMapPin size={13} /> {selectedCandidate.location || (selectedCandidate as any).currentLocation || "Location not set"}
-                    </span>
-                    <span className="modal-meta-pill">
-                      <FiBriefcase size={13} /> {selectedCandidate.totalExperienceYears || ((selectedCandidate as any).totalExperienceMonths ? Math.round((selectedCandidate as any).totalExperienceMonths / 12) : 0)} Years Exp
-                    </span>
-                    {selectedCandidate.noticePeriod && (
-                      <span className="modal-meta-pill highlight">
-                        <FiClock size={13} /> {selectedCandidate.noticePeriod} Notice
-                      </span>
-                    )}
-                    {selectedCandidate.experienceStatus && (
-                      <span className="modal-meta-pill">
-                        <FiUserCheck size={13} /> {selectedCandidate.experienceStatus}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact & External Links */}
-              {((selectedCandidate as any).githubUrl || selectedCandidate.linkedinUrl || selectedCandidate.portfolioUrl) && (
-                <div className="profile-links-bar">
-                  {(selectedCandidate as any).githubUrl && (
-                    <a href={normalizeExternalUrl((selectedCandidate as any).githubUrl)} target="_blank" rel="noopener noreferrer" className="modal-link-btn github">
-                      <FiGithub size={14} /> GitHub Profile <FiExternalLink size={12} />
-                    </a>
-                  )}
-                  {selectedCandidate.linkedinUrl && (
-                    <a href={normalizeExternalUrl(selectedCandidate.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="modal-link-btn linkedin">
-                      <FiLinkedin size={14} /> LinkedIn <FiExternalLink size={12} />
-                    </a>
-                  )}
-                  {selectedCandidate.portfolioUrl && (
-                    <a href={normalizeExternalUrl(selectedCandidate.portfolioUrl)} target="_blank" rel="noopener noreferrer" className="modal-link-btn portfolio">
-                      <FiGlobe size={14} /> Portfolio <FiExternalLink size={12} />
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {loadingProfile && (
-                <div className="modal-loading-inline">
-                  <div className="spinner-sm" />
-                  <span>Loading full candidate profile details...</span>
-                </div>
-              )}
-
-              {/* Summary / Bio */}
-              {selectedCandidate.videoUrl && (
-                <div id="candidate-video-section" className="modal-profile-section video-intro-section">
-                  <h4 className="section-title"><FiVideo size={16} /> Candidate Video Introduction</h4>
-                  <div className="video-player-container">
-                    <video
-                      src={selectedCandidate.videoUrl}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="candidate-video-player"
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
-                </div>
-              )}
-
-              {(selectedCandidate.summary || (selectedCandidate as any).bio) && (
-                <div className="modal-profile-section">
-                  <h4 className="section-title"><FiUserCheck size={16} /> Professional Summary</h4>
-                  <p className="section-body-text">{selectedCandidate.summary || (selectedCandidate as any).bio}</p>
-                </div>
-              )}
-
-              {/* Skills */}
-              {((selectedCandidate.skills && selectedCandidate.skills.length > 0) || ((selectedCandidate as any).topSkills && (selectedCandidate as any).topSkills.length > 0)) && (
-                <div className="modal-profile-section">
-                  <h4 className="section-title"><FiAward size={16} /> Technical Skills & Competencies</h4>
-                  <div className="modal-skills-grid">
-                    {(selectedCandidate.skills || (selectedCandidate as any).topSkills || []).map((sk: any, idx: number) => {
-                      const skillName = typeof sk === "string" ? sk : (sk.skillName || sk.name || sk.skill?.name || "Skill");
-                      return (
-                        <div key={idx} className="modal-skill-card-badge">
-                          <span className="skill-badge-name">{skillName}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Work Experience */}
-              {selectedCandidate.experiences && selectedCandidate.experiences.length > 0 && (
-                <div className="modal-profile-section">
-                  <h4 className="section-title"><FiBriefcase size={16} /> Work Experience</h4>
-                  <div className="modal-timeline-list">
-                    {selectedCandidate.experiences.map((exp: any, idx: number) => (
-                      <div key={idx} className="timeline-item">
-                        <div className="timeline-bullet" />
-                        <div className="timeline-content">
-                          <div className="timeline-header">
-                            <h5 className="timeline-role">{exp.title || "Role Title"}</h5>
-                            <span className="timeline-dates">
-                              {exp.startDate || "N/A"} — {exp.isCurrent ? "Present" : (exp.endDate || "N/A")}
-                            </span>
-                          </div>
-                          <div className="timeline-company">{exp.companyName || "Company"}</div>
-                          {exp.description && <p className="timeline-desc">{exp.description}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Projects */}
-              {selectedCandidate.projects && selectedCandidate.projects.length > 0 && (
-                <div className="modal-profile-section">
-                  <h4 className="section-title"><FiFolder size={16} /> Key Projects</h4>
-                  <div className="modal-projects-grid">
-                    {selectedCandidate.projects.map((proj: any, idx: number) => (
-                      <div key={idx} className="modal-project-card">
-                        <div className="project-card-header">
-                          <h5>{proj.name || "Project"}</h5>
-                          <div className="project-links-row">
-                            {(() => {
-                              const rawUrl = proj.githubUrl || proj.github || proj.codeUrl || (selectedCandidate as any).githubUrl;
-                              const finalUrl = normalizeExternalUrl(rawUrl) || `https://github.com/search?q=${encodeURIComponent(proj.name || 'project')}`;
-                              return (
-                                <a
-                                  href={finalUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="proj-link github-proj-link"
-                                  onClick={e => e.stopPropagation()}
-                                  title={`Open ${proj.name || 'Project'} repository`}
-                                >
-                                  <FiGithub size={13} /> GitHub Repository <FiExternalLink size={11} />
-                                </a>
-                              );
-                            })()}
-                            {(proj.demoUrl || proj.liveUrl || proj.projectUrl) && (
-                              <a
-                                href={normalizeExternalUrl(proj.demoUrl || proj.liveUrl || proj.projectUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="proj-link demo-proj-link"
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <FiExternalLink size={13} /> Live Demo
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                        {proj.summary && <p className="proj-summary">{proj.summary}</p>}
-                        {proj.responsibilities && <p className="proj-resp"><strong>Key Contributions:</strong> {proj.responsibilities}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Education */}
-              {((selectedCandidate.education && selectedCandidate.education.length > 0) || ((selectedCandidate as any).educations && (selectedCandidate as any).educations.length > 0)) && (
-                <div className="modal-profile-section">
-                  <h4 className="section-title"><FiBookOpen size={16} /> Education & Academic Credentials</h4>
-                  <div className="modal-education-list">
-                    {(selectedCandidate.education || (selectedCandidate as any).educations || []).map((edu: any, idx: number) => (
-                      <div key={idx} className="education-item-row">
-                        <div className="edu-icon-box"><FiBookOpen size={16} /></div>
-                        <div className="edu-info">
-                          <h5 className="edu-degree">{edu.qualification} {edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ""}</h5>
-                          <div className="edu-school">{edu.institution}</div>
-                          {(edu.startYear || edu.endYear) && (
-                            <div className="edu-years">{edu.startYear || ""} - {edu.endYear || "Present"}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Role Interests */}
-              {selectedCandidate.roleInterests && selectedCandidate.roleInterests.length > 0 && (
-                <div className="modal-profile-section">
-                  <h4 className="section-title"><FiUsers size={16} /> Target Role Interests</h4>
-                  <div className="modal-interests-list">
-                    {selectedCandidate.roleInterests.map((ri: any, idx: number) => (
-                      <div key={idx} className="role-interest-chip">
-                        <strong>{ri.roleName || "Target Role"}</strong>
-                        {ri.workType && <span className="work-type-badge">{ri.workType}</span>}
-                        {ri.preferredLocation && <span className="pref-loc"><FiMapPin size={11} /> {ri.preferredLocation}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-footer-bar">
-              <div className="modal-footer-left">
                 <button
                   type="button"
-                  className="btn-modal-action-secondary"
-                  onClick={() => handleCopyShareLink(selectedCandidate.id || (selectedCandidate as any).candidateId)}
-                  title="Share Candidate Profile link"
-                >
-                  <FiShare2 size={15} /> Share Profile
-                </button>
-                <button
-                  type="button"
-                  className="btn-modal-action-secondary"
-                  onClick={handleExportPDF}
-                  title="Export Candidate Profile as PDF"
-                >
-                  <FiPrinter size={15} /> Export as PDF
-                </button>
-              </div>
-              <div className="modal-footer-right">
-                <button
-                  type="button"
-                  className="btn-close-secondary"
-                  onClick={() => setSelectedCandidate(null)}
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  className="btn-connect-modal"
-                  onClick={e => {
+                  className="btn-header-connect-primary"
+                  onClick={(e) => {
                     const c = selectedCandidate;
-                    setSelectedCandidate(null);
                     handleOpenConnectSingle(e, c);
                   }}
                 >
-                  <FiUserPlus size={16} /> Connect with Candidate
+                  <FiUserPlus size={15} /> <span>Connect with Candidate</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-fullscreen-close"
+                  onClick={() => setSelectedCandidate(null)}
+                  title="Close Profile (Esc)"
+                >
+                  <FiX size={20} />
                 </button>
               </div>
             </div>
+
+            {/* Scrollable Main Full-Screen Body */}
+            <div className="fullscreen-profile-scroll-body">
+              <div className="fullscreen-profile-inner-container">
+                {/* LEFT SIDEBAR COLUMN */}
+                <div className="fullscreen-profile-left-col">
+                  {/* Hero Identity Card */}
+                  <div className="fullscreen-card fullscreen-hero-card">
+                    <div className="fullscreen-avatar-wrapper">
+                      {(selectedCandidate.avatarUrl || (selectedCandidate as any).avatarUrl) ? (
+                        <img
+                          src={selectedCandidate.avatarUrl || (selectedCandidate as any).avatarUrl}
+                          alt={selectedCandidate.fullName || "Candidate"}
+                          className="fullscreen-avatar-img"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                            const sibling = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
+                            if (sibling) sibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="fullscreen-avatar-initials"
+                        style={{
+                          background: avatarStyle.bg,
+                          color: avatarStyle.color,
+                          display: (selectedCandidate.avatarUrl || (selectedCandidate as any).avatarUrl) ? 'none' : 'flex'
+                        }}
+                      >
+                        {initials}
+                      </div>
+                    </div>
+
+                    <h2 className="fullscreen-candidate-title">{selectedCandidate.fullName}</h2>
+                    <p className="fullscreen-candidate-headline">{selectedCandidate.headline || "Professional Candidate Profile"}</p>
+
+                    {/* Quick Meta List */}
+                    <div className="fullscreen-meta-list">
+                      <div className="fullscreen-meta-item">
+                        <FiMapPin size={15} className="meta-icon" />
+                        <span>{selectedCandidate.location || (selectedCandidate as any).currentLocation || "Location not set"}</span>
+                      </div>
+                      <div className="fullscreen-meta-item">
+                        <FiBriefcase size={15} className="meta-icon" />
+                        <span>{selectedCandidate.totalExperienceYears || ((selectedCandidate as any).totalExperienceMonths ? Math.round((selectedCandidate as any).totalExperienceMonths / 12) : 0)} Years Experience</span>
+                      </div>
+                      {selectedCandidate.noticePeriod && (
+                        <div className="fullscreen-meta-item highlight-green">
+                          <FiClock size={15} className="meta-icon" />
+                          <span>{selectedCandidate.noticePeriod} Notice Period</span>
+                        </div>
+                      )}
+                      {selectedCandidate.experienceStatus && (
+                        <div className="fullscreen-meta-item">
+                          <FiUserCheck size={15} className="meta-icon" />
+                          <span>{selectedCandidate.experienceStatus}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Sidebar Connect Button */}
+                    <button
+                      type="button"
+                      className="btn-fullscreen-sidebar-connect"
+                      onClick={(e) => {
+                        const c = selectedCandidate;
+                        handleOpenConnectSingle(e, c);
+                      }}
+                    >
+                      <FiUserPlus size={16} />
+                      <span>Connect with Candidate</span>
+                    </button>
+
+                    {/* External Profiles */}
+                    {((selectedCandidate as any).githubUrl || selectedCandidate.linkedinUrl || selectedCandidate.portfolioUrl) && (
+                      <div className="fullscreen-external-links-grid">
+                        {(selectedCandidate as any).githubUrl && (
+                          <a href={normalizeExternalUrl((selectedCandidate as any).githubUrl)} target="_blank" rel="noopener noreferrer" className="fullscreen-ext-btn github">
+                            <FiGithub size={15} /> <span>GitHub</span> <FiExternalLink size={12} />
+                          </a>
+                        )}
+                        {selectedCandidate.linkedinUrl && (
+                          <a href={normalizeExternalUrl(selectedCandidate.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="fullscreen-ext-btn linkedin">
+                            <FiLinkedin size={15} /> <span>LinkedIn</span> <FiExternalLink size={12} />
+                          </a>
+                        )}
+                        {selectedCandidate.portfolioUrl && (
+                          <a href={normalizeExternalUrl(selectedCandidate.portfolioUrl)} target="_blank" rel="noopener noreferrer" className="fullscreen-ext-btn portfolio">
+                            <FiGlobe size={15} /> <span>Portfolio</span> <FiExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Target Role Interests */}
+                  {selectedCandidate.roleInterests && selectedCandidate.roleInterests.length > 0 && (
+                    <div className="fullscreen-card">
+                      <h4 className="fullscreen-card-title"><FiUsers size={16} /> Target Role Interests</h4>
+                      <div className="fullscreen-interests-list">
+                        {selectedCandidate.roleInterests.map((ri: any, idx: number) => (
+                          <div key={idx} className="fullscreen-interest-item">
+                            <strong>{ri.roleName || "Target Role"}</strong>
+                            <div className="interest-tags">
+                              {ri.workType && <span className="work-type-badge">{ri.workType}</span>}
+                              {ri.preferredLocation && <span className="pref-loc"><FiMapPin size={11} /> {ri.preferredLocation}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Education & Credentials */}
+                  {((selectedCandidate.education && selectedCandidate.education.length > 0) || ((selectedCandidate as any).educations && (selectedCandidate as any).educations.length > 0)) && (
+                    <div className="fullscreen-card">
+                      <h4 className="fullscreen-card-title"><FiBookOpen size={16} /> Education & Credentials</h4>
+                      <div className="fullscreen-education-list">
+                        {(selectedCandidate.education || (selectedCandidate as any).educations || []).map((edu: any, idx: number) => (
+                          <div key={idx} className="fullscreen-edu-item">
+                            <div className="edu-icon-bubble"><FiBookOpen size={15} /></div>
+                            <div className="edu-content">
+                              <h5 className="edu-title">{edu.qualification} {edu.fieldOfStudy ? `in ${edu.fieldOfStudy}` : ""}</h5>
+                              <div className="edu-school-name">{edu.institution}</div>
+                              {(edu.startYear || edu.endYear) && (
+                                <div className="edu-period">{edu.startYear || ""} - {edu.endYear || "Present"}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT CONTENT COLUMN */}
+                <div className="fullscreen-profile-right-col">
+                  {loadingProfile && (
+                    <div className="fullscreen-loading-banner">
+                      <div className="spinner-sm" />
+                      <span>Refreshing full candidate details & verified assessments...</span>
+                    </div>
+                  )}
+
+                  {/* Video Introduction */}
+                  {selectedCandidate.videoUrl && (
+                    <div className="fullscreen-section-card video-card">
+                      <div className="section-card-header">
+                        <div className="section-card-title-group">
+                          <FiVideo size={18} className="section-header-icon" />
+                          <h4>Candidate Video Introduction (60s Pitch)</h4>
+                        </div>
+                      </div>
+                      <div className="fullscreen-video-wrapper">
+                        <video
+                          src={selectedCandidate.videoUrl}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="fullscreen-video-player"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Professional Summary */}
+                  {(selectedCandidate.summary || (selectedCandidate as any).bio) && (
+                    <div className="fullscreen-section-card">
+                      <div className="section-card-header">
+                        <div className="section-card-title-group">
+                          <FiUserCheck size={18} className="section-header-icon" />
+                          <h4>Professional Summary & Background</h4>
+                        </div>
+                      </div>
+                      <p className="fullscreen-summary-text">{selectedCandidate.summary || (selectedCandidate as any).bio}</p>
+                    </div>
+                  )}
+
+                  {/* Verified Skills */}
+                  {((selectedCandidate.skills && selectedCandidate.skills.length > 0) || ((selectedCandidate as any).topSkills && (selectedCandidate as any).topSkills.length > 0)) && (
+                    <div className="fullscreen-section-card">
+                      <div className="section-card-header">
+                        <div className="section-card-title-group">
+                          <FiAward size={18} className="section-header-icon" />
+                          <h4>Verified Technical Skills & Competencies</h4>
+                        </div>
+                      </div>
+                      <div className="fullscreen-skills-container">
+                        {(selectedCandidate.skills || (selectedCandidate as any).topSkills || []).map((sk: any, idx: number) => {
+                          const skillName = typeof sk === "string" ? sk : (sk.skillName || sk.name || sk.skill?.name || "Skill");
+                          return (
+                            <div key={idx} className="fullscreen-skill-badge">
+                              <FiCheckCircle size={14} className="skill-check-icon" />
+                              <span>{skillName}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Work Experience */}
+                  {selectedCandidate.experiences && selectedCandidate.experiences.length > 0 && (
+                    <div className="fullscreen-section-card">
+                      <div className="section-card-header">
+                        <div className="section-card-title-group">
+                          <FiBriefcase size={18} className="section-header-icon" />
+                          <h4>Work Experience & Employment History</h4>
+                        </div>
+                      </div>
+                      <div className="fullscreen-timeline">
+                        {selectedCandidate.experiences.map((exp: any, idx: number) => (
+                          <div key={idx} className="fullscreen-timeline-entry">
+                            <div className="timeline-marker" />
+                            <div className="timeline-entry-content">
+                              <div className="timeline-top-row">
+                                <h5 className="timeline-position">{exp.title || "Role Title"}</h5>
+                                <span className="timeline-date-badge">
+                                  {exp.startDate || "N/A"} — {exp.isCurrent ? "Present" : (exp.endDate || "N/A")}
+                                </span>
+                              </div>
+                              <div className="timeline-company-name">{exp.companyName || "Company"}</div>
+                              {exp.description && <p className="timeline-description-text">{exp.description}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Projects */}
+                  {selectedCandidate.projects && selectedCandidate.projects.length > 0 && (
+                    <div className="fullscreen-section-card">
+                      <div className="section-card-header">
+                        <div className="section-card-title-group">
+                          <FiFolder size={18} className="section-header-icon" />
+                          <h4>Key Projects & Authentic Codebases</h4>
+                        </div>
+                      </div>
+                      <div className="fullscreen-projects-grid">
+                        {selectedCandidate.projects.map((proj: any, idx: number) => (
+                          <div key={idx} className="fullscreen-project-card">
+                            <div className="project-top-bar">
+                              <h5 className="project-title-text">{proj.name || "Project"}</h5>
+                              <div className="project-actions-row">
+                                {(() => {
+                                  const rawUrl = proj.githubUrl || proj.github || proj.codeUrl || (selectedCandidate as any).githubUrl;
+                                  const finalUrl = normalizeExternalUrl(rawUrl) || `https://github.com/search?q=${encodeURIComponent(proj.name || 'project')}`;
+                                  return (
+                                    <a
+                                      href={finalUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="project-action-link github"
+                                      onClick={e => e.stopPropagation()}
+                                      title={`Open ${proj.name || 'Project'} repository`}
+                                    >
+                                      <FiGithub size={13} /> <span>GitHub Repo</span> <FiExternalLink size={11} />
+                                    </a>
+                                  );
+                                })()}
+                                {(proj.demoUrl || proj.liveUrl || proj.projectUrl) && (
+                                  <a
+                                    href={normalizeExternalUrl(proj.demoUrl || proj.liveUrl || proj.projectUrl)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="project-action-link demo"
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    <FiExternalLink size={13} /> <span>Live Demo</span>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            {proj.summary && <p className="project-summary-text">{proj.summary}</p>}
+                            {proj.responsibilities && (
+                              <div className="project-contrib-box">
+                                <strong>Key Contributions:</strong> {proj.responsibilities}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Connection Request Modal */}
       {connectModalOpen && connectCandidates.length > 0 && (

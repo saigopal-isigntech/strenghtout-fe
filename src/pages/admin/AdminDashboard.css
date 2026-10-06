@@ -10,18 +10,26 @@
   color: var(--text-color, #0f172a);
 }
 
-.admin-toast {
+.ad-toast {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  top: 88px;
+  right: 28px;
+  bottom: auto;
+  left: auto;
+  width: auto;
+  max-width: 450px;
   background: #0f172a;
   color: #ffffff;
   padding: 12px 20px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.88rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  z-index: 9999;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  z-index: 99999;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  animation: auToastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ============================================================

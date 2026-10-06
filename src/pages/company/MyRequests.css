@@ -23,18 +23,18 @@
   border: 1px solid rgba(167, 243, 208, 0.6);
 }
 
-.hero-bg-waves {
+.mr-hero-banner .mr-hero-waves {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 60%;
+  width: 45%;
   height: 100%;
   pointer-events: none;
   z-index: 1;
 }
 
-.hero-left-col {
+.mr-hero-left {
   position: relative;
   z-index: 2;
   max-width: 620px;
@@ -72,7 +72,7 @@
   font-weight: 500;
 }
 
-.hero-right-col {
+.mr-hero-right {
   position: relative;
   z-index: 2;
   display: flex;

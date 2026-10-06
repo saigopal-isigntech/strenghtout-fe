@@ -49,6 +49,7 @@ const AdminDashboard: React.FC = () => {
       }
       if (queueRes.status === "fulfilled" && queueRes.value.data?.data) {
         setPendingRequests(queueRes.value.data.data.content || []);
+        setPendingFallback(queueRes.value.data.data.totalElements ?? 0);
       }
       if (compRes.status === "fulfilled" && compRes.value.data?.data) {
         setCompFallback(compRes.value.data.data.totalElements ?? 0);
@@ -58,8 +59,6 @@ const AdminDashboard: React.FC = () => {
       }
       if (reqsRes.status === "fulfilled" && reqsRes.value.data?.data) {
         setTotalReqFallback(reqsRes.value.data.data.totalElements ?? 0);
-        const content = reqsRes.value.data.data.content || [];
-        setPendingFallback(content.filter((r: any) => r.status === "SUBMITTED" || r.status === "UNDER_REVIEW").length);
       }
     } catch {
       /* silent */
@@ -89,7 +88,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="admin-dashboard">
-      {toast && <div className="admin-toast">{toast}</div>}
+      {toast && <div className="ad-toast">{toast}</div>}
 
       {/* Detailed Hero Banner Matching Reference Image Detailing */}
       <AdminHeroBanner
@@ -109,7 +108,7 @@ const AdminDashboard: React.FC = () => {
             <span className="kpi-icon-box bg-emerald-light">
               <FiUsers size={22} className="text-emerald-deep" />
             </span>
-            <span className="kpi-trend positive">+12% this month</span>
+            <span className="kpi-trend positive">Active Talent Pool</span>
           </div>
           <div className="kpi-body">
             <span className="kpi-number">{loading ? "..." : (ovAny?.candidateCount ?? ovAny?.totalCandidates ?? ovAny?.totalUsers ?? candFallback ?? 0)}</span>

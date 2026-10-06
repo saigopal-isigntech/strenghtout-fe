@@ -74,9 +74,8 @@ html {
 
 @media (min-width: 769px) {
   html {
-    scroll-behavior: smooth;
-    scrollbar-gutter: stable;
-    overflow-y: scroll;
+    scroll-behavior: auto;
+    overflow-y: auto;
   }
 }
 
@@ -113,6 +112,8 @@ body {
   padding: 0;
   width: 100%;
   margin-top: 60px;
+  min-height: calc(100vh - 60px);
+  box-sizing: border-box;
 }
 
 /* Global spinner */
