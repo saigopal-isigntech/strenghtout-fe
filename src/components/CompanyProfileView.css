@@ -150,6 +150,17 @@
   border: 3px solid #ffffff;
 }
 
+.comp-identity-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: #ffffff;
+  border-radius: 15px;
+  padding: 6px;
+  box-sizing: border-box;
+  display: block;
+}
+
 .logo-initials-txt {
   font-size: 1.8rem;
   font-weight: 800;
@@ -1255,4 +1266,308 @@
   background: #eff6ff;
   border-color: #93c5fd;
   color: #1d4ed8;
+}
+
+/* Empty Contacts Placeholder */
+.empty-contacts-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.25rem 1.5rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  margin: 0.25rem 0;
+}
+
+.empty-contacts-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e6f9f0;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.08);
+}
+
+.empty-contacts-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 0 0 0.35rem 0;
+}
+
+.empty-contacts-sub {
+  font-size: 0.825rem;
+  color: #64748b;
+  margin: 0;
+  max-width: 440px;
+}
+
+/* ============================================================
+   COMPANY LOGO MODAL, LIGHTBOX & ACTIONS
+   ============================================================ */
+.company-logo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.company-logo-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.company-logo-lightbox-card {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 620px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.company-logo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.company-logo-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.company-logo-modal-close {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.company-logo-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.company-logo-modal-body {
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+.company-logo-modal-preview-box {
+  width: 200px;
+  height: 200px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.company-logo-modal-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.company-logo-modal-placeholder {
+  width: 160px;
+  height: 160px;
+  border-radius: 16px;
+  background: #047857;
+  color: #ffffff;
+  font-size: 3.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(4, 120, 87, 0.25);
+}
+
+.company-logo-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1.15rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.logo-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  flex: 1;
+  min-width: 120px;
+}
+
+.logo-modal-btn.btn-view {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+
+.logo-modal-btn.btn-view:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.logo-modal-btn.btn-change {
+  background: #047857;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.25);
+}
+
+.logo-modal-btn.btn-change:hover {
+  background: #065f46;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.35);
+}
+
+.logo-modal-btn.btn-remove {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+.logo-modal-btn.btn-remove:hover {
+  background: #ffe4e6;
+  color: #be123c;
+  border-color: #fda4af;
+}
+
+.company-logo-lightbox-body {
+  padding: 2.25rem;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+}
+
+.company-logo-full-img {
+  max-width: 100%;
+  max-height: 440px;
+  object-fit: contain;
+  background: #ffffff;
+  padding: 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+.clickable-logo-box {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clickable-logo-box:hover {
+  transform: scale(1.04);
+  box-shadow: 0 10px 24px rgba(4, 120, 87, 0.35);
+}
+
+.comp-logo-preview-wrap.active-preview {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  height: 140px;
+  overflow: hidden;
+}
+
+.comp-logo-actions-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 0.5rem;
+}
+
+.comp-logo-preview-wrap.active-preview:hover .comp-logo-actions-overlay {
+  opacity: 1;
+}
+
+.comp-logo-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.comp-logo-quick-btn:hover {
+  background: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.comp-logo-quick-btn.delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.comp-logo-quick-btn.delete:hover {
+  background: #fecaca;
 }

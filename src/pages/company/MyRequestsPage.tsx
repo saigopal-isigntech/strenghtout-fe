@@ -16,7 +16,6 @@ import {
   FiSliders,
   FiGrid,
   FiList,
-  FiMoreVertical,
   FiChevronDown,
   FiChevronUp,
   FiEye,
@@ -673,9 +672,7 @@ export const MyRequestsPage: React.FC = () => {
                             <span>{isExp ? "Hide Details" : "View Details"}</span>
                             {isExp ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
                           </button>
-                          <button type="button" className="btn-options-action" title="Options">
-                            <FiMoreVertical size={16} />
-                          </button>
+
                         </div>
                       </td>
                     </tr>

@@ -1,4 +1,4 @@
-// Helper to format external URLs with protocol to prevent relative route issues
+﻿// Helper to format external URLs with protocol to prevent relative route issues
 const normalizeExternalUrl = (url?: string | null): string => {
   if (!url) return '';
   const trimmed = url.trim();
@@ -23,6 +23,7 @@ import {
   isValidUserAvatar,
 } from '../../utils/validators';
 import './Profile.css';
+import { exportCandidateProfilePDF } from '../../utils/candidatePdfExport';
 import {
   FiHome,
   FiChevronRight,
@@ -117,6 +118,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
 
 
   const [loading, setLoading] = useState(true);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   // Auto-dismiss notification popup after 3 seconds (3000ms)
   useEffect(() => {
@@ -176,7 +178,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
   const [roleInterests, setRoleInterests] = useState<CandidateRoleInterest[]>([]);
   const [evidencesList, setEvidencesList] = useState<Evidence[]>([]);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
-  const isCompanyView = user?.role === 'ROLE_COMPANY' || previewMode;
+  const isCompanyView = isExternalView || user?.role === 'ROLE_COMPANY' || previewMode;
   const [publishing, setPublishing] = useState<boolean>(false);
 
   const [roleForm, setRoleForm] = useState({
@@ -1427,11 +1429,27 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 <button
                   type="button"
                   className="btn-pv-company-preview"
-                  onClick={() => window.print()}
-                  title="Export candidate profile as PDF"
+                  disabled={isExportingPdf}
+                  onClick={async () => {
+                    setIsExportingPdf(true);
+                    try {
+                      const profileToExport: any = {
+                        ...displayData,
+                        roleInterests,
+                      };
+                      await exportCandidateProfilePDF(profileToExport);
+                    } catch (err: any) {
+                      console.error('PDF export failed:', err);
+                      setAlertMsg({ type: 'error', text: 'Failed to generate PDF dossier. Please try again.' });
+                    } finally {
+                      setIsExportingPdf(false);
+                    }
+                  }}
+                  title={isExportingPdf ? 'Generating PDF...' : 'Export candidate profile as PDF'}
+                  style={{ opacity: isExportingPdf ? 0.7 : 1, cursor: isExportingPdf ? 'not-allowed' : 'pointer' }}
                 >
                   <FiPrinter size={15} />
-                  Export as PDF
+                  {isExportingPdf ? 'Exporting...' : 'Export as PDF'}
                 </button>
 
                 {user?.role === 'ROLE_COMPANY' && (
@@ -1511,9 +1529,11 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                     </div>
                   )}
                 </div>
-                <div className="pv-avatar-cam-badge">
-                  <FiCamera size={13} />
-                </div>
+                {!isReadOnly && !isCompanyView && (
+                  <div className="pv-avatar-cam-badge">
+                    <FiCamera size={13} />
+                  </div>
+                )}
               </div>
 
               <div className="pv-header-meta-col">
@@ -1530,14 +1550,14 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       <FiMapPin size={14} /> {displayData.currentLocation}
                     </span>
                   )}
-                  {(displayData.phone || (!isExternalView && user?.phone)) && (
+                  {!isCompanyView && (displayData.phone || user?.phone) && (
                     <span className="pv-info-pill">
-                      <FiPhone size={14} /> {isCompanyView ? 'Available upon connection' : (displayData.phone || user?.phone)}
+                      <FiPhone size={14} /> {displayData.phone || user?.phone}
                     </span>
                   )}
-                  {emailText && (
+                  {!isCompanyView && emailText && (
                     <span className="pv-info-pill">
-                      <FiMail size={14} /> {isCompanyView ? 'Available upon connection' : emailText}
+                      <FiMail size={14} /> {emailText}
                     </span>
                   )}
                   {displayData.experienceStatus && (
@@ -2040,20 +2060,24 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 </div>
               </div>
 
-              {/* 5. Personal Details */}
-              <div className="pv-card">
-                <div className="pv-card-head">
-                  <div className="pv-card-title-group">
-                    <div className="pv-card-icon-badge">
-                      <FiUser size={18} />
+              {/* 5. Personal Details (Masked in Company/Shared View) */}
+              {(!isCompanyView ? (
+                displayData.gender || displayData.dateOfBirth || displayData.maritalStatus || displayData.languages || displayData.permanentAddress
+              ) : (
+                Boolean(displayData.languages)
+              )) && (
+                <div className="pv-card">
+                  <div className="pv-card-head">
+                    <div className="pv-card-title-group">
+                      <div className="pv-card-icon-badge">
+                        <FiUser size={18} />
+                      </div>
+                      <h2 className="pv-card-title-text">{isCompanyView ? 'Languages & Communication' : 'Personal Details'}</h2>
                     </div>
-                    <h2 className="pv-card-title-text">Personal Details</h2>
                   </div>
-                </div>
 
-                {displayData.gender || displayData.dateOfBirth || displayData.maritalStatus || displayData.languages || displayData.permanentAddress ? (
                   <div className="pv-personal-2col-grid">
-                    {displayData.gender && (
+                    {!isCompanyView && displayData.gender && (
                       <div className="pv-personal-cell">
                         <FiUser size={18} className="pv-personal-cell-icon" />
                         <div className="pv-personal-cell-info">
@@ -2063,7 +2087,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       </div>
                     )}
 
-                    {displayData.dateOfBirth && (
+                    {!isCompanyView && displayData.dateOfBirth && (
                       <div className="pv-personal-cell">
                         <FiCalendar size={18} className="pv-personal-cell-icon" />
                         <div className="pv-personal-cell-info">
@@ -2073,7 +2097,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       </div>
                     )}
 
-                    {displayData.maritalStatus && (
+                    {!isCompanyView && displayData.maritalStatus && (
                       <div className="pv-personal-cell">
                         <FiHeart size={18} className="pv-personal-cell-icon" />
                         <div className="pv-personal-cell-info">
@@ -2087,13 +2111,13 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       <div className="pv-personal-cell">
                         <FiGlobe size={18} className="pv-personal-cell-icon" />
                         <div className="pv-personal-cell-info">
-                          <span className="pv-personal-cell-label">Languages</span>
+                          <span className="pv-personal-cell-label">Languages Known</span>
                           <span className="pv-personal-cell-val">{displayData.languages}</span>
                         </div>
                       </div>
                     )}
 
-                    {displayData.permanentAddress && (
+                    {!isCompanyView && displayData.permanentAddress && (
                       <div className="pv-personal-cell pv-personal-cell-full">
                         <FiMapPin size={18} className="pv-personal-cell-icon" />
                         <div className="pv-personal-cell-info">
@@ -2103,12 +2127,8 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       </div>
                     )}
                   </div>
-                ) : (
-                  <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
-                    No personal details provided yet.
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

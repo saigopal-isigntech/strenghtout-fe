@@ -1,6 +1,6 @@
-import CommandPalette from "./components/CommandPalette";
+﻿import CommandPalette from "./components/CommandPalette";
 import React, { Suspense, lazy, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
@@ -48,6 +48,17 @@ const PageLoader = () => (
 );
 
 // Intelligent root / dashboard router that directs users to their identifiable module dashboard
+// Intelligent candidate detail router that redirects companies to discover view with selected candidate
+const CandidateDetailRouter: React.FC = () => {
+  const { user } = useAuth();
+  const { id } = useParams<{ id: string }>();
+
+  if (user?.role === "ROLE_COMPANY") {
+    return <Navigate to={"/company/discover?candidateId=" + id} replace />;
+  }
+
+  return <CandidateProfilePage />;
+};
 const DashboardRouter: React.FC = () => {
   const { user, isAdmin } = useAuth();
   if (isAdmin()) {
@@ -168,8 +179,8 @@ const App: React.FC = () => (
           <Route path="/candidate/requests" element={<ProtectedRoute roles={["ROLE_CANDIDATE"]}><CandidateOpportunitiesPage /></ProtectedRoute>} />
           <Route path="/candidate/profile" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
           <Route path="/candidate/profile/edit" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage initialMode="edit" /></ProtectedRoute>} />
-          <Route path="/candidates/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
-          <Route path="/candidate/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateProfilePage /></ProtectedRoute>} />
+          <Route path="/candidates/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateDetailRouter /></ProtectedRoute>} />
+          <Route path="/candidate/:id" element={<ProtectedRoute roles={["ROLE_CANDIDATE", "ROLE_COMPANY", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"]}><CandidateDetailRouter /></ProtectedRoute>} />
 
           {/* Shared Notifications */}
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />

@@ -7,11 +7,11 @@ import type { CompanyProfile } from "../types";
 import { validateEmail, validatePhone, validateRequired, validateUrl } from "../utils/validators";
 import {
   FiEdit3,
+  FiEye,
   FiTrash2,
   FiMail,
   FiPhone,
   FiMapPin,
-  FiCheckCircle,
   FiLinkedin,
   FiGlobe,
   FiBriefcase,
@@ -33,7 +33,7 @@ import {
 import "./CompanyProfileView.css";
 
 const CompanyProfileView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUserAvatar } = useAuth();
   const navigate = useNavigate();
   const { id: routeCompanyId } = useParams<{ id?: string }>();
   const isExternalView = Boolean(routeCompanyId);
@@ -58,12 +58,28 @@ const CompanyProfileView: React.FC = () => {
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({});
   const contactNameInputRef = useRef<HTMLInputElement>(null);
   const legalNameInputRef = useRef<HTMLInputElement>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Logo action & lightbox modal states
+  const [showLogoModal, setShowLogoModal] = useState(false);
+  const [showFullViewModal, setShowFullViewModal] = useState(false);
 
   useEffect(() => {
     if (showAddContact) {
       setTimeout(() => contactNameInputRef.current?.focus(), 60);
     }
   }, [showAddContact]);
+
+  
+  useEffect(() => {
+    if (showLogoModal || showFullViewModal) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [showLogoModal, showFullViewModal]);
 
   useEffect(() => {
     if (editing) {
@@ -103,6 +119,9 @@ const CompanyProfileView: React.FC = () => {
       const res = await companiesApi.getMyProfile();
       setProfile(res.data.data);
       setForm(res.data.data);
+      if (res.data?.data?.logoUrl && updateUserAvatar) {
+        updateUserAvatar(res.data.data.logoUrl);
+      }
     } catch (err) {
       console.warn("Could not load company profile from DB, initializing with user info", err);
       const fallback: CompanyProfile = {
@@ -130,6 +149,56 @@ const CompanyProfileView: React.FC = () => {
   useEffect(() => {
     loadProfile();
   }, [routeCompanyId]);
+
+  
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Logo image must be smaller than 2MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        setForm(p => ({ ...p, logoUrl: base64 }));
+        setProfile(p => p ? { ...p, logoUrl: base64 } : null);
+        if (updateUserAvatar) {
+          updateUserAvatar(base64);
+        }
+        if (!editing && profile?.id) {
+          try {
+            await companiesApi.updateMyProfile({ ...profile, logoUrl: base64 });
+            setSuccess("Company logo updated successfully!");
+            setTimeout(() => setSuccess(""), 3500);
+          } catch {
+            setError("Failed to update logo on server.");
+          }
+        }
+        setShowLogoModal(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!window.confirm("Are you sure you want to remove the company logo?")) return;
+    setForm(p => ({ ...p, logoUrl: "" }));
+    setProfile(p => p ? { ...p, logoUrl: "" } : null);
+    if (updateUserAvatar) {
+      updateUserAvatar("");
+    }
+    if (!editing && profile?.id) {
+      try {
+        await companiesApi.updateMyProfile({ ...profile, logoUrl: "" });
+        setSuccess("Company logo removed successfully!");
+        setTimeout(() => setSuccess(""), 3500);
+      } catch {
+        setError("Failed to remove logo on server.");
+      }
+    }
+    setShowLogoModal(false);
+  };
 
   const handleSave = async () => {
     const errors: Record<string, string> = {};
@@ -162,6 +231,9 @@ const CompanyProfileView: React.FC = () => {
       const res = await companiesApi.updateMyProfile(form);
       setProfile(res.data.data);
       setForm(res.data.data);
+      if (res.data?.data?.logoUrl && updateUserAvatar) {
+        updateUserAvatar(res.data.data.logoUrl);
+      }
       setEditing(false);
       setSuccess("Company profile updated successfully!");
       setTimeout(() => setSuccess(""), 3500);
@@ -256,7 +328,9 @@ const CompanyProfileView: React.FC = () => {
     );
   }
 
-  const companyInitials = (profile?.displayName || profile?.legalName || "CO").substring(0, 2).toUpperCase();
+  const companyName = profile?.displayName || profile?.legalName || user?.fullName || "Company";
+  const companyInitials = companyName.substring(0, 2).toUpperCase();
+  const companyLogo = profile?.logoUrl || (!isExternalView ? user?.avatarUrl : undefined);
 
   return (
     <div className="company-profile-page-wrapper">
@@ -338,11 +412,26 @@ const CompanyProfileView: React.FC = () => {
             {/* 2. Company Identity & Quick Profile Card */}
             <div className="company-identity-card">
               <div className="company-identity-main">
-                <div className="company-logo-avatar-box">
-                  <span className="logo-initials-txt">{companyInitials}</span>
-                  <span className="logo-active-tag">
-                    <FiCheckCircle size={11} /> ACTIVE
-                  </span>
+                <div
+                  className={`company-logo-avatar-box ${companyLogo ? "clickable-logo-box" : ""}`}
+                  onClick={() => {
+                    if (companyLogo || !isReadOnly) {
+                      setShowLogoModal(true);
+                    }
+                  }}
+                  title={companyLogo ? "Click to View or Manage Logo" : (!isReadOnly ? "Click to Upload Logo" : undefined)}
+                  role={companyLogo || !isReadOnly ? "button" : undefined}
+                  tabIndex={companyLogo || !isReadOnly ? 0 : undefined}
+                >
+                  {companyLogo ? (
+                    <img
+                      src={companyLogo}
+                      alt={companyName}
+                      className="comp-identity-logo-img"
+                    />
+                  ) : (
+                    <span className="logo-initials-txt">{companyInitials}</span>
+                  )}
                 </div>
 
                 <div className="company-identity-details">
@@ -684,8 +773,11 @@ const CompanyProfileView: React.FC = () => {
                 </div>
               ) : (
                 <div className="empty-contacts-placeholder">
-                  <FiUsers size={28} />
-                  <p>No hiring contact persons listed yet.</p>
+                  <div className="empty-contacts-icon-box">
+                    <FiUsers size={24} />
+                  </div>
+                  <p className="empty-contacts-title">No hiring contact persons listed yet.</p>
+                  <p className="empty-contacts-sub">Add team members or recruitment specialists for candidates to connect with.</p>
                 </div>
               )}
             </div>
@@ -821,44 +913,74 @@ const CompanyProfileView: React.FC = () => {
                     </div>
                   </div>
                   <div className="comp-card-body">
-                    <label className="comp-logo-dropzone">
-                      <input
-                        type="file"
-                        accept="image/png, image/jpeg, image/jpg, image/webp"
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            if (file.size > 2 * 1024 * 1024) {
-                              alert("Logo image must be smaller than 2MB");
-                              return;
-                            }
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setForm(p => ({ ...p, logoUrl: reader.result as string }));
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                      {form.logoUrl ? (
-                        <div className="comp-logo-preview-wrap">
-                          <img src={form.logoUrl} alt="Company Logo" className="comp-logo-preview-img" />
-                          <div className="comp-logo-preview-hover">
-                            <FiCamera size={18} />
-                            <span>Change Logo</span>
-                          </div>
+                    <input
+                      type="file"
+                      ref={logoFileInputRef}
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      style={{ display: 'none' }}
+                      onChange={handleLogoFileChange}
+                    />
+                    {form.logoUrl ? (
+                      <div
+                        className="comp-logo-preview-wrap active-preview"
+                        onClick={() => setShowLogoModal(true)}
+                        title="Click to View or Manage Logo"
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <img src={form.logoUrl} alt="Company Logo" className="comp-logo-preview-img" />
+                        <div className="comp-logo-actions-overlay">
+                          <button
+                            type="button"
+                            className="comp-logo-quick-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowFullViewModal(true);
+                            }}
+                            title="View Logo"
+                          >
+                            <FiEye size={14} /> View Logo
+                          </button>
+                          <button
+                            type="button"
+                            className="comp-logo-quick-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              logoFileInputRef.current?.click();
+                            }}
+                            title="Change Logo"
+                          >
+                            <FiCamera size={14} /> Change
+                          </button>
+                          <button
+                            type="button"
+                            className="comp-logo-quick-btn delete"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveLogo();
+                            }}
+                            title="Remove Logo"
+                          >
+                            <FiTrash2 size={14} /> Remove Logo
+                          </button>
                         </div>
-                      ) : (
+                      </div>
+                    ) : (
+                      <div
+                        className="comp-logo-dropzone"
+                        onClick={() => logoFileInputRef.current?.click()}
+                        role="button"
+                        tabIndex={0}
+                      >
                         <div className="comp-logo-placeholder">
                           <div className="comp-logo-camera-icon">
                             <FiCamera size={18} />
                           </div>
                           <span className="comp-logo-upload-title">Upload Company Logo</span>
-                          <span className="comp-logo-upload-types">JPG, PNG (Max 2 MB)</span>
+                          <span className="comp-logo-upload-types">JPG, PNG, WebP (Max 2 MB)</span>
                         </div>
-                      )}
-                    </label>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1087,6 +1209,103 @@ const CompanyProfileView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+        {/* ============================================================
+            COMPANY LOGO ACTION & PREVIEW MODAL
+           ============================================================ */}
+        {showLogoModal && (
+          <div className="company-logo-modal-overlay" onClick={() => setShowLogoModal(false)}>
+            <div className="company-logo-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="company-logo-modal-header">
+                <h3>Company Logo</h3>
+                <button
+                  type="button"
+                  className="company-logo-modal-close"
+                  onClick={() => setShowLogoModal(false)}
+                  title="Close"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+
+              <div className="company-logo-modal-body">
+                {(form.logoUrl || companyLogo) ? (
+                  <div className="company-logo-modal-preview-box">
+                    <img
+                      src={form.logoUrl || companyLogo}
+                      alt={companyName}
+                      className="company-logo-modal-img"
+                    />
+                  </div>
+                ) : (
+                  <div className="company-logo-modal-placeholder">
+                    <span>{companyInitials}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="company-logo-modal-footer">
+                {(form.logoUrl || companyLogo) && (
+                  <button
+                    type="button"
+                    className="logo-modal-btn btn-view"
+                    onClick={() => {
+                      setShowFullViewModal(true);
+                      setShowLogoModal(false);
+                    }}
+                  >
+                    <FiEye size={16} /> View Logo
+                  </button>
+                )}
+
+                {!isReadOnly && (
+                  <>
+                    <button
+                      type="button"
+                      className="logo-modal-btn btn-change"
+                      onClick={() => {
+                        logoFileInputRef.current?.click();
+                      }}
+                    >
+                      <FiCamera size={16} /> {(form.logoUrl || companyLogo) ? "Change Logo" : "Upload Logo"}
+                    </button>
+
+                    {(form.logoUrl || companyLogo) && (
+                      <button
+                        type="button"
+                        className="logo-modal-btn btn-remove"
+                        onClick={handleRemoveLogo}
+                      >
+                        <FiTrash2 size={16} /> Remove Logo
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Full Size View Modal */}
+        {showFullViewModal && (form.logoUrl || companyLogo) && (
+          <div className="company-logo-modal-overlay" onClick={() => setShowFullViewModal(false)}>
+            <div className="company-logo-lightbox-card" onClick={e => e.stopPropagation()}>
+              <div className="company-logo-modal-header">
+                <h3>{companyName} - Logo Preview</h3>
+                <button
+                  type="button"
+                  className="company-logo-modal-close"
+                  onClick={() => setShowFullViewModal(false)}
+                  title="Close"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+              <div className="company-logo-lightbox-body">
+                <img src={form.logoUrl || companyLogo} alt={companyName} className="company-logo-full-img" />
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 // Helper to normalize external links with protocol
 const normalizeExternalUrl = (url?: string | null): string => {
   if (!url) return '';
@@ -14,6 +14,8 @@ import { useSearchParams } from "react-router-dom";
 import { candidatesApi } from "../../api/candidates";
 import { connectionsApi } from "../../api/connections";
 import type { CandidateProfile, RoleCatalogItem } from "../../types";
+import { exportCandidateProfilePDF } from "../../utils/candidatePdfExport";
+import { isValidUserAvatar } from "../../utils/validators";
 import {
   FiMapPin,
   FiUserPlus,
@@ -31,7 +33,6 @@ import {
   FiSearch,
   FiGrid,
   FiList,
-  FiSliders,
   FiUsers,
   FiShield,
   FiGlobe,
@@ -75,7 +76,7 @@ const getInitials = (name?: string) => {
 };
 
 export const DiscoverPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Shortlisting state
   const [discoverTab, setDiscoverTab] = useState<"ALL" | "SHORTLISTED">("ALL");
@@ -96,7 +97,7 @@ export const DiscoverPage: React.FC = () => {
   };
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState<"relevance" | "completion" | "name">("relevance");
+  
 
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
   const [rolesCatalog, setRolesCatalog] = useState<RoleCatalogItem[]>([]);
@@ -105,6 +106,13 @@ export const DiscoverPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
   const [toastMsg, setToastMsg] = useState("");
+  const initialLoadDone = useRef(false);
+  const prevFiltersRef = useRef({
+    query: "",
+    selectedRoleId: "",
+    selectedExpRange: "",
+    selectedWorkType: "",
+  });
 
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedExpRange, setSelectedExpRange] = useState("");
@@ -113,6 +121,7 @@ export const DiscoverPage: React.FC = () => {
   // Profile modal state
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   // Candidate selection & Connect request modal state
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
@@ -149,7 +158,13 @@ export const DiscoverPage: React.FC = () => {
   }, []);
 
   const search = useCallback(
-    async (p: number, searchQ: string) => {
+    async (
+      p: number,
+      searchQ: string = query,
+      roleId: string = selectedRoleId,
+      exp: string = selectedExpRange,
+      work: string = selectedWorkType
+    ) => {
       setLoading(true);
       try {
         const apiParams: Record<string, any> = {
@@ -162,32 +177,32 @@ export const DiscoverPage: React.FC = () => {
           apiParams.query = searchQ.trim();
         }
 
-        if (selectedRoleId) {
-          apiParams.roleIds = selectedRoleId;
-          apiParams.roleId = selectedRoleId;
-          apiParams.targetRoleId = selectedRoleId;
+        if (roleId) {
+          apiParams.roleIds = roleId;
+          apiParams.roleId = roleId;
+          apiParams.targetRoleId = roleId;
         }
 
-        if (selectedExpRange === "entry") {
+        if (exp === "entry") {
           apiParams.minExperienceMonths = 0;
           apiParams.maxExperienceMonths = 24;
           apiParams.minExperienceYears = 0;
           apiParams.maxExperienceYears = 2;
-        } else if (selectedExpRange === "mid") {
+        } else if (exp === "mid") {
           apiParams.minExperienceMonths = 24;
           apiParams.maxExperienceMonths = 60;
           apiParams.minExperienceYears = 2;
           apiParams.maxExperienceYears = 5;
-        } else if (selectedExpRange === "senior") {
+        } else if (exp === "senior") {
           apiParams.minExperienceMonths = 60;
           apiParams.maxExperienceMonths = 1200;
           apiParams.minExperienceYears = 5;
           apiParams.maxExperienceYears = 100;
         }
 
-        if (selectedWorkType) {
-          apiParams.workTypes = selectedWorkType;
-          apiParams.preferredWorkType = selectedWorkType;
+        if (work) {
+          apiParams.workTypes = work;
+          apiParams.preferredWorkType = work;
         }
 
         const res = await candidatesApi.search(apiParams);
@@ -204,21 +219,49 @@ export const DiscoverPage: React.FC = () => {
         setLoading(false);
       }
     },
-    [selectedRoleId, selectedExpRange, selectedWorkType]
+    [query, selectedRoleId, selectedExpRange, selectedWorkType]
   );
 
   useEffect(() => {
     const qFromUrl = searchParams.get("query") || "";
-    if (qFromUrl) setQuery(qFromUrl);
-    search(0, qFromUrl);
+    if (qFromUrl) {
+      setQuery(qFromUrl);
+      prevFiltersRef.current.query = qFromUrl;
+    }
+    search(0, qFromUrl, "", "", "");
+    initialLoadDone.current = true;
+
+    const cIdFromUrl = searchParams.get("candidateId");
+    if (cIdFromUrl) {
+      handleOpenProfile({ id: cIdFromUrl } as any);
+    }
   }, []);
 
   useEffect(() => {
+    if (!initialLoadDone.current) return;
+
+    const prev = prevFiltersRef.current;
+    if (
+      prev.query === query &&
+      prev.selectedRoleId === selectedRoleId &&
+      prev.selectedExpRange === selectedExpRange &&
+      prev.selectedWorkType === selectedWorkType
+    ) {
+      return;
+    }
+
+    prevFiltersRef.current = {
+      query,
+      selectedRoleId,
+      selectedExpRange,
+      selectedWorkType,
+    };
+
     const timer = setTimeout(() => {
-      search(0, query);
-    }, 350);
+      search(0, query, selectedRoleId, selectedExpRange, selectedWorkType);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [query, selectedRoleId, selectedExpRange, selectedWorkType, search]);
+  }, [query, selectedRoleId, selectedExpRange, selectedWorkType]);
 
   const handleInputChange = (val: string) => {
     setQuery(val);
@@ -229,7 +272,13 @@ export const DiscoverPage: React.FC = () => {
     setSelectedRoleId("");
     setSelectedExpRange("");
     setSelectedWorkType("");
-    search(0, "");
+    prevFiltersRef.current = {
+      query: "",
+      selectedRoleId: "",
+      selectedExpRange: "",
+      selectedWorkType: "",
+    };
+    search(0, "", "", "", "");
   };
 
   const hasActiveFilters = Boolean(
@@ -249,7 +298,7 @@ export const DiscoverPage: React.FC = () => {
       setTimeout(() => setToastMsg(""), 3000);
       return;
     }
-    const shareUrl = `${window.location.origin}/candidate/${cId}`;
+    const shareUrl = `${window.location.origin}/company/discover?candidateId=${cId}`;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl)
         .then(() => {
@@ -266,15 +315,32 @@ export const DiscoverPage: React.FC = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    window.print();
+  const handleExportPDF = async () => {
+    if (!selectedCandidate) return;
+    setIsExportingPdf(true);
+    try {
+      await exportCandidateProfilePDF(selectedCandidate);
+    } catch (err: any) {
+      console.error("PDF export failed:", err);
+      setToastMsg("Failed to generate PDF dossier. Please try again.");
+      setTimeout(() => setToastMsg(""), 5000);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleOpenProfile = async (c: CandidateProfile) => {
     setSelectedCandidate(c);
     setLoadingProfile(true);
+    const candidateId = c.id || (c as any).candidateId;
+    if (candidateId) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set("candidateId", candidateId);
+        return next;
+      }, { replace: true });
+    }
     try {
-      const candidateId = c.id || (c as any).candidateId;
       if (candidateId) {
         const res = await candidatesApi.getProfile(candidateId);
         if (res.data?.data) {
@@ -286,6 +352,15 @@ export const DiscoverPage: React.FC = () => {
     } finally {
       setLoadingProfile(false);
     }
+  };
+
+  const handleCloseProfile = () => {
+    setSelectedCandidate(null);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete("candidateId");
+      return next;
+    }, { replace: true });
   };
 
   // Filter candidates by tab
@@ -324,15 +399,8 @@ export const DiscoverPage: React.FC = () => {
       });
     }
 
-    // Sorting
-    if (sortBy === "name") {
-      return [...list].sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
-    }
-    if (sortBy === "completion") {
-      return [...list].sort((a, b) => (b.completionPct || 0) - (a.completionPct || 0));
-    }
     return list;
-  }, [candidates, discoverTab, shortlist, sortBy, query, selectedRoleId, selectedExpRange, selectedWorkType]);
+  }, [candidates, discoverTab, shortlist, query, selectedRoleId, selectedExpRange, selectedWorkType]);
 
   // Multi-selection handlers
   const toggleSelectCandidate = (e: React.MouseEvent, candidateId: string) => {
@@ -358,6 +426,7 @@ export const DiscoverPage: React.FC = () => {
 
   const handleOpenConnectSingle = (e: React.MouseEvent, candidate: CandidateProfile) => {
     e.stopPropagation();
+    if (!candidate || !candidate.id) return;
     setConnectCandidates([candidate]);
     setRoleTitle("");
     setOpportunitySummary("");
@@ -371,6 +440,18 @@ export const DiscoverPage: React.FC = () => {
     setSending(false);
     setConnectErrors({});
     setConnectModalOpen(true);
+  };
+
+  
+  const handleRemoveCandidateFromBatch = (candidateId: string) => {
+    setConnectCandidates(prev => {
+      const next = prev.filter(c => c.id !== candidateId);
+      if (next.length === 0) {
+        setConnectModalOpen(false);
+      }
+      return next;
+    });
+    setSelectedCandidateIds(prev => prev.filter(id => id !== candidateId));
   };
 
   const handleOpenConnectSelected = () => {
@@ -485,8 +566,12 @@ export const DiscoverPage: React.FC = () => {
   // Prevent body scrolling when full-screen candidate profile is active and enable Esc key close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedCandidate) {
-        setSelectedCandidate(null);
+      if (e.key === "Escape") {
+        if (connectModalOpen) {
+          setConnectModalOpen(false);
+        } else if (selectedCandidate) {
+          handleCloseProfile();
+        }
       }
     };
     if (selectedCandidate) {
@@ -718,19 +803,7 @@ export const DiscoverPage: React.FC = () => {
               </button>
             )}
 
-            <div className="sort-dropdown-wrapper">
-              <FiSliders size={14} className="sort-icon" />
-              <span className="sort-label">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value as any)}
-                className="sort-select"
-              >
-                <option value="relevance">Most Relevant</option>
-                <option value="completion">Profile Completion</option>
-                <option value="name">Candidate Name</option>
-              </select>
-            </div>
+            
 
             <div className="view-mode-toggle">
               <button
@@ -753,77 +826,45 @@ export const DiscoverPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Floating / Active Bulk Selection Bar (Only in Shortlisted view) */}
+        </div>
+
+        {/* Floating Bulk Selection Dock */}
         {discoverTab === "SHORTLISTED" && selectedCandidateIds.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "linear-gradient(135deg, #065f46, #047857)",
-              color: "#ffffff",
-              padding: "10px 18px",
-              borderRadius: "12px",
-              boxShadow: "0 4px 14px rgba(5, 150, 105, 0.25)",
-              flexWrap: "wrap",
-              gap: "10px",
-              animation: "fadeIn 0.2s ease-in-out",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontWeight: 700, fontSize: "0.92rem", letterSpacing: "0.2px" }}>
-                ✓ {selectedCandidateIds.length} candidate{selectedCandidateIds.length > 1 ? "s" : ""} selected
-              </span>
+          <div className="floating-selection-dock">
+            <div className="dock-left-info">
+              <div className="dock-count-badge">
+                <span className="check-icon-dock">
+                  <FiCheckCircle size={14} />
+                </span>
+                <span>{selectedCandidateIds.length} candidate{selectedCandidateIds.length > 1 ? "s" : ""} selected</span>
+              </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div className="dock-right-actions">
               <button
                 type="button"
+                className="btn-dock-connect"
                 onClick={handleOpenConnectSelected}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "7px",
-                  background: "#ffffff",
-                  color: "#065f46",
-                  border: "none",
-                  padding: "7px 16px",
-                  borderRadius: "8px",
-                  fontSize: "0.88rem",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-                }}
               >
-                <FiUserPlus size={16} /> Connect with Selected ({selectedCandidateIds.length})
+                <FiUserPlus size={15} />
+                <span>Connect with Selected ({selectedCandidateIds.length})</span>
               </button>
 
               <button
                 type="button"
+                className="btn-dock-clear"
                 onClick={handleClearSelection}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  background: "rgba(255,255,255,0.2)",
-                  color: "#ffffff",
-                  border: "1px solid rgba(255,255,255,0.4)",
-                  padding: "7px 14px",
-                  borderRadius: "8px",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
+                title="Clear current selection"
               >
-                <FiX size={14} /> Clear Selection
+                <FiX size={14} />
+                <span>Clear</span>
               </button>
             </div>
           </div>
         )}
-      </div>
 
       {/* 5. Candidates Grid / List Stream */}
-      {loading ? (
+      {loading && candidates.length === 0 ? (
         <div className="discover-loading-state">
           <div className="spinner" />
           <span>Searching verified candidate profiles...</span>
@@ -847,6 +888,8 @@ export const DiscoverPage: React.FC = () => {
             const isStarred = c.id && shortlist.includes(c.id);
             const avatarStyle = getAvatarStyle(c.fullName || "", idx);
             const initials = getInitials(c.fullName);
+            const avatarSrc = c.avatarUrl || (c as any).avatarUrl;
+            const hasRealAvatar = Boolean(avatarSrc && isValidUserAvatar(avatarSrc));
 
             const skillList = c.skills || (c as any).topSkills || [];
 
@@ -879,9 +922,9 @@ export const DiscoverPage: React.FC = () => {
                       />
                     </div>
                   )}
-                  {(c.avatarUrl || (c as any).avatarUrl) ? (
+                  {hasRealAvatar ? (
                     <img
-                      src={c.avatarUrl || (c as any).avatarUrl}
+                      src={avatarSrc}
                       alt={c.fullName || "Candidate"}
                       className="avatar-photo-box"
                       onError={e => {
@@ -896,7 +939,7 @@ export const DiscoverPage: React.FC = () => {
                     style={{
                       background: avatarStyle.bg,
                       color: avatarStyle.color,
-                      display: (c.avatarUrl || (c as any).avatarUrl) ? 'none' : 'flex'
+                      display: hasRealAvatar ? 'none' : 'flex'
                     }}
                   >
                     {initials}
@@ -1016,7 +1059,7 @@ export const DiscoverPage: React.FC = () => {
                 <button
                   type="button"
                   className="btn-fullscreen-back"
-                  onClick={() => setSelectedCandidate(null)}
+                  onClick={handleCloseProfile}
                   title="Back to Discovery (Esc)"
                 >
                   <FiArrowLeft size={18} />
@@ -1056,17 +1099,20 @@ export const DiscoverPage: React.FC = () => {
                   type="button"
                   className="btn-modal-action-header"
                   onClick={handleExportPDF}
-                  title="Export candidate profile as PDF"
+                  disabled={isExportingPdf}
+                  title={isExportingPdf ? "Generating PDF..." : "Export candidate profile as PDF"}
+                  style={{ opacity: isExportingPdf ? 0.7 : 1, cursor: isExportingPdf ? "not-allowed" : "pointer" }}
                 >
-                  <FiPrinter size={14} /> <span>Export as PDF</span>
+                  <FiPrinter size={14} /> <span>{isExportingPdf ? "Exporting..." : "Export as PDF"}</span>
                 </button>
 
                 <button
                   type="button"
                   className="btn-header-connect-primary"
                   onClick={(e) => {
-                    const c = selectedCandidate;
-                    handleOpenConnectSingle(e, c);
+                    if (selectedCandidate) {
+                      handleOpenConnectSingle(e, selectedCandidate);
+                    }
                   }}
                 >
                   <FiUserPlus size={15} /> <span>Connect with Candidate</span>
@@ -1075,7 +1121,7 @@ export const DiscoverPage: React.FC = () => {
                 <button
                   type="button"
                   className="btn-fullscreen-close"
-                  onClick={() => setSelectedCandidate(null)}
+                  onClick={handleCloseProfile}
                   title="Close Profile (Esc)"
                 >
                   <FiX size={20} />
@@ -1379,58 +1425,101 @@ export const DiscoverPage: React.FC = () => {
       {/* Connection Request Modal */}
       {connectModalOpen && connectCandidates.length > 0 && (
         <div className="modal-backdrop" onClick={() => setConnectModalOpen(false)}>
-          <div className="modal-dialog-connect" onClick={e => e.stopPropagation()}>
-            <div className="modal-header-bar">
-              <h2>{connectCandidates.length > 1 ? `Connect with ${connectCandidates.length} Candidates` : "Connect with Candidate"}</h2>
+          <div className="modal-dialog-connect modern-connect-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-bar modern-modal-header">
+              <div className="modal-header-title-wrap">
+                <h2>{connectCandidates.length > 1 ? "Batch Connection Request" : "Connect with Candidate"}</h2>
+                <span className="modal-batch-pill">
+                  {connectCandidates.length > 1 ? `Multi-Candidate Invitation (${connectCandidates.length} Candidates)` : "Direct Opportunity Invitation"}
+                </span>
+              </div>
               <button type="button" className="btn-close-modal" onClick={() => setConnectModalOpen(false)}>
                 <FiX size={18} />
               </button>
             </div>
-            <div className="modal-body-content" style={{ maxHeight: "78vh", overflowY: "auto" }}>
-              <div style={{ background: "#f8fafc", padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                {connectCandidates.length === 1 ? (
-                  <p className="connect-subtitle" style={{ margin: 0, color: "#334155", fontSize: "0.92rem" }}>
-                    Sending connection request to <strong>{connectCandidates[0].fullName}</strong>
-                  </p>
-                ) : (
-                  <div>
-                    <p style={{ margin: "0 0 6px 0", color: "#1e293b", fontSize: "0.9rem", fontWeight: 700 }}>
-                      Sending connection request to {connectCandidates.length} candidates:
-                    </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxHeight: "80px", overflowY: "auto" }}>
-                      {connectCandidates.map(c => (
-                        <span key={c.id} style={{ background: "#e2e8f0", color: "#334155", padding: "3px 8px", borderRadius: "12px", fontSize: "0.78rem", fontWeight: 600 }}>
-                          {c.fullName}
-                        </span>
-                      ))}
-                    </div>
+            
+            <div className="modal-body-content modern-modal-body" style={{ maxHeight: "78vh", overflowY: "auto" }}>
+              {/* Candidate Recipients Ribbon */}
+              <div className="connect-recipients-card">
+                <div className="recipients-card-top">
+                  <span className="recipients-label">
+                    <FiUsers size={14} />
+                    <strong>Recipients ({connectCandidates.length})</strong>
+                  </span>
+                  {connectCandidates.length > 1 && (
+                    <span className="recipients-hint">Click &times; to remove any candidate from this batch</span>
+                  )}
+                </div>
+
+                <div className="recipients-chips-grid">
+                  {connectCandidates.map((c, idx) => {
+                    const initials = getInitials(c.fullName);
+                    const avatarStyle = getAvatarStyle(c.fullName || "", idx);
+                    const avatarSrc = c.avatarUrl || (c as any).avatarUrl;
+                    const hasAvatar = Boolean(avatarSrc && isValidUserAvatar(avatarSrc));
+
+                    return (
+                      <div key={c.id || idx} className="recipient-chip">
+                        <div className="recipient-avatar-sm" style={{ background: hasAvatar ? "transparent" : avatarStyle.bg, color: avatarStyle.color }}>
+                          {hasAvatar ? (
+                            <img src={avatarSrc} alt={c.fullName || "Candidate"} className="recipient-avatar-img" />
+                          ) : (
+                            <span>{initials}</span>
+                          )}
+                        </div>
+                        <div className="recipient-chip-info">
+                          <strong className="recipient-name">{c.fullName || "Candidate"}</strong>
+                          <span className="recipient-headline">{c.headline || "Candidate Profile"}</span>
+                        </div>
+                        {connectCandidates.length > 1 && (
+                          <button
+                            type="button"
+                            className="btn-remove-recipient-chip"
+                            onClick={() => handleRemoveCandidateFromBatch(c.id!)}
+                            title={`Remove ${c.fullName} from this invitation`}
+                          >
+                            <FiX size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {connectCandidates.length > 1 && (
+                  <div className="recipients-info-note">
+                    <span>Individual opportunity requests will be sent to each candidate with the details below.</span>
                   </div>
                 )}
               </div>
 
               {connectErrors.form && (
-                <div style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", padding: "10px 14px", borderRadius: "8px", fontSize: "0.88rem" }}>
-                  {connectErrors.form}
+                <div className="connect-error-banner">
+                  <FiX size={16} />
+                  <span>{connectErrors.form}</span>
                 </div>
               )}
 
               <div className="form-group">
-                <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
-                  Target Role Title <span style={{ color: "#ef4444" }}>*</span>
+                <label className="form-field-label">
+                  Target Role Title <span className="req-star">*</span>
                 </label>
                 <input
                   type="text"
                   className="form-input"
                   placeholder="e.g. Senior Full Stack Developer / Data Engineer"
                   value={roleTitle}
-                  onChange={e => setRoleTitle(e.target.value)}
+                  onChange={e => {
+                    setRoleTitle(e.target.value);
+                    if (connectErrors.roleTitle) setConnectErrors(prev => ({ ...prev, roleTitle: "" }));
+                  }}
                 />
-                {connectErrors.roleTitle && <span className="field-error" style={{ color: "#ef4444", fontSize: "0.82rem" }}>{connectErrors.roleTitle}</span>}
+                {connectErrors.roleTitle && <span className="field-error">{connectErrors.roleTitle}</span>}
               </div>
 
-              <div className="form-row-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div className="form-row-2col">
                 <div className="form-group">
-                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  <label className="form-field-label">
                     Work Type
                   </label>
                   <select
@@ -1445,7 +1534,7 @@ export const DiscoverPage: React.FC = () => {
                 </div>
 
                 <div className="form-group">
-                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  <label className="form-field-label">
                     Company / Job Location
                   </label>
                   <input
@@ -1458,22 +1547,22 @@ export const DiscoverPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="form-row-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div className="form-row-2col">
                 <div className="form-group">
-                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  <label className="form-field-label">
                     Salary / Compensation Range
                   </label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. ₹12 - 18 LPA / $90,000 - $120,000"
+                    placeholder="e.g. 12 - 18 LPA / $90,000 - $120,000"
                     value={salaryRange}
                     onChange={e => setSalaryRange(e.target.value)}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  <label className="form-field-label">
                     Work Timings / Shift
                   </label>
                   <input
@@ -1486,9 +1575,9 @@ export const DiscoverPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="form-row-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div className="form-row-2col">
                 <div className="form-group">
-                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  <label className="form-field-label">
                     Experience Required
                   </label>
                   <input
@@ -1501,7 +1590,7 @@ export const DiscoverPage: React.FC = () => {
                 </div>
 
                 <div className="form-group">
-                  <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                  <label className="form-field-label">
                     No. of Openings / Members to Hire
                   </label>
                   <input
@@ -1516,7 +1605,7 @@ export const DiscoverPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
+                <label className="form-field-label">
                   Expected Joining Date
                 </label>
                 <input
@@ -1528,27 +1617,46 @@ export const DiscoverPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label style={{ fontWeight: 600, fontSize: "0.88rem", color: "#1e293b", marginBottom: "4px", display: "block" }}>
-                  Opportunity Summary <span style={{ color: "#ef4444" }}>*</span>
+                <label className="form-field-label">
+                  Opportunity Summary &amp; Introduction <span className="req-star">*</span>
                 </label>
                 <textarea
                   className="form-textarea"
                   rows={3}
                   placeholder="Describe key responsibilities, role perks, and candidate expectations..."
                   value={opportunitySummary}
-                  onChange={e => setOpportunitySummary(e.target.value)}
+                  onChange={e => {
+                    setOpportunitySummary(e.target.value);
+                    if (connectErrors.opportunitySummary) setConnectErrors(prev => ({ ...prev, opportunitySummary: "" }));
+                  }}
                 />
-                {connectErrors.opportunitySummary && <span className="field-error" style={{ color: "#ef4444", fontSize: "0.82rem" }}>{connectErrors.opportunitySummary}</span>}
+                {connectErrors.opportunitySummary && <span className="field-error">{connectErrors.opportunitySummary}</span>}
               </div>
             </div>
-            <div className="modal-footer-bar">
+            
+            <div className="modal-footer-bar modern-modal-footer">
+              <button
+                type="button"
+                className="btn-cancel-modal"
+                onClick={() => setConnectModalOpen(false)}
+                disabled={sending}
+              >
+                Cancel
+              </button>
               <button
                 type="button"
                 className="btn-submit-connect"
                 onClick={handleSubmitConnect}
                 disabled={sending}
               >
-                {sending ? `Sending to ${connectCandidates.length} candidate${connectCandidates.length > 1 ? "s" : ""}...` : connectCandidates.length > 1 ? `Submit Request for ${connectCandidates.length} Candidates` : "Submit Connection Request"}
+                <FiSend size={15} />
+                <span>
+                  {sending
+                    ? `Sending to ${connectCandidates.length} Candidate${connectCandidates.length > 1 ? "s" : ""}...`
+                    : connectCandidates.length > 1
+                    ? `Send Request to ${connectCandidates.length} Candidates`
+                    : "Send Connection Request"}
+                </span>
               </button>
             </div>
           </div>

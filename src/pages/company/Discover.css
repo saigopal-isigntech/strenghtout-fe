@@ -1,4 +1,4 @@
-/* Discover Candidates Page - Fixed Grid & Flex Layout Boundaries */
+﻿/* Discover Candidates Page - Fixed Grid & Flex Layout Boundaries */
 .discover-page-container {
   max-width: 1440px;
   margin: 0 auto;
@@ -574,9 +574,9 @@
   overscroll-behavior: contain;
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1494,12 +1494,12 @@
   align-items: center;
   gap: 6px;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 2px 8px rgba(4, 120, 87, 0.2);
 }
 
 .candidate-detail-modal .btn-connect-modal:hover {
-  background: #15803d;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  background: #065f46;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
 }
 
 /* Extra Job Form Styling for Connect Modal */
@@ -1944,7 +1944,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: #00b852;
+  background: #047857;
   color: #ffffff;
   border: none;
   border-radius: 9px;
@@ -1953,13 +1953,13 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 10px rgba(0, 184, 82, 0.28);
+  box-shadow: 0 2px 10px rgba(4, 120, 87, 0.28);
 }
 
 .btn-header-connect-primary:hover {
-  background: #009e45;
+  background: #065f46;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 184, 82, 0.38);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.38);
 }
 
 .btn-fullscreen-close {
@@ -2105,7 +2105,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #00b852;
+  background: #047857;
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -2114,14 +2114,14 @@
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(0, 184, 82, 0.35);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
   margin-bottom: 1rem;
 }
 
 .btn-fullscreen-sidebar-connect:hover {
-  background: #009e45;
+  background: #065f46;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 184, 82, 0.45);
+  box-shadow: 0 6px 18px rgba(4, 120, 87, 0.45);
 }
 
 .fullscreen-external-links-grid {
@@ -2340,7 +2340,7 @@
 }
 
 .section-header-icon {
-  color: #00b852;
+  color: #047857;
   flex-shrink: 0;
 }
 
@@ -2368,7 +2368,7 @@
   line-height: 1.7;
   margin: 0;
   background: #f8fafc;
-  border-left: 4px solid #00b852;
+  border-left: 4px solid #047857;
   padding: 1.1rem 1.35rem;
   border-radius: 0 10px 10px 0;
 }
@@ -2401,7 +2401,7 @@
 }
 
 .skill-check-icon {
-  color: #00b852;
+  color: #047857;
 }
 
 /* Timeline */
@@ -2438,7 +2438,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #00b852;
+  background: #047857;
   border: 3px solid #ffffff;
   box-shadow: 0 0 0 2px #bbf7d0;
 }
@@ -2481,7 +2481,7 @@
 .timeline-company-name {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #00b852;
+  color: #047857;
 }
 
 .timeline-description-text {
@@ -2640,4 +2640,340 @@
     border: 1px solid #e2e8f0 !important;
     break-inside: avoid;
   }
+}
+
+/* ============================================================
+   MODERN MULTI-CANDIDATE SELECTION DOCK & CONNECT MODAL
+   ============================================================ */
+
+/* Floating Bulk Selection Dock */
+.floating-selection-dock {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #064e3b;
+  color: #ffffff;
+  padding: 8px 12px 8px 20px;
+  border-radius: 9999px;
+  box-shadow: 0 12px 36px -4px rgba(6, 78, 59, 0.45), 0 0 0 1px rgba(167, 243, 208, 0.25);
+  backdrop-filter: blur(10px);
+  animation: dockSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dockSlideUp {
+  from {
+    transform: translate(-50%, 20px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+.dock-left-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dock-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #a7f3d0;
+}
+
+.dock-count-badge .check-icon-dock {
+  background: rgba(167, 243, 208, 0.2);
+  color: #a7f3d0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-dock-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ffffff;
+  color: #065f46;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+}
+
+.btn-dock-connect:hover {
+  background: #f0fdf4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.btn-dock-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-dock-clear:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Modern Connect Modal Enhancements */
+.modal-dialog-connect.modern-connect-modal {
+  max-width: 640px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modern-modal-header {
+  padding: 1.25rem 1.75rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-header-title-wrap h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.modal-batch-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.775rem;
+  font-weight: 700;
+  color: #047857;
+  background: #e6f9f0;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  width: fit-content;
+}
+
+.modern-modal-body {
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+/* Recipients Card & Chips Grid */
+.connect-recipients-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recipients-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recipients-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.825rem;
+  color: #334155;
+}
+
+.recipients-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.recipients-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 30px;
+  padding: 4px 10px 4px 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+}
+
+.recipient-avatar-sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.725rem;
+  font-weight: 800;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.recipient-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recipient-chip-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.recipient-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f172a;
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recipient-headline {
+  font-size: 0.7rem;
+  color: #64748b;
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-remove-recipient-chip {
+  background: #f1f5f9;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s ease;
+  margin-left: 2px;
+}
+
+.btn-remove-recipient-chip:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.recipients-info-note {
+  font-size: 0.775rem;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #a7f3d0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-field-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.form-field-label .req-star {
+  color: #ef4444;
+}
+
+.connect-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.modern-modal-footer {
+  padding: 1.25rem 1.75rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel-modal {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel-modal:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
