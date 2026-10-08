@@ -1,4 +1,4 @@
-﻿/* Discover Candidates Page - Fixed Grid & Flex Layout Boundaries */
+/* Discover Candidates Page - Fixed Grid & Flex Layout Boundaries */
 .discover-page-container {
   max-width: 1440px;
   margin: 0 auto;
@@ -2976,4 +2976,79 @@
 .btn-cancel-modal:hover {
   background: #f1f5f9;
   color: #0f172a;
+}
+
+
+/* Connection Status Badge & Disabled Connect States */
+.card-conn-status-row {
+  display: flex;
+  align-items: center;
+  margin-top: -4px;
+  margin-bottom: 2px;
+}
+
+.card-conn-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.conn-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.btn-connect-candidate.btn-connect-disabled {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  opacity: 0.95;
+  font-weight: 600;
+}
+
+.btn-connect-candidate.btn-connect-disabled:hover {
+  background: #f1f5f9 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.fullscreen-conn-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.btn-header-connect-primary.btn-connect-disabled,
+.btn-fullscreen-sidebar-connect.btn-connect-disabled {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  opacity: 0.95;
+  font-weight: 600;
+}
+
+.btn-fullscreen-sidebar-connect.btn-connect-disabled:hover,
+.btn-header-connect-primary.btn-connect-disabled:hover {
+  background: #f1f5f9 !important;
+  box-shadow: none !important;
+  transform: none !important;
 }

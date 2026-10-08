@@ -75,6 +75,23 @@ const getInitials = (name?: string) => {
   return name.slice(0, 2).toUpperCase();
 };
 
+const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
+  SUBMITTED:            { label: "Submitted",            color: "#6b21a8", bg: "#f3e8ff", border: "#e9d5ff", dot: "#9333ea" },
+  UNDER_REVIEW:         { label: "Under Review",         color: "#92400e", bg: "#fef3c7", border: "#fde68a", dot: "#d97706" },
+  COMPANY_CONTACTED:    { label: "Company Contacted",    color: "#1e40af", bg: "#dbeafe", border: "#bfdbfe", dot: "#2563eb" },
+  CANDIDATE_DISCUSSION: { label: "Candidate Discussion", color: "#4c1d95", bg: "#ede9fe", border: "#c4b5fd", dot: "#7c3aed" },
+  SELECTED:             { label: "Selected / Hired",     color: "#065f46", bg: "#d1fae5", border: "#6ee7b7", dot: "#10b981" },
+  NOT_PROCEEDING:       { label: "Not Proceeding",       color: "#991b1b", bg: "#fee2e2", border: "#fca5a5", dot: "#ef4444" },
+  RETURNED:             { label: "Returned",             color: "#991b1b", bg: "#fee2e2", border: "#fca5a5", dot: "#ef4444" },
+  CLOSED:               { label: "Closed",               color: "#374151", bg: "#f3f4f6", border: "#d1d5db", dot: "#6b7280" },
+};
+
+const getStatusMeta = (status?: string) => {
+  if (!status) return null;
+  const upper = status.toUpperCase();
+  return STATUS_META[upper] || { label: status, color: "#374151", bg: "#f3f4f6", border: "#d1d5db", dot: "#6b7280" };
+};
+
 export const DiscoverPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -98,6 +115,32 @@ export const DiscoverPage: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
+
+  const [companyRequestsMap, setCompanyRequestsMap] = useState<Record<string, any>>({});
+
+  const loadCompanyRequests = useCallback(async () => {
+    try {
+      const res = await connectionsApi.getMyRequests(0, 500);
+      const reqList = res.data?.data?.content || (res.data?.data as any) || [];
+      const map: Record<string, any> = {};
+      if (Array.isArray(reqList)) {
+        reqList.forEach((req: any) => {
+          if (req.candidateId) {
+            if (!map[req.candidateId] || (req.submittedAt && map[req.candidateId].submittedAt && new Date(req.submittedAt) > new Date(map[req.candidateId].submittedAt))) {
+              map[req.candidateId] = req;
+            }
+          }
+        });
+      }
+      setCompanyRequestsMap(map);
+    } catch (err) {
+      console.error("Failed to load company connection requests:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCompanyRequests();
+  }, [loadCompanyRequests]);
 
   const [candidates, setCandidates] = useState<CandidateProfile[]>([]);
   const [rolesCatalog, setRolesCatalog] = useState<RoleCatalogItem[]>([]);
@@ -426,7 +469,15 @@ export const DiscoverPage: React.FC = () => {
 
   const handleOpenConnectSingle = (e: React.MouseEvent, candidate: CandidateProfile) => {
     e.stopPropagation();
-    if (!candidate || !candidate.id) return;
+    const cId = candidate?.id || (candidate as any)?.candidateId;
+    if (!cId) return;
+    const existingReq = companyRequestsMap[cId];
+    if (existingReq) {
+      const meta = getStatusMeta(existingReq.status);
+      setToastMsg(`Connection request already submitted for ${candidate.fullName || "this candidate"} (Status: ${meta?.label || existingReq.status}).`);
+      setTimeout(() => setToastMsg(""), 4000);
+      return;
+    }
     setConnectCandidates([candidate]);
     setRoleTitle("");
     setOpportunitySummary("");
@@ -457,7 +508,21 @@ export const DiscoverPage: React.FC = () => {
   const handleOpenConnectSelected = () => {
     const targets = displayedCandidates.filter(c => c.id && selectedCandidateIds.includes(c.id));
     if (targets.length === 0) return;
-    setConnectCandidates(targets);
+    const availableTargets = targets.filter(c => !companyRequestsMap[c.id!]);
+    const skippedCount = targets.length - availableTargets.length;
+
+    if (availableTargets.length === 0) {
+      setToastMsg("All selected candidates already have connection requests.");
+      setTimeout(() => setToastMsg(""), 4000);
+      return;
+    }
+
+    if (skippedCount > 0) {
+      setToastMsg(`${skippedCount} candidate(s) with existing connection requests were excluded.`);
+      setTimeout(() => setToastMsg(""), 4000);
+    }
+
+    setConnectCandidates(availableTargets);
     setRoleTitle("");
     setOpportunitySummary("");
     setWorkType("HYBRID");
@@ -465,7 +530,7 @@ export const DiscoverPage: React.FC = () => {
     setSalaryRange("");
     setWorkTimings("");
     setExperienceRequired("");
-    setOpeningsCount(String(targets.length));
+    setOpeningsCount(String(availableTargets.length));
     setExpectedStart("");
     setSending(false);
     setConnectErrors({});
@@ -474,7 +539,21 @@ export const DiscoverPage: React.FC = () => {
 
   const handleOpenConnectAll = () => {
     if (displayedCandidates.length === 0) return;
-    setConnectCandidates(displayedCandidates);
+    const availableTargets = displayedCandidates.filter(c => c.id && !companyRequestsMap[c.id]);
+    const skippedCount = displayedCandidates.length - availableTargets.length;
+
+    if (availableTargets.length === 0) {
+      setToastMsg("All shortlisted candidates already have connection requests.");
+      setTimeout(() => setToastMsg(""), 4000);
+      return;
+    }
+
+    if (skippedCount > 0) {
+      setToastMsg(`${skippedCount} candidate(s) with existing connection requests were excluded.`);
+      setTimeout(() => setToastMsg(""), 4000);
+    }
+
+    setConnectCandidates(availableTargets);
     setRoleTitle("");
     setOpportunitySummary("");
     setWorkType("HYBRID");
@@ -482,7 +561,7 @@ export const DiscoverPage: React.FC = () => {
     setSalaryRange("");
     setWorkTimings("");
     setExperienceRequired("");
-    setOpeningsCount(String(displayedCandidates.length));
+    setOpeningsCount(String(availableTargets.length));
     setExpectedStart("");
     setSending(false);
     setConnectErrors({});
@@ -548,6 +627,23 @@ export const DiscoverPage: React.FC = () => {
         }
         setSelectedCandidateIds([]);
         setConnectModalOpen(false);
+        setCompanyRequestsMap(prev => {
+          const next = { ...prev };
+          connectCandidates.forEach(c => {
+            const cid = c.id || (c as any).candidateId;
+            if (cid) {
+              next[cid] = {
+                id: "new-" + Date.now(),
+                candidateId: cid,
+                status: "SUBMITTED",
+                roleTitle,
+                submittedAt: new Date().toISOString(),
+              };
+            }
+          });
+          return next;
+        });
+        loadCompanyRequests();
         setTimeout(() => setToastMsg(""), 4000);
       } else {
         if (conflictCount > 0) {
@@ -892,6 +988,9 @@ export const DiscoverPage: React.FC = () => {
             const hasRealAvatar = Boolean(avatarSrc && isValidUserAvatar(avatarSrc));
 
             const skillList = c.skills || (c as any).topSkills || [];
+            const cId = c.id || (c as any).candidateId;
+            const existingReq = cId ? companyRequestsMap[cId] : null;
+            const statusMeta = existingReq ? getStatusMeta(existingReq.status) : null;
 
             return (
               <div
@@ -968,6 +1067,23 @@ export const DiscoverPage: React.FC = () => {
                   </button>
                 </div>
 
+                {/* Connection Status Badge Row */}
+                {statusMeta && (
+                  <div className="card-conn-status-row">
+                    <span
+                      className="card-conn-status-badge"
+                      style={{
+                        color: statusMeta.color,
+                        background: statusMeta.bg,
+                        borderColor: statusMeta.border,
+                      }}
+                    >
+                      <span className="conn-status-dot" style={{ background: statusMeta.dot }} />
+                      <span>Status: {statusMeta.label}</span>
+                    </span>
+                  </div>
+                )}
+
                 {/* Skill Pills */}
                 {skillList && skillList.length > 0 && (
                   <div className="skills-row">
@@ -996,14 +1112,27 @@ export const DiscoverPage: React.FC = () => {
 
                 {/* Bottom Connect Action Button */}
                 <div className="card-action-footer">
-                  <button
-                    type="button"
-                    className="btn-connect-candidate"
-                    onClick={e => handleOpenConnectSingle(e, c)}
-                  >
-                    <FiUserPlus size={15} />
-                    <span>Connect with Candidate</span>
-                  </button>
+                  {existingReq ? (
+                    <button
+                      type="button"
+                      className="btn-connect-candidate btn-connect-disabled"
+                      disabled
+                      onClick={e => e.stopPropagation()}
+                      title={`Connection request already submitted (${statusMeta?.label || existingReq.status})`}
+                    >
+                      <FiCheckCircle size={15} style={{ color: statusMeta?.dot || "#059669" }} />
+                      <span>Request Sent &bull; {statusMeta?.label || existingReq.status}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-connect-candidate"
+                      onClick={e => handleOpenConnectSingle(e, c)}
+                    >
+                      <FiUserPlus size={15} />
+                      <span>Connect with Candidate</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -1050,6 +1179,9 @@ export const DiscoverPage: React.FC = () => {
         const isStarred = selectedCandidate.id && shortlist.includes(selectedCandidate.id);
         const avatarStyle = getAvatarStyle(selectedCandidate.fullName || "");
         const initials = getInitials(selectedCandidate.fullName);
+        const scId = selectedCandidate.id || (selectedCandidate as any).candidateId;
+        const selectedReq = scId ? companyRequestsMap[scId] : null;
+        const selectedStatusMeta = selectedReq ? getStatusMeta(selectedReq.status) : null;
 
         return (
           <div className="fullscreen-candidate-view" role="dialog" aria-modal="true">
@@ -1106,17 +1238,42 @@ export const DiscoverPage: React.FC = () => {
                   <FiPrinter size={14} /> <span>{isExportingPdf ? "Exporting..." : "Export as PDF"}</span>
                 </button>
 
-                <button
-                  type="button"
-                  className="btn-header-connect-primary"
-                  onClick={(e) => {
-                    if (selectedCandidate) {
-                      handleOpenConnectSingle(e, selectedCandidate);
-                    }
-                  }}
-                >
-                  <FiUserPlus size={15} /> <span>Connect with Candidate</span>
-                </button>
+                {selectedStatusMeta ? (
+                  <>
+                    <div
+                      className="fullscreen-conn-status-pill"
+                      style={{
+                        color: selectedStatusMeta.color,
+                        background: selectedStatusMeta.bg,
+                        borderColor: selectedStatusMeta.border,
+                      }}
+                    >
+                      <span className="conn-status-dot" style={{ background: selectedStatusMeta.dot }} />
+                      <span>Status: <strong>{selectedStatusMeta.label}</strong></span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-header-connect-primary btn-connect-disabled"
+                      disabled
+                      title={`Connection request already submitted (${selectedStatusMeta.label})`}
+                    >
+                      <FiCheckCircle size={15} style={{ color: selectedStatusMeta.dot }} />
+                      <span>Request Sent</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-header-connect-primary"
+                    onClick={(e) => {
+                      if (selectedCandidate) {
+                        handleOpenConnectSingle(e, selectedCandidate);
+                      }
+                    }}
+                  >
+                    <FiUserPlus size={15} /> <span>Connect with Candidate</span>
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -1189,17 +1346,29 @@ export const DiscoverPage: React.FC = () => {
                     </div>
 
                     {/* Sidebar Connect Button */}
-                    <button
-                      type="button"
-                      className="btn-fullscreen-sidebar-connect"
-                      onClick={(e) => {
-                        const c = selectedCandidate;
-                        handleOpenConnectSingle(e, c);
-                      }}
-                    >
-                      <FiUserPlus size={16} />
-                      <span>Connect with Candidate</span>
-                    </button>
+                    {selectedReq ? (
+                      <button
+                        type="button"
+                        className="btn-fullscreen-sidebar-connect btn-connect-disabled"
+                        disabled
+                        title={`Connection request already submitted (${selectedStatusMeta?.label || selectedReq.status})`}
+                      >
+                        <FiCheckCircle size={16} style={{ color: selectedStatusMeta?.dot }} />
+                        <span>Request Sent &bull; {selectedStatusMeta?.label || selectedReq.status}</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-fullscreen-sidebar-connect"
+                        onClick={(e) => {
+                          const c = selectedCandidate;
+                          handleOpenConnectSingle(e, c);
+                        }}
+                      >
+                        <FiUserPlus size={16} />
+                        <span>Connect with Candidate</span>
+                      </button>
+                    )}
 
                     {/* External Profiles */}
                     {((selectedCandidate as any).githubUrl || selectedCandidate.linkedinUrl || selectedCandidate.portfolioUrl) && (
