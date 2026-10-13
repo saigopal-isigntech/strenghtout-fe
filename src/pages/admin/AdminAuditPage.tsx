@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminApi } from "../../api/admin";
 import type { AdminAuditItem, AdminUserItem, CompanyProfile, CandidateProfile } from "../../types";
 import { AdminHeroBanner } from "../../components/admin/AdminHeroBanner";
 import {
   FiRefreshCw,
+  FiX,
   FiShield,
   FiUser,
   FiGlobe,
@@ -45,9 +46,22 @@ export const AdminAuditPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<FilterCategory>("ALL");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedPayloads, setExpandedPayloads] = useState<Record<string, boolean>>({});
-  const [dateRange, setDateRange] = useState({ start: "30 Sep 2026", end: "30 Sep 2026" });
+  
+  // Date Filtering State
+  type DatePreset = "ALL" | "TODAY" | "LAST_24H" | "LAST_7D" | "LAST_30D" | "CUSTOM";
+  const [datePreset, setDatePreset] = useState<DatePreset>("ALL");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Extended Filters State
+  const [filterActorRole, setFilterActorRole] = useState<"ALL" | "ADMIN" | "COMPANY" | "CANDIDATE" | "SYSTEM">("ALL");
+  const [filterSeverity, setFilterSeverity] = useState<"ALL" | "SUCCESS" | "DANGER">("ALL");
+  const [filterEntityType, setFilterEntityType] = useState<"ALL" | "USER" | "CANDIDATE_PROFILE" | "COMPANY_PROFILE" | "CONNECTION_REQUEST">("ALL");
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const moreFiltersRef = useRef<HTMLDivElement>(null);
 
   // Directory caches to resolve User/Company/Candidate details
   const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
@@ -92,6 +106,45 @@ export const AdminAuditPage: React.FC = () => {
     loadLogs();
     loadDirectoryData();
   }, []);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setShowDatePicker(false);
+      }
+      if (moreFiltersRef.current && !moreFiltersRef.current.contains(e.target as Node)) {
+        setShowMoreFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getDateRangeLabel = () => {
+    const now = new Date();
+    const pad = (n: number) => (n < 10 ? "0" + n : String(n));
+    const fmt = (d: Date) => `${pad(d.getDate())} ${d.toLocaleString("en-US", { month: "short" })} ${d.getFullYear()}`;
+
+    if (datePreset === "ALL") return "All Time";
+    if (datePreset === "TODAY") return `Today (${fmt(now)})`;
+    if (datePreset === "LAST_24H") return "Last 24 Hours";
+    if (datePreset === "LAST_7D") {
+      const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return `${fmt(past)} – ${fmt(now)}`;
+    }
+    if (datePreset === "LAST_30D") {
+      const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return `${fmt(past)} – ${fmt(now)}`;
+    }
+    if (datePreset === "CUSTOM") {
+      if (customStartDate && customEndDate) return `${customStartDate} – ${customEndDate}`;
+      if (customStartDate) return `From ${customStartDate}`;
+      if (customEndDate) return `Until ${customEndDate}`;
+      return "Custom Range";
+    }
+    return "All Time";
+  };
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
@@ -390,31 +443,94 @@ export const AdminAuditPage: React.FC = () => {
   };
 
   const filteredLogs = useMemo(() => {
+    const now = new Date();
+
     return logs.filter(log => {
-      const type = log.eventType || "";
-      const entity = log.entityType || "";
+      const type = (log.eventType || "").toUpperCase();
+      const entity = (log.entityType || "").toUpperCase();
+      const actor = resolveActor(log.actorUserId);
 
-      // Category filter
-      if (activeCategory === "AUTH" && !type.includes("LOGIN") && !type.includes("PASSWORD")) {
-        return false;
-      }
-      if (activeCategory === "REGISTER" && !type.includes("REGISTER")) {
-        return false;
-      }
-      if (activeCategory === "PROFILES" && !type.includes("PROFILE") && entity !== "CANDIDATE_PROFILE" && entity !== "COMPANY_PROFILE") {
-        return false;
-      }
-      if (activeCategory === "CONNECTIONS" && !type.includes("CONNECTION") && entity !== "CONNECTION_REQUEST") {
-        return false;
-      }
-      if (activeCategory === "SECURITY" && !type.includes("FAILED") && !type.includes("PASSWORD") && !type.includes("STATUS")) {
-        return false;
+      // 1. Category filter
+      if (activeCategory === "AUTH") {
+        if (!type.includes("LOGIN") && !type.includes("PASSWORD") && !type.includes("AUTH") && !type.includes("LOGOUT") && !type.includes("TOKEN")) {
+          return false;
+        }
+      } else if (activeCategory === "REGISTER") {
+        if (!type.includes("REGISTER") && !type.includes("SIGNUP") && !type.includes("CREATE")) {
+          return false;
+        }
+      } else if (activeCategory === "PROFILES") {
+        if (!type.includes("PROFILE") && !type.includes("PUBLISH") && entity !== "CANDIDATE_PROFILE" && entity !== "COMPANY_PROFILE") {
+          return false;
+        }
+      } else if (activeCategory === "CONNECTIONS") {
+        if (!type.includes("CONNECTION") && !type.includes("NOTE") && entity !== "CONNECTION_REQUEST") {
+          return false;
+        }
+      } else if (activeCategory === "SECURITY") {
+        if (!type.includes("FAILED") && !type.includes("PASSWORD") && !type.includes("ALERT") && !type.includes("SUSPEND") && !type.includes("ERROR") && !type.includes("REJECT") && !type.includes("UNPUBLISH")) {
+          return false;
+        }
       }
 
-      // Query filter matching Event ID, resolved names, and raw attributes
+      // 2. Date filter
+      if (log.createdAt && datePreset !== "ALL") {
+        const logDate = new Date(log.createdAt);
+        if (!isNaN(logDate.getTime())) {
+          if (datePreset === "TODAY") {
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            if (logDate < startOfToday) return false;
+          } else if (datePreset === "LAST_24H") {
+            const past24 = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            if (logDate < past24) return false;
+          } else if (datePreset === "LAST_7D") {
+            const past7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (logDate < past7d) return false;
+          } else if (datePreset === "LAST_30D") {
+            const past30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            if (logDate < past30d) return false;
+          } else if (datePreset === "CUSTOM") {
+            if (customStartDate) {
+              const start = new Date(customStartDate + "T00:00:00");
+              if (!isNaN(start.getTime()) && logDate < start) return false;
+            }
+            if (customEndDate) {
+              const end = new Date(customEndDate + "T23:59:59");
+              if (!isNaN(end.getTime()) && logDate > end) return false;
+            }
+          }
+        }
+      }
+
+      // 3. Actor Role Filter
+      if (filterActorRole !== "ALL") {
+        const actorRole = (actor.role || "").toUpperCase();
+        if (filterActorRole === "ADMIN") {
+          if (!actorRole.includes("ADMIN")) return false;
+        } else if (filterActorRole === "COMPANY") {
+          if (!actorRole.includes("COMPANY")) return false;
+        } else if (filterActorRole === "CANDIDATE") {
+          if (!actorRole.includes("CANDIDATE")) return false;
+        } else if (filterActorRole === "SYSTEM") {
+          if (!actorRole.includes("SYSTEM")) return false;
+        }
+      }
+
+      // 4. Severity / Outcome Filter
+      if (filterSeverity !== "ALL") {
+        const cat = getEventCategory(log.eventType || "");
+        if (filterSeverity === "DANGER" && cat !== "danger") return false;
+        if (filterSeverity === "SUCCESS" && cat === "danger") return false;
+      }
+
+      // 5. Entity Type Filter
+      if (filterEntityType !== "ALL") {
+        if (entity !== filterEntityType) return false;
+      }
+
+      // 6. Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const actor = resolveActor(log.actorUserId);
         const entityInfo = resolveEntity(log.entityType, log.entityId);
 
         const matchesEventId = (log.id || "").toLowerCase().includes(q);
@@ -430,13 +546,58 @@ export const AdminAuditPage: React.FC = () => {
                              actor.role.toLowerCase().includes(q);
         const matchesIp = (log.ipAddress || "").toLowerCase().includes(q);
         const matchesMeta = (log.metadataJson || "").toLowerCase().includes(q);
+        const matchesFormattedDate = formatExactTime(log.createdAt || "").toLowerCase().includes(q);
 
-        return matchesEventId || matchesEvent || matchesEntity || matchesActor || matchesIp || matchesMeta;
+        return matchesEventId || matchesEvent || matchesEntity || matchesActor || matchesIp || matchesMeta || matchesFormattedDate;
       }
 
       return true;
     });
-  }, [logs, activeCategory, searchQuery, usersMap, companiesMapById, candidatesMapById]);
+  }, [
+    logs,
+    activeCategory,
+    datePreset,
+    customStartDate,
+    customEndDate,
+    filterActorRole,
+    filterSeverity,
+    filterEntityType,
+    searchQuery,
+    usersMap,
+    companiesMapById,
+    candidatesMapById,
+  ]);
+
+  const activeExtraFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filterActorRole !== "ALL") count++;
+    if (filterSeverity !== "ALL") count++;
+    if (filterEntityType !== "ALL") count++;
+    return count;
+  }, [filterActorRole, filterSeverity, filterEntityType]);
+
+  const hasAnyActiveFilters = useMemo(() => {
+    return Boolean(
+      searchQuery.trim() ||
+      activeCategory !== "ALL" ||
+      datePreset !== "ALL" ||
+      filterActorRole !== "ALL" ||
+      filterSeverity !== "ALL" ||
+      filterEntityType !== "ALL"
+    );
+  }, [searchQuery, activeCategory, datePreset, filterActorRole, filterSeverity, filterEntityType]);
+
+  const handleResetAllFilters = () => {
+    setSearchQuery("");
+    setActiveCategory("ALL");
+    setDatePreset("ALL");
+    setCustomStartDate("");
+    setCustomEndDate("");
+    setFilterActorRole("ALL");
+    setFilterSeverity("ALL");
+    setFilterEntityType("ALL");
+    setPage(0);
+  };
 
   const totalFiltered = filteredLogs.length;
   const totalFilteredPages = Math.ceil(totalFiltered / PAGE_SIZE) || 1;
@@ -539,13 +700,11 @@ export const AdminAuditPage: React.FC = () => {
 
   return (
     <div className="admin-audit-page-container">
-      {/* 1. Hero Header Banner matching exact design with Dual Badges */}
+      {/* 1. Hero Header Banner */}
       <AdminHeroBanner
         illustrationType="audit"
         badgeText="LIVE INGESTION ACTIVE"
         badgeIcon={<span className="live-pulse-dot" />}
-        secondBadgeText="TAMPER-EVIDENT LEDGER"
-        secondBadgeIcon={<FiShield size={13} />}
         title="Platform Audit & Security Stream"
         highlightText="Audit & Security Stream"
         subtitle="Cryptographically ordered immutable event logs tracking authentication, company registrations, profile updates, and access security."
@@ -637,33 +796,89 @@ export const AdminAuditPage: React.FC = () => {
                 type="button"
                 className="search-clear-btn"
                 onClick={() => handleSearchChange("")}
+                title="Clear search"
               >
-                ×
+                <FiX size={14} />
               </button>
             )}
           </div>
 
           {/* Date Picker Button */}
-          <div className="date-picker-dropdown-rel">
+          <div className="date-picker-dropdown-rel" ref={datePickerRef}>
             <button
               type="button"
-              className="date-range-btn"
+              className={`date-range-btn ${datePreset !== "ALL" ? "active-date-btn" : ""}`}
               onClick={() => setShowDatePicker(!showDatePicker)}
+              title="Filter audit logs by timestamp range"
             >
               <FiCalendar size={16} className="btn-icon" />
-              <span>{dateRange.start} – {dateRange.end}</span>
+              <span>{getDateRangeLabel()}</span>
               <FiChevronDown size={14} className="dropdown-arrow" />
             </button>
             {showDatePicker && (
               <div className="date-picker-menu">
-                <div className="date-option" onClick={() => { setDateRange({ start: "30 Sep 2026", end: "30 Sep 2026" }); setShowDatePicker(false); }}>
-                  Today (30 Sep 2026)
+                <div
+                  className={`date-option ${datePreset === "ALL" ? "active-option" : ""}`}
+                  onClick={() => { setDatePreset("ALL"); setShowDatePicker(false); setPage(0); }}
+                >
+                  <span>All Time</span>
+                  {datePreset === "ALL" && <FiCheck size={14} />}
                 </div>
-                <div className="date-option" onClick={() => { setDateRange({ start: "23 Sep 2026", end: "30 Sep 2026" }); setShowDatePicker(false); }}>
-                  Last 7 Days
+                <div
+                  className={`date-option ${datePreset === "TODAY" ? "active-option" : ""}`}
+                  onClick={() => { setDatePreset("TODAY"); setShowDatePicker(false); setPage(0); }}
+                >
+                  <span>Today</span>
+                  {datePreset === "TODAY" && <FiCheck size={14} />}
                 </div>
-                <div className="date-option" onClick={() => { setDateRange({ start: "01 Sep 2026", end: "30 Sep 2026" }); setShowDatePicker(false); }}>
-                  Last 30 Days
+                <div
+                  className={`date-option ${datePreset === "LAST_24H" ? "active-option" : ""}`}
+                  onClick={() => { setDatePreset("LAST_24H"); setShowDatePicker(false); setPage(0); }}
+                >
+                  <span>Last 24 Hours</span>
+                  {datePreset === "LAST_24H" && <FiCheck size={14} />}
+                </div>
+                <div
+                  className={`date-option ${datePreset === "LAST_7D" ? "active-option" : ""}`}
+                  onClick={() => { setDatePreset("LAST_7D"); setShowDatePicker(false); setPage(0); }}
+                >
+                  <span>Last 7 Days</span>
+                  {datePreset === "LAST_7D" && <FiCheck size={14} />}
+                </div>
+                <div
+                  className={`date-option ${datePreset === "LAST_30D" ? "active-option" : ""}`}
+                  onClick={() => { setDatePreset("LAST_30D"); setShowDatePicker(false); setPage(0); }}
+                >
+                  <span>Last 30 Days</span>
+                  {datePreset === "LAST_30D" && <FiCheck size={14} />}
+                </div>
+
+                <div className="date-custom-divider" />
+
+                <div className="date-custom-section">
+                  <div className="date-custom-title">Custom Date Range:</div>
+                  <div className="date-inputs-row">
+                    <input
+                      type="date"
+                      className="custom-date-input"
+                      value={customStartDate}
+                      onChange={e => { setCustomStartDate(e.target.value); setDatePreset("CUSTOM"); setPage(0); }}
+                    />
+                    <span className="date-separator">to</span>
+                    <input
+                      type="date"
+                      className="custom-date-input"
+                      value={customEndDate}
+                      onChange={e => { setCustomEndDate(e.target.value); setDatePreset("CUSTOM"); setPage(0); }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-apply-custom-date"
+                    onClick={() => setShowDatePicker(false)}
+                  >
+                    Apply Range
+                  </button>
                 </div>
               </div>
             )}
@@ -731,23 +946,101 @@ export const AdminAuditPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="more-filters-dropdown-rel">
-            <button
-              type="button"
-              className="more-filters-btn"
-              onClick={() => setShowMoreFilters(!showMoreFilters)}
-            >
-              <FiFilter size={15} className="btn-icon" />
-              <span>More Filters</span>
-              <FiChevronDown size={14} className="dropdown-arrow" />
-            </button>
-            {showMoreFilters && (
-              <div className="more-filters-menu">
-                <div className="filter-menu-item" onClick={() => setShowMoreFilters(false)}>Filter by Actor (Admin / System / User)</div>
-                <div className="filter-menu-item" onClick={() => setShowMoreFilters(false)}>Filter by IP Address</div>
-                <div className="filter-menu-item" onClick={() => setShowMoreFilters(false)}>Only High Severity</div>
-              </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {hasAnyActiveFilters && (
+              <button
+                type="button"
+                className="btn-clear-all-filters"
+                onClick={handleResetAllFilters}
+                title="Reset all active search and filter criteria"
+              >
+                <FiX size={14} /> <span>Clear Filters</span>
+              </button>
             )}
+
+            <div className="more-filters-dropdown-rel" ref={moreFiltersRef}>
+              <button
+                type="button"
+                className={`more-filters-btn ${activeExtraFiltersCount > 0 ? "active-more-btn" : ""}`}
+                onClick={() => setShowMoreFilters(!showMoreFilters)}
+              >
+                <FiFilter size={15} className="btn-icon" />
+                <span>More Filters</span>
+                {activeExtraFiltersCount > 0 && (
+                  <span className="filter-badge-count">{activeExtraFiltersCount}</span>
+                )}
+                <FiChevronDown size={14} className="dropdown-arrow" />
+              </button>
+
+              {showMoreFilters && (
+                <div className="more-filters-menu expanded-filters-panel">
+                  <div className="filter-group-section">
+                    <label className="filter-group-label">Actor Role</label>
+                    <select
+                      className="filter-select-field"
+                      value={filterActorRole}
+                      onChange={e => { setFilterActorRole(e.target.value as any); setPage(0); }}
+                    >
+                      <option value="ALL">All Roles</option>
+                      <option value="ADMIN">Admin / Super Admin</option>
+                      <option value="COMPANY">Company Accounts</option>
+                      <option value="CANDIDATE">Candidate Accounts</option>
+                      <option value="SYSTEM">System Automations</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group-section">
+                    <label className="filter-group-label">Event Outcome / Severity</label>
+                    <select
+                      className="filter-select-field"
+                      value={filterSeverity}
+                      onChange={e => { setFilterSeverity(e.target.value as any); setPage(0); }}
+                    >
+                      <option value="ALL">All Severity Levels</option>
+                      <option value="SUCCESS">Success / Informational</option>
+                      <option value="DANGER">Security Alerts & Failures Only</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group-section">
+                    <label className="filter-group-label">Target Entity</label>
+                    <select
+                      className="filter-select-field"
+                      value={filterEntityType}
+                      onChange={e => { setFilterEntityType(e.target.value as any); setPage(0); }}
+                    >
+                      <option value="ALL">All Entities</option>
+                      <option value="USER">User Account</option>
+                      <option value="CANDIDATE_PROFILE">Candidate Profile</option>
+                      <option value="COMPANY_PROFILE">Company Profile</option>
+                      <option value="CONNECTION_REQUEST">Connection Request</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-actions-row">
+                    <button
+                      type="button"
+                      className="btn-reset-panel"
+                      onClick={() => {
+                        setFilterActorRole("ALL");
+                        setFilterSeverity("ALL");
+                        setFilterEntityType("ALL");
+                        setPage(0);
+                      }}
+                    >
+                      Reset Extra
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-done-panel"
+                      onClick={() => setShowMoreFilters(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -763,21 +1056,17 @@ export const AdminAuditPage: React.FC = () => {
           <FiShield size={48} className="empty-icon" />
           <h3>No Matching Audit Events Found</h3>
           <p>
-            {searchQuery || activeCategory !== "ALL"
-              ? "Try adjusting your search query or filter category."
-              : "Security audit events will appear here in real-time as users authenticate and update data."}
+            {hasAnyActiveFilters
+              ? "Try adjusting your search keywords, date range, or filter criteria."
+              : "Security audit events will appear here in real-time as users authenticate and perform activities."}
           </p>
-          {(searchQuery || activeCategory !== "ALL") && (
+          {hasAnyActiveFilters && (
             <button
               type="button"
               className="reset-filters-btn"
-              onClick={() => {
-                setSearchQuery("");
-                setActiveCategory("ALL");
-                setPage(0);
-              }}
+              onClick={handleResetAllFilters}
             >
-              Reset Filters
+              Reset All Filters
             </button>
           )}
         </div>

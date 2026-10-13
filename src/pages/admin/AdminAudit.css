@@ -840,3 +840,196 @@
   color: #9ca3af;
   font-weight: 600;
 }
+
+
+/* Enhanced Filters & Date Picker Menu */
+.date-picker-menu {
+  min-width: 250px;
+  padding: 8px;
+}
+
+.date-option {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+}
+
+.date-option:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.date-option.active-option {
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+}
+
+.date-custom-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 6px 0;
+}
+
+.date-custom-section {
+  padding: 6px 4px 4px;
+}
+
+.date-custom-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.date-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.custom-date-input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.custom-date-input:focus {
+  outline: none;
+  border-color: #047857;
+}
+
+.date-separator {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.btn-apply-custom-date {
+  width: 100%;
+  padding: 6px 12px;
+  background: #047857;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-apply-custom-date:hover {
+  background: #065f46;
+}
+
+.expanded-filters-panel {
+  min-width: 270px;
+  padding: 14px;
+}
+
+.filter-group-section {
+  margin-bottom: 12px;
+}
+
+.filter-group-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 5px;
+}
+
+.filter-select-field {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.filter-select-field:focus {
+  outline: none;
+  border-color: #047857;
+}
+
+.filter-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-reset-panel {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.btn-reset-panel:hover {
+  text-decoration: underline;
+}
+
+.btn-done-panel {
+  padding: 5px 14px;
+  background: #047857;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #047857;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin-left: 4px;
+}
+
+.btn-clear-all-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px dashed #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-clear-all-filters:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
