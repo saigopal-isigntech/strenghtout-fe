@@ -1,4 +1,4 @@
-﻿import CommandPalette from "./components/CommandPalette";
+import CommandPalette from "./components/CommandPalette";
 import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -59,6 +59,21 @@ const CandidateDetailRouter: React.FC = () => {
 
   return <CandidateProfilePage />;
 };
+// Intelligent root router: authenticated candidates/users are automatically directed to their dashboard and cannot return to public '/'
+const RootPageRouter: React.FC = () => {
+  const { user, isAuthenticated, isAdmin } = useAuth();
+  if (isAuthenticated && user) {
+    if (isAdmin()) {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    if (user.role === "ROLE_COMPANY") {
+      return <Navigate to="/company/dashboard" replace />;
+    }
+    return <Navigate to="/candidate/dashboard" replace />;
+  }
+  return <AboutPage />;
+};
+
 const DashboardRouter: React.FC = () => {
   const { user, isAdmin } = useAuth();
   if (isAdmin()) {
@@ -137,7 +152,7 @@ const App: React.FC = () => (
         {/* Persistent Layout */}
         <Route element={<PersistentAppLayout />}>
           {/* Public Landing & Informational Pages */}
-          <Route path="/" element={<AboutPage />} />
+          <Route path="/" element={<RootPageRouter />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/careers" element={<AboutPage />} />

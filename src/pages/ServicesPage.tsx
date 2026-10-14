@@ -35,7 +35,7 @@ interface ServiceItem {
 }
 
 const ServicesPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<"all" | "assessment" | "profile" | "placement">("all");
   const [modalService, setModalService] = useState<string | null>(null);
 
@@ -234,8 +234,8 @@ const ServicesPage: React.FC = () => {
             </p>
 
             <div className="dark-hero-cta">
-              <Link to="/candidate/profile" className="btn-hero-primary">
-                <span>View & Polish My Profile</span>
+              <Link to={isAuthenticated ? "/candidate/profile" : "/register"} className="btn-hero-primary">
+                <span>{isAuthenticated ? "View & Polish My Profile" : "Join StrengthOut Free"}</span>
                 <FiArrowRight size={16} />
               </Link>
               <Link to="/about" className="btn-hero-secondary">

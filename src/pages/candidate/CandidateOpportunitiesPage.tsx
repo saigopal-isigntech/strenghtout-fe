@@ -90,7 +90,7 @@ const STEPS = [
 const cleanText = (val: string | null | undefined): string => {
   if (!val) return "";
   return val
-    .replace(/^["'s]+|["'s]+$/g, "")
+    .replace(/^["'\s]+|["'\s]+$/g, "")
     .replace(/\r\n/g, " ")
     .replace(/\n/g, " ")
     .replace(/\r/g, " ")
@@ -531,7 +531,7 @@ const CandidateOpportunitiesPage: React.FC = () => {
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", margin: "14px 0", background: "#f8fafc", padding: "12px 14px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                       <div>
                         <span style={{ fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Work Model & Location</span>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>{workType} • {cleanText(r.location) || "Not specified"}</div>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b", marginTop: "2px" }}>{workType} {" \u2022 "} {cleanText(r.location) || "Not specified"}</div>
                       </div>
                       {r.salaryRange && (
                         <div>

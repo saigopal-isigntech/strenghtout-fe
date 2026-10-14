@@ -25,11 +25,6 @@ const DashboardPage: React.FC = () => {
   const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // If user is Admin or Super Admin, render the executive Admin Control Center!
-  if (isAdmin()) {
-    return <AdminDashboard />;
-  }
-
   const isCompany = user?.role === "ROLE_COMPANY";
   const isCandidate = user?.role === "ROLE_CANDIDATE";
 
@@ -49,6 +44,11 @@ const DashboardPage: React.FC = () => {
         });
     }
   }, [isCandidate]);
+
+  // If user is Admin or Super Admin, render the executive Admin Control Center!
+  if (isAdmin()) {
+    return <AdminDashboard />;
+  }
 
   // Determine if candidate profile is brand new / unmodified:
   const isProfileUnmodified =
@@ -216,7 +216,7 @@ const DashboardPage: React.FC = () => {
         <div className="hero-left-content">
           <span className="hero-greeting-tag">{greeting()}</span>
           <h1 className="hero-user-name">
-            {user?.fullName ? (user.fullName.trim().split(/\s+/).length === 2 && user.fullName.trim().split(/\s+/)[0].toLowerCase() === user.fullName.trim().split(/\s+/)[1].toLowerCase() ? user.fullName.trim().split(/\s+/)[0] : user.fullName) : (isCompany ? "company1" : "User")} <span className="wave-hand">👋</span>
+            {user?.fullName ? (user.fullName.trim().split(/\s+/).length === 2 && user.fullName.trim().split(/\s+/)[0].toLowerCase() === user.fullName.trim().split(/\s+/)[1].toLowerCase() ? user.fullName.trim().split(/\s+/)[0] : user.fullName) : (isCompany ? "company1" : "User")} <span className="wave-hand" role="img" aria-label="wave">{"\uD83D\uDC4B"}</span>
           </h1>
           <p className="hero-subtext">
             {isCompany

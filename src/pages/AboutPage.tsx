@@ -28,7 +28,7 @@ interface FaqItem {
 }
 
 const AboutPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const isCompanyUser = user?.role === "ROLE_COMPANY";
 
   // Default tab based on current logged in user role
@@ -127,8 +127,8 @@ const AboutPage: React.FC = () => {
             <div className="dark-hero-cta">
               {activeTab === "candidate" ? (
                 <>
-                  <Link to="/candidate/profile" className="btn-hero-primary">
-                    <span>View & Polish My Profile</span>
+                  <Link to={isAuthenticated ? "/candidate/profile" : "/register"} className="btn-hero-primary">
+                    <span>{isAuthenticated ? "View & Polish My Profile" : "Get Started as Candidate"}</span>
                     <FiArrowRight size={16} />
                   </Link>
                   <Link to="/services" className="btn-hero-secondary">
@@ -137,8 +137,8 @@ const AboutPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Link to="/company/discover" className="btn-hero-primary">
-                    <span>Start Discovering Talent</span>
+                  <Link to={isAuthenticated ? "/company/discover" : "/register"} className="btn-hero-primary">
+                    <span>{isAuthenticated ? "Start Discovering Talent" : "Get Started as Company"}</span>
                     <FiArrowRight size={16} />
                   </Link>
                   <Link to="/services" className="btn-hero-secondary">

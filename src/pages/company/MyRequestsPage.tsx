@@ -42,7 +42,7 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
 const sm = (s: string) => STATUS_META[s] ?? { label: s, color: "#374151", bg: "#f3f4f6", border: "#d1d5db", dot: "#6b7280" };
 
 const fmtDateDisplay = (iso?: string | null) => {
-  if (!iso) return "—";
+  if (!iso) return "\u2014";
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return String(iso);
@@ -53,7 +53,7 @@ const fmtDateDisplay = (iso?: string | null) => {
 };
 
 const fmtTimeDisplay = (iso?: string | null) => {
-  if (!iso) return "";
+  if (!iso) return "\u2014";
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "";
@@ -94,7 +94,7 @@ const STAGES = [
   { key: "UNDER_REVIEW",         step: 2, label: "Under Review",         sub: "Profile Screen",    desc: "iSignTech talent advisors are verifying candidate availability and requirements.", Icon: FiSearch },
   { key: "COMPANY_CONTACTED",    step: 3, label: "Company Contacted",    sub: "Intro Alignment",   desc: "Company hiring team is contacted to align on role expectations & timeline.", Icon: FiSend },
   { key: "CANDIDATE_DISCUSSION", step: 4, label: "Candidate Discussion", sub: "Interview Stage",   desc: "Candidate discussion and interview coordination in active progress.", Icon: FiUsers },
-  { key: "SELECTED",             step: 5, label: "Selected / Hired",     sub: "Hiring Confirmed",  desc: "Candidate successfully selected / hired for this opportunity! 🎉", Icon: FiAward },
+  { key: "SELECTED",             step: 5, label: "Selected / Hired",     sub: "Hiring Confirmed",  desc: "Candidate successfully selected / hired for this opportunity! \uD83C\uDF89", Icon: FiAward },
 ];
 
 const getStageIndex = (status: string) => {
