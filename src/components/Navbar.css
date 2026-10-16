@@ -1004,3 +1004,36 @@
   }
 }
 
+
+
+/* Back to Home Navbar Link */
+.nav-item.nav-back-item {
+  color: #1d72f2;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-item.nav-back-item:hover {
+  color: #1558b0;
+  background-color: rgba(29, 114, 242, 0.08);
+}
+
+.nav-item.nav-back-item svg {
+  transition: transform 0.18s ease;
+}
+
+.nav-item.nav-back-item:hover svg {
+  transform: translateX(-2px);
+}
+
+[data-theme="dark"] .nav-item.nav-back-item {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .nav-item.nav-back-item:hover {
+  color: #93c5fd;
+  background-color: rgba(59, 130, 246, 0.15);
+}

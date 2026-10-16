@@ -16,6 +16,7 @@ import {
   FiLogOut,
   FiMenu,
   FiX,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { HiOutlineUser, HiOutlineUsers, HiOutlineClipboardList } from "react-icons/hi";
 
@@ -215,11 +216,14 @@ const Navbar: React.FC = () => {
   };
 
   const navLinks = () => {
-    if (!user)
+    if (!user) {
+      const isSubpage = location.pathname === "/about" || location.pathname === "/services";
       return [
+        ...(isSubpage ? [{ to: "/", label: "Back to Home", isBack: true }] : []),
         { to: "/about", label: "About" },
         { to: "/services", label: "Services" },
       ];
+    }
     if (isAdmin())
       return [
         { to: "/admin/dashboard", label: "Dashboard" },
@@ -277,8 +281,9 @@ const Navbar: React.FC = () => {
             <Link
               key={link.to + link.label}
               to={link.to}
-              className={`nav-item ${isActive(link.to) ? "active" : ""}`}
+              className={`nav-item ${(link as any).isBack ? "nav-back-item" : ""} ${isActive(link.to) ? "active" : ""}`}
             >
+              {(link as any).isBack && <FiArrowLeft size={15} style={{ marginRight: "0.35rem" }} />}
               {link.label}
             </Link>
           ))}
@@ -331,9 +336,10 @@ const Navbar: React.FC = () => {
               <Link
                 key={link.to + link.label}
                 to={link.to}
-                className={`mobile-nav-link ${isActive(link.to) ? "active" : ""}`}
+                className={`mobile-nav-link ${(link as any).isBack ? "nav-back-item" : ""} ${isActive(link.to) ? "active" : ""}`}
                 onClick={() => setMobileOpen(false)}
               >
+                {(link as any).isBack && <FiArrowLeft size={15} style={{ marginRight: "0.35rem" }} />}
                 {link.label}
               </Link>
             ))}

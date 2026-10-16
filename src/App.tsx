@@ -22,6 +22,7 @@ const AdminAuditPage       = lazy(() => import("./pages/admin/AdminAuditPage"));
 const AdminDashboardPage   = lazy(() => import("./pages/admin/AdminDashboard"));
 const MyRequestsPage       = lazy(() => import("./pages/company/MyRequestsPage"));
 const CompanyProfileView   = lazy(() => import("./components/CompanyProfileView"));
+const LandingPage          = lazy(() => import("./pages/LandingPage"));
 const AboutPage            = lazy(() => import("./pages/AboutPage"));
 const ServicesPage         = lazy(() => import("./pages/ServicesPage"));
 
@@ -71,7 +72,7 @@ const RootPageRouter: React.FC = () => {
     }
     return <Navigate to="/candidate/dashboard" replace />;
   }
-  return <AboutPage />;
+  return <LandingPage />;
 };
 
 const DashboardRouter: React.FC = () => {
