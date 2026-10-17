@@ -217,7 +217,7 @@ const Navbar: React.FC = () => {
 
   const navLinks = () => {
     if (!user) {
-      const isSubpage = location.pathname === "/about" || location.pathname === "/services";
+      const isSubpage = location.pathname === "/about" || location.pathname === "/services" || location.pathname === "/careers" || location.pathname === "/contact";
       return [
         ...(isSubpage ? [{ to: "/", label: "Back to Home", isBack: true }] : []),
         { to: "/about", label: "About" },

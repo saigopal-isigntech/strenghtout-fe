@@ -25,6 +25,8 @@ const CompanyProfileView   = lazy(() => import("./components/CompanyProfileView"
 const LandingPage          = lazy(() => import("./pages/LandingPage"));
 const AboutPage            = lazy(() => import("./pages/AboutPage"));
 const ServicesPage         = lazy(() => import("./pages/ServicesPage"));
+const CareersPage          = lazy(() => import("./pages/CareersPage"));
+const ContactPage          = lazy(() => import("./pages/ContactPage"));
 
 // Instant Scroll Reset on route change to ensure all pages open cleanly from top (0,0)
 const ScrollToTop: React.FC = () => {
@@ -156,8 +158,8 @@ const App: React.FC = () => (
           <Route path="/" element={<RootPageRouter />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/services" element={<ServicesPage />} />
-          <Route path="/careers" element={<AboutPage />} />
-          <Route path="/contact" element={<AboutPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Smart Unified Routers (Backward-Compatible) */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardRouter /></ProtectedRoute>} />
