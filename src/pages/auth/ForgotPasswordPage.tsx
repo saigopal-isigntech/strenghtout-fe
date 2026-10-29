@@ -9,17 +9,17 @@ import "./Auth.css";
 
 const FEATURES = [
   {
-    icon: <FiShield size={20} color="#70c144" />,
+    icon: <FiShield size={20} color="#047857" />,
     title: "Secure account recovery",
     desc: "We send a 6-digit OTP directly to your email to verify your identity.",
   },
   {
-    icon: <FiKey size={20} color="#70c144" />,
+    icon: <FiKey size={20} color="#047857" />,
     title: "Instant password reset",
     desc: "Set up a new strong password and regain access in under 2 minutes.",
   },
   {
-    icon: <FiLock size={20} color="#70c144" />,
+    icon: <FiLock size={20} color="#047857" />,
     title: "End-to-end security",
     desc: "Your credentials are always protected with enterprise-grade encryption.",
   },
@@ -227,9 +227,9 @@ const ForgotPasswordPage: React.FC = () => {
 
             {/* Step progress bar */}
             <div className="fp-steps-indicator" style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
-              <div className={`fp-step-dot ${step === "email" ? "active" : "done"}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: "#70c144" }} />
-              <div className={`fp-step-dot ${step === "otp" ? "active" : step === "reset" ? "done" : ""}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: step === "otp" || step === "reset" ? "#70c144" : "#e2e8f0" }} />
-              <div className={`fp-step-dot ${step === "reset" ? "active" : ""}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: step === "reset" ? "#70c144" : "#e2e8f0" }} />
+              <div className={`fp-step-dot ${step === "email" ? "active" : "done"}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: "#047857" }} />
+              <div className={`fp-step-dot ${step === "otp" ? "active" : step === "reset" ? "done" : ""}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: step === "otp" || step === "reset" ? "#047857" : "#e2e8f0" }} />
+              <div className={`fp-step-dot ${step === "reset" ? "active" : ""}`} style={{ flex: 1, height: "4px", borderRadius: "2px", background: step === "reset" ? "#047857" : "#e2e8f0" }} />
             </div>
 
             {/* ---- STEP 1: Email ---- */}

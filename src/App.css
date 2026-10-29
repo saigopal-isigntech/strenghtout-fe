@@ -12,14 +12,17 @@
   --bg-body: #f8fafc;
   --bg-surface: #ffffff;
   --bg-dark-header: #212529;
-  --bg-mint: #dcf3e5;
-  --border-mint: #bfe8cf;
+  --bg-mint: #ecfdf5;
+  --border-mint: #a7f3d0;
   
   /* Signature Brand Colors from Image */
-  --primary-green: #70c144;
-  --primary-green-hover: #5ea836;
-  --primary-green-soft: #eaf7ec;
-  --green-title: #66cc33;
+  --primary-green: #047857;
+  --primary-green-hover: #065f46;
+  --primary-green-soft: #ecfdf5;
+  --primary-green-light: #d1fae5;
+  --primary-green-border: #a7f3d0;
+  --primary-green-ring: rgba(4, 120, 87, 0.18);
+  --green-title: #047857;
 
   --secondary-blue: #1d72f2;
   --secondary-blue-hover: #1558c0;
@@ -28,16 +31,18 @@
   --bg-dark-card: #080b0e;
   --border-dark-card: #181d22;
 
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
+  --text-primary: #0f172a;
+  --text-heading: #0f172a;
+  --text-secondary: #334155;
+  --text-body: #334155;
+  --text-muted: #64748b;
   --text-white: #ffffff;
   --text-link: #38bdf8;
 
   --border-subtle: #e2e8f0;
-  --border-card: #e5e7eb;
-  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-  --card-shadow-hover: 0 10px 30px -4px rgba(0, 0, 0, 0.1);
+  --border-card: #e2e8f0;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 4px 14px -2px rgba(0, 0, 0, 0.08);
 }
 
 /* ============================================================
@@ -376,7 +381,7 @@ html, body {
   pointer-events: auto;
   position: relative;
   overflow: hidden;
-  border-left: 4px solid #00b852;
+  border-left: 4px solid #047857;
 }
 
 .auth-modal-icon {
@@ -384,7 +389,7 @@ html, body {
   height: 36px;
   border-radius: 50%;
   background: #e6f4ea;
-  color: #00b852;
+  color: #047857;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -427,7 +432,7 @@ html, body {
 
 .auth-modal-progress-bar {
   height: 100%;
-  background: #00b852;
+  background: #047857;
   width: 100%;
   animation: modalCountdown 2s linear forwards;
 }

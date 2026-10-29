@@ -3227,7 +3227,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                         setInternshipErrors(prev => ({ ...prev, endDate: '' }));
                       }
                     }}
-                    style={{ width: '16px', height: '16px', accentColor: '#70c144' }}
+                    style={{ width: '16px', height: '16px', accentColor: '#047857' }}
                   />
                   Currently pursuing / working in this internship
                 </label>

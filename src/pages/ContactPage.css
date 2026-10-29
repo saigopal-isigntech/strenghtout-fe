@@ -1,6 +1,6 @@
 /* ============================================================
    CONTACT PAGE STYLING - STRENGTHOUT DESIGN SYSTEM
-   Primary: #70c144   Secondary: #1d72f2   Dark: #06231a / #090e17
+   Primary: #047857   Secondary: #1d72f2   Dark: #06231a / #090e17
    ============================================================ */
 
 .contact-page-wrapper {
@@ -46,9 +46,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(112, 193, 68, 0.15);
-  border: 1px solid rgba(112, 193, 68, 0.35);
-  color: #70c144;
+  background: rgba(4, 120, 87, 0.15);
+  border: 1px solid rgba(4, 120, 87, 0.35);
+  color: #047857;
   padding: 0.4rem 1rem;
   border-radius: 20px;
   font-size: 0.78rem;
@@ -67,7 +67,7 @@
 }
 
 .contact-hero-title .accent-text {
-  color: #70c144;
+  color: #047857;
 }
 
 .contact-hero-subtitle {
@@ -137,8 +137,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(112, 193, 68, 0.12);
-  color: #70c144;
+  background: rgba(4, 120, 87, 0.12);
+  color: #047857;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -201,7 +201,7 @@
 
 .contact-assurance-card {
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border-color: rgba(112, 193, 68, 0.3);
+  border-color: rgba(4, 120, 87, 0.3);
   padding: 1.5rem;
 }
 
@@ -258,8 +258,8 @@
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-  border-color: #70c144;
-  box-shadow: 0 0 0 3px rgba(112, 193, 68, 0.18);
+  border-color: #047857;
+  box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.18);
 }
 
 .form-input.error,
@@ -279,7 +279,7 @@
 .btn-contact-submit {
   width: 100%;
   padding: 0.85rem 1.5rem;
-  background: linear-gradient(135deg, #70c144 0%, #5ea836 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -290,14 +290,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.35);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: 1.5rem;
 }
 
 .btn-contact-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(112, 193, 68, 0.45);
+  box-shadow: 0 6px 20px rgba(4, 120, 87, 0.45);
 }
 
 .btn-contact-submit:disabled {
@@ -370,8 +370,8 @@
 }
 
 .btn-send-another:hover {
-  border-color: #70c144;
-  color: #70c144;
+  border-color: #047857;
+  color: #047857;
 }
 
 /* 3. FAQ Section */
@@ -420,9 +420,9 @@
 }
 
 .faq-card.open {
-  border-color: rgba(112, 193, 68, 0.4);
+  border-color: rgba(4, 120, 87, 0.4);
   background: #ffffff;
-  box-shadow: 0 4px 12px rgba(112, 193, 68, 0.08);
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.08);
 }
 
 .faq-question-btn {
@@ -453,7 +453,7 @@
 }
 
 .faq-card.open .faq-chevron {
-  color: #70c144;
+  color: #047857;
 }
 
 .faq-answer-panel {
@@ -513,13 +513,13 @@
 }
 
 .cta-btn.primary {
-  background: linear-gradient(135deg, #70c144 0%, #5ea836 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
 }
 
 .cta-btn.primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.4);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.4);
 }
 
 .cta-btn.secondary {
@@ -591,7 +591,7 @@
 
 [data-theme="dark"] .faq-card.open {
   background: #0f172a;
-  border-color: #70c144;
+  border-color: #047857;
 }
 
 [data-theme="dark"] .faq-answer-panel {

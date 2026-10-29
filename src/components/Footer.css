@@ -52,8 +52,8 @@
   transition: color 0.15s, background 0.15s;
 }
 .footer-link:hover {
-  color: #70c144;
-  background: #f0fdf4;
+  color: #047857;
+  background: #ecfdf5;
 }
 .footer-link svg { flex-shrink: 0; }
 
@@ -85,7 +85,7 @@
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
 }
-.footer-social-icon:hover { color: #70c144; background: #f0fdf4; }
+.footer-social-icon:hover { color: #047857; background: #ecfdf5; }
 
 .footer-locale {
   display: inline-flex;

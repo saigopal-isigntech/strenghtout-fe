@@ -1,6 +1,6 @@
 /* ============================================================
    NAVBAR - StrengthOut  (Naukri-style horizontal bar)
-   Primary: #70c144 (green)   Secondary: #1d72f2 (blue)
+   Primary: #047857 (green)   Secondary: #1d72f2 (blue)
    ============================================================ */
 
 /* Shell */
@@ -57,7 +57,7 @@
   font-weight: 800;
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
-  background: #1d72f2;
+  background: #0f172a;
   color: #ffffff;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -93,10 +93,10 @@
   background-color: #f1f5f9;
 }
 .nav-item.active {
-  color: #15803d;
-  background-color: #f0fdf4;
-  font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(112, 193, 68, 0.35);
+  color: #047857;
+  background-color: #ecfdf5;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 /* Search bar */
@@ -124,9 +124,9 @@
   box-sizing: border-box;
 }
 .nav-search-input:focus {
-  border-color: #70c144;
+  border-color: #047857;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(112, 193, 68, 0.15);
+  box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.18);
 }
 .nav-search-input::placeholder { color: #9ca3af; }
 
@@ -144,7 +144,7 @@
   border-radius: 50%;
   transition: color 0.15s;
 }
-.nav-search-btn:hover { color: #70c144; }
+.nav-search-btn:hover { color: #047857; }
 
 /* Right cluster */
 .nav-right {
@@ -174,8 +174,8 @@
 }
 .nav-icon-btn:hover {
   background: #f0fdf4;
-  border-color: #70c144;
-  color: #70c144;
+  border-color: #047857;
+  color: #047857;
 }
 
 .nav-icon-badge {
@@ -229,7 +229,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #059669;
+  background: #047857;
   color: #fff;
   display: flex;
   align-items: center;
@@ -289,7 +289,7 @@
   transition: transform 0.22s;
   flex-shrink: 0;
 }
-.user-caret-icon.open { transform: rotate(180deg); color: #70c144; }
+.user-caret-icon.open { transform: rotate(180deg); color: #047857; }
 
 /* Dropdown */
 .nav-dropdown {
@@ -323,7 +323,7 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #059669;
+  background: #047857;
   color: #fff;
   display: flex;
   align-items: center;
@@ -400,7 +400,7 @@
 }
 .dropdown-link svg { color: #9ca3af; flex-shrink: 0; transition: color 0.14s; }
 .dropdown-link:hover { background: #f8fafc; color: #111827; }
-.dropdown-link:hover svg { color: #70c144; }
+.dropdown-link:hover svg { color: #047857; }
 .dropdown-link.logout-btn { color: #dc2626; }
 .dropdown-link.logout-btn svg { color: #dc2626; }
 .dropdown-link.logout-btn:hover { background: #fff1f2; color: #b91c1c; }
@@ -422,9 +422,9 @@
   text-decoration: none;
   transition: border-color 0.18s, color 0.18s;
 }
-.nav-btn-login:hover { border-color: #70c144; color: #70c144; }
+.nav-btn-login:hover { border-color: #047857; color: #047857; }
 .nav-btn-register {
-  background: #059669;
+  background: #047857;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 700;
@@ -550,9 +550,9 @@
   .mobile-nav-link:hover { background: #f8fafc; color: #111827; }
   .mobile-nav-link.active {
     background: #f0fdf4;
-    color: #15803d;
+    color: #047857;
     font-weight: 700;
-    border-left: 3px solid #70c144;
+    border-left: 3px solid #047857;
   }
 
   .mobile-drawer-search {
@@ -573,7 +573,7 @@
     box-sizing: border-box;
   }
   .mobile-search-input:focus {
-    border-color: #70c144;
+    border-color: #047857;
     background: #fff;
   }
 
@@ -663,8 +663,8 @@
 
 [data-theme="dark"] .nav-item.active {
   color: #86efac;
-  background-color: rgba(112, 193, 68, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(112, 193, 68, 0.35);
+  background-color: rgba(4, 120, 87, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(4, 120, 87, 0.25);
 }
 
 [data-theme="dark"] .nav-user-trigger {
@@ -689,7 +689,7 @@
 
 [data-theme="dark"] .nav-search-input:focus {
   background: #0f172a;
-  border-color: #70c144;
+  border-color: #047857;
 }
 
 [data-theme="dark"] .nav-icon-btn {
@@ -700,8 +700,8 @@
 
 [data-theme="dark"] .nav-icon-btn:hover {
   background: #334155;
-  color: #70c144;
-  border-color: #70c144;
+  color: #047857;
+  border-color: #047857;
 }
 
 [data-theme="dark"] .user-firstname {
@@ -761,8 +761,8 @@
 }
 
 [data-theme="dark"] .nav-btn-login:hover {
-  border-color: #70c144;
-  color: #70c144;
+  border-color: #047857;
+  color: #047857;
 }
 
 [data-theme="dark"] .mobile-drawer {
@@ -823,7 +823,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: #059669;
+  background: #047857;
   color: #fff;
   font-weight: 700;
   font-size: 0.9rem;
@@ -863,7 +863,7 @@
 .mobile-drawer-user-role {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #70c144;
+  color: #047857;
   letter-spacing: 0.04em;
 }
 
@@ -956,7 +956,7 @@
 }
 
 .nav-cmd-search-icon {
-  color: #059669;
+  color: #047857;
   font-size: 14px;
   flex-shrink: 0;
 }

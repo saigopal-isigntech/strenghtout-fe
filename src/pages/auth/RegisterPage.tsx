@@ -25,17 +25,17 @@ import './Auth.css';
 
 const CANDIDATE_FEATURES = [
   {
-    icon: <FiAward size={20} color="#70c144" />,
+    icon: <FiAward size={20} color="#047857" />,
     title: 'Prove your strength, not just your resume',
     desc: 'Complete real-world skill challenges that let companies see exactly what you can build.',
   },
   {
-    icon: <FiBriefcase size={20} color="#70c144" />,
+    icon: <FiBriefcase size={20} color="#047857" />,
     title: 'Companies that match your ambitions',
     desc: 'Connect directly with hiring managers who value authentic engineering talent.',
   },
   {
-    icon: <FiTrendingUp size={20} color="#70c144" />,
+    icon: <FiTrendingUp size={20} color="#047857" />,
     title: 'Accelerate your hiring journey',
     desc: 'Skip initial phone screens and move straight to meaningful conversations.',
   },
@@ -43,17 +43,17 @@ const CANDIDATE_FEATURES = [
 
 const COMPANY_FEATURES = [
   {
-    icon: <FiAward size={20} color="#70c144" />,
+    icon: <FiAward size={20} color="#047857" />,
     title: 'Hire Verified, High-Impact Talent',
     desc: 'Access pre-evaluated candidates with validated skills, repo code, and RightPath assessments.',
   },
   {
-    icon: <FiBriefcase size={20} color="#70c144" />,
+    icon: <FiBriefcase size={20} color="#047857" />,
     title: 'Cut Screening Time by 70%',
     desc: 'Review verified submissions and candidate video pitch introductions directly.',
   },
   {
-    icon: <FiTrendingUp size={20} color="#70c144" />,
+    icon: <FiTrendingUp size={20} color="#047857" />,
     title: 'Accelerate Team Growth',
     desc: 'Hire directly with transparent candidate data and zero recruitment bottlenecks.',
   },
@@ -541,7 +541,7 @@ const RegisterPage: React.FC = () => {
                 <div className="company-details-step">
                   <div className="form-group">
                     <label htmlFor="reg-website">
-                      <FiGlobe size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#70c144' }} />
+                      <FiGlobe size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#047857' }} />
                       Company Website URL
                     </label>
                     <input
@@ -572,7 +572,7 @@ const RegisterPage: React.FC = () => {
                   <div className="form-row-2col">
                     <div className="form-group">
                       <label htmlFor="reg-city">
-                        <FiMapPin size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiMapPin size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#047857' }} />
                         City / Headquarters
                       </label>
                       <input
@@ -599,7 +599,7 @@ const RegisterPage: React.FC = () => {
                   <div className="form-row-2col">
                     <div className="form-group">
                       <label htmlFor="reg-size">
-                        <FiUsers size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiUsers size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#047857' }} />
                         Employee Strength
                       </label>
                       <select
@@ -618,7 +618,7 @@ const RegisterPage: React.FC = () => {
 
                     <div className="form-group">
                       <label htmlFor="reg-industry">
-                        <FiLayers size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiLayers size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#047857' }} />
                         Industry / Domain
                       </label>
                       <select
@@ -654,7 +654,7 @@ const RegisterPage: React.FC = () => {
                   <div className="form-row-2col">
                     <div className="form-group">
                       <label htmlFor="reg-contact-name">
-                        <FiUser size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiUser size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#047857' }} />
                         Contact Person
                       </label>
                       <input
@@ -668,7 +668,7 @@ const RegisterPage: React.FC = () => {
 
                     <div className="form-group">
                       <label htmlFor="reg-contact-phone">
-                        <FiPhone size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#70c144' }} />
+                        <FiPhone size={14} style={{ marginRight: '5px', verticalAlign: 'middle', color: '#047857' }} />
                         Contact Phone
                       </label>
                       <input

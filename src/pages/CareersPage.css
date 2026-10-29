@@ -1,6 +1,6 @@
 /* ============================================================
    CAREERS PAGE STYLING - STRENGTHOUT DESIGN SYSTEM
-   Primary: #70c144   Secondary: #1d72f2   Dark: #06231a / #090e17
+   Primary: #047857   Secondary: #1d72f2   Dark: #06231a / #090e17
    ============================================================ */
 
 .careers-page-wrapper {
@@ -46,9 +46,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(112, 193, 68, 0.15);
-  border: 1px solid rgba(112, 193, 68, 0.35);
-  color: #70c144;
+  background: rgba(4, 120, 87, 0.15);
+  border: 1px solid rgba(4, 120, 87, 0.35);
+  color: #047857;
   padding: 0.4rem 1rem;
   border-radius: 20px;
   font-size: 0.78rem;
@@ -67,7 +67,7 @@
 }
 
 .careers-hero-title .accent-text {
-  color: #70c144;
+  color: #047857;
 }
 
 .careers-hero-subtitle {
@@ -89,7 +89,7 @@
 .btn-careers-primary {
   padding: 0.8rem 1.6rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, #70c144 0%, #5ea836 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.95rem;
@@ -97,13 +97,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.35);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-careers-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(112, 193, 68, 0.45);
+  box-shadow: 0 6px 20px rgba(4, 120, 87, 0.45);
 }
 
 .btn-careers-secondary {
@@ -173,8 +173,8 @@
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: rgba(112, 193, 68, 0.12);
-  color: #70c144;
+  background: rgba(4, 120, 87, 0.12);
+  color: #047857;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -261,8 +261,8 @@
 }
 
 .job-card:hover {
-  border-color: rgba(112, 193, 68, 0.4);
-  box-shadow: 0 8px 25px rgba(112, 193, 68, 0.08);
+  border-color: rgba(4, 120, 87, 0.4);
+  box-shadow: 0 8px 25px rgba(4, 120, 87, 0.08);
   transform: translateY(-2px);
 }
 
@@ -283,7 +283,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: rgba(112, 193, 68, 0.12);
+  background: rgba(4, 120, 87, 0.12);
   color: #15803d;
   padding: 0.2rem 0.6rem;
   border-radius: 6px;
@@ -362,10 +362,10 @@
 }
 
 .btn-apply-job:hover {
-  background: #70c144;
+  background: #047857;
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.35);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
 }
 
 /* 4. Talent Pool Card */
@@ -420,7 +420,7 @@
 .btn-talent-register {
   padding: 0.75rem 1.35rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, #70c144 0%, #5ea836 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.92rem;
@@ -430,7 +430,7 @@
 
 .btn-talent-register:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(112, 193, 68, 0.4);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.4);
 }
 
 /* 5. Application Modal */
@@ -482,7 +482,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #70c144;
+  color: #047857;
   letter-spacing: 0.05em;
   display: block;
   margin-bottom: 0.25rem;
@@ -548,8 +548,8 @@
 
 .modal-input:focus,
 .modal-textarea:focus {
-  border-color: #70c144;
-  box-shadow: 0 0 0 3px rgba(112, 193, 68, 0.18);
+  border-color: #047857;
+  box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.18);
 }
 
 .modal-input.error,
@@ -591,7 +591,7 @@
 }
 
 .btn-modal-submit {
-  background: linear-gradient(135deg, #70c144 0%, #5ea836 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
   border: none;
   padding: 0.65rem 1.4rem;
@@ -602,13 +602,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  box-shadow: 0 3px 10px rgba(112, 193, 68, 0.35);
+  box-shadow: 0 3px 10px rgba(4, 120, 87, 0.35);
   transition: all 0.18s ease;
 }
 
 .btn-modal-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(112, 193, 68, 0.45);
+  box-shadow: 0 5px 14px rgba(4, 120, 87, 0.45);
 }
 
 .btn-modal-submit:disabled {
