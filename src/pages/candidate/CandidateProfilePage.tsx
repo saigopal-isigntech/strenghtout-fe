@@ -1,4 +1,4 @@
-﻿// Helper to format external URLs with protocol to prevent relative route issues
+// Helper to format external URLs with protocol to prevent relative route issues
 const normalizeExternalUrl = (url?: string | null): string => {
   if (!url) return '';
   const trimmed = url.trim();
@@ -1785,7 +1785,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                               {proj.summary && proj.summary.length > 120 && (
                                 <button
                                   type="button"
-                                  style={{ background: 'transparent', border: 'none', color: '#059669', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem', padding: 0, marginLeft: '4px' }}
+                                  style={{ background: 'transparent', border: 'none', color: '#047857', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem', padding: 0, marginLeft: '4px' }}
                                   onClick={() => toggleProjectExpand(proj.id || proj.name)}
                                 >
                                   {expandedProjects[proj.id || proj.name] ? 'Less' : 'More'}
@@ -1879,17 +1879,17 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                 {evidencesList.length > 0 ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem' }}>
                     {evidencesList.map(ev => (
-                      <div key={ev.id} style={{ background: '#f0fdf4', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <div key={ev.id} style={{ background: '#ecfdf5', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>{ev.title}</strong>
+                          <strong style={{ fontSize: '0.9rem', color: '#065f46' }}>{ev.title}</strong>
                           {ev.score != null && (
-                            <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.78rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+                            <span style={{ background: '#ffffff', color: '#047857', border: '1px solid #a7f3d0', fontSize: '0.78rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
                               Score: {ev.score}%
                             </span>
                           )}
                         </div>
-                        {ev.summary && <p style={{ fontSize: '0.82rem', color: '#166534', margin: '0.35rem 0 0' }}>{ev.summary}</p>}
-                        <span style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: 600, display: 'inline-block', marginTop: '0.4rem' }}>
+                        {ev.summary && <p style={{ fontSize: '0.82rem', color: '#047857', margin: '0.35rem 0 0' }}>{ev.summary}</p>}
+                        <span style={{ fontSize: '0.74rem', color: '#047857', fontWeight: 600, display: 'inline-block', marginTop: '0.4rem' }}>
                           ✓ Verified by {ev.sourceSystem || 'RightPath'}
                         </span>
                       </div>
@@ -2566,7 +2566,7 @@ const CandidateProfilePage: React.FC<CandidateProfilePageProps> = ({ initialMode
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#15803d',
+                        color: '#047857',
                         cursor: 'pointer',
                         padding: 0,
                         display: 'flex',
