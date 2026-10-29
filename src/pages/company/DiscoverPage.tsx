@@ -53,12 +53,12 @@ import "./Discover.css";
 const PAGE_SIZE = 12;
 
 const avatarColors = [
-  { bg: "#0d9488", color: "#ffffff" },
-  { bg: "#0284c7", color: "#ffffff" },
-  { bg: "#7c3aed", color: "#ffffff" },
-  { bg: "#059669", color: "#ffffff" },
-  { bg: "#d97706", color: "#ffffff" },
-  { bg: "#db2777", color: "#ffffff" },
+  { bg: "#ecfdf5", color: "#047857" }, // soft emerald
+  { bg: "#f1f5f9", color: "#334155" }, // soft slate
+  { bg: "#e0f2fe", color: "#0369a1" }, // soft sky
+  { bg: "#f8fafc", color: "#0f172a" }, // soft dark
+  { bg: "#fef3c7", color: "#92400e" }, // soft amber
+  { bg: "#e6f4ea", color: "#065f46" }, // soft mint
 ];
 
 const getAvatarStyle = (name: string, index: number = 0) => {
@@ -997,7 +997,7 @@ export const DiscoverPage: React.FC = () => {
                 key={c.id || idx}
                 className={`candidate-card-item ${isStarred ? "is-starred" : ""} ${c.id && selectedCandidateIds.includes(c.id) ? "is-card-selected" : ""}`}
                 onClick={() => handleOpenProfile(c)}
-                style={discoverTab === "SHORTLISTED" && c.id && selectedCandidateIds.includes(c.id) ? { borderColor: "#059669", background: "#f0fdf4", boxShadow: "0 4px 14px rgba(5, 150, 105, 0.12)" } : {}}
+                style={discoverTab === "SHORTLISTED" && c.id && selectedCandidateIds.includes(c.id) ? { borderColor: "#047857", background: "#ecfdf5", boxShadow: "0 4px 14px rgba(4, 120, 87, 0.12)" } : {}}
               >
                 {/* Top Row: Selection Checkbox (Shortlisted tab only), Initials Avatar, Name, Headline, Location, Star Button */}
                 <div className="card-header-row" style={{ position: "relative" }}>
@@ -1017,7 +1017,7 @@ export const DiscoverPage: React.FC = () => {
                         type="checkbox"
                         checked={selectedCandidateIds.includes(c.id)}
                         onChange={() => {}}
-                        style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "#059669" }}
+                        style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "#047857" }}
                       />
                     </div>
                   )}
