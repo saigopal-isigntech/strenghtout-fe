@@ -10,14 +10,17 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
   width: 100%;
   height: 60px;
   min-height: 60px;
   max-height: 60px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
   flex-shrink: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .navbar-inner {
@@ -297,13 +300,13 @@
   right: 0;
   top: calc(100% + 8px);
   background: #ffffff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   min-width: 250px;
-  box-shadow: 0 16px 40px -8px rgba(0,0,0,0.14), 0 4px 12px -2px rgba(0,0,0,0.06);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
   padding: 0.5rem;
   z-index: 1010;
-  animation: dropdownPop 0.18s cubic-bezier(0.16,1,0.3,1);
+  animation: dropdownPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top right;
 }
 @keyframes dropdownPop {
@@ -368,8 +371,9 @@
 .role-badge-tag {
   font-size: 0.64rem;
   font-weight: 700;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
   padding: 0.18rem 0.55rem;
   border-radius: 4px;
   text-transform: uppercase;
@@ -378,7 +382,7 @@
 }
 .role-badge-tag.super { background: #fef3c7; color: #92400e; }
 
-.dropdown-divider { border: none; border-top: 1px solid #f1f5f9; margin: 0.4rem 0; }
+.dropdown-divider { border: none; border-top: 1px solid #e2e8f0; margin: 0.4rem 0; }
 
 .dropdown-link {
   display: flex;
@@ -399,7 +403,7 @@
   font-family: inherit;
 }
 .dropdown-link svg { color: #9ca3af; flex-shrink: 0; transition: color 0.14s; }
-.dropdown-link:hover { background: #f8fafc; color: #111827; }
+.dropdown-link:hover { background: #f8fafc; color: #0f172a; }
 .dropdown-link:hover svg { color: #047857; }
 .dropdown-link.logout-btn { color: #dc2626; }
 .dropdown-link.logout-btn svg { color: #dc2626; }
@@ -638,9 +642,11 @@
    NAVBAR DARK MODE STYLES
    ============================================================ */
 [data-theme="dark"] .navbar {
-  background: #0f172a;
-  border-bottom-color: #1e293b;
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: rgba(30, 41, 59, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .nav-item {
@@ -936,23 +942,23 @@
 .nav-cmd-palette-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 20px;
-  padding: 6px 14px;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 12px;
   font-size: 13px;
   color: #64748b;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
 .nav-cmd-palette-btn:hover {
   background: #ffffff;
-  border-color: #10b981;
+  border-color: #047857;
   color: #0f172a;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.12);
 }
 
 .nav-cmd-search-icon {
@@ -970,13 +976,13 @@
 .nav-cmd-kbd-badge kbd {
   font-family: inherit;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 2px 7px;
+  border-radius: 5px;
+  padding: 1.5px 6px;
   color: #475569;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   letter-spacing: 0.3px;
 }
 

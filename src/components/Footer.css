@@ -4,16 +4,17 @@
 
 .footer {
   background: #ffffff;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #e2e8f0;
   width: 100%;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: inherit;
 }
 
 .footer-bar {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 1.5rem;
-  height: 48px;
+  height: 52px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,8 +24,8 @@
 
 /* left: copyright */
 .footer-copy {
-  font-size: 0.8rem;
-  color: #6b7280;
+  font-size: 0.82rem;
+  color: #64748b;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -43,13 +44,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.3rem 0.65rem;
-  font-size: 0.8rem;
-  color: #6b7280;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  color: #64748b;
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: 6px;
   white-space: nowrap;
-  transition: color 0.15s, background 0.15s;
+  transition: all 0.15s ease;
 }
 .footer-link:hover {
   color: #047857;
